@@ -19,14 +19,17 @@ handle (Req) ->
             {
                <<"data">>,
                [
-                  {
-                     [
-                        {
-                           <<"status">>,
-                           <<"OK">>
-                        }
-                     ]
-                  }
+                  jiffy:encode
+                  (
+                     {
+                        [
+                           {
+                              <<"status">>,
+                              <<"OK">>
+                           }
+                        ]
+                     }
+                  )
                ]
             }
          ]
