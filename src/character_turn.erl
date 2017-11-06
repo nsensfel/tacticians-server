@@ -2,13 +2,15 @@
 
 -export(
    [
-      handle_request/1
+      handle/1
    ]
 ).
 
-handle_request (Req) ->
+handle (Req) ->
+   io:format("~nReceived~p...", [Req]),
    JSON_Req_Map = jiffy:decode(Req, [return_maps]),
    UserToken = maps:get(<<"user_token">>, JSON_Req_Map),
+   io:format("~nCharacter Turn for ~p...", [UserToken]),
 %%   ok = users_manager:ping(UserToken),
    jiffy:encode(
       {
