@@ -1,6 +1,8 @@
+<erl>
 out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
       character_turn:handle(A#arg.clidata)
-   }
+   }.
+</erl>
