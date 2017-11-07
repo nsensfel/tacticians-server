@@ -1,4 +1,4 @@
--module(character_turn).
+-module(battlemap_character_turn).
 
 -export(
    [
