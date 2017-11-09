@@ -19,7 +19,8 @@
    [
       add_cache/3,
       inherit_cache/3,
-      delete_cache/2
+      delete_cache/2,
+      get_timeout/1
    ]
 )
 .
@@ -43,25 +44,6 @@ add_cache (DB, Heir) ->
       ]
    ).
 
-delete_cache (CacheList, DB) ->
-   case lists:member(DB, CacheList) of
-      true ->
-         delete_cache(DB),
-         lists:delete(DB, CacheList);
-      false ->
-         CacheList
-   end.
-
-add_cache (CacheList, DB, Heir) ->
-   case lists:member(DB, CacheList) of
-      true ->
-         ets:setopts(DB, {heir, Heir, DB}),
-         CacheList;
-
-      false ->
-         add_cache(DB, Heir),
-         [DB|CacheList]
-   end.
 
 inherit_cache (CacheList, DB, Heir) ->
    case lists:member(DB, CacheList) of
@@ -113,3 +95,29 @@ format_status (_, [_, State]) ->
 
 handle_info(_, State) ->
    {noreply, State}.
+
+%%%% actual interface
+delete_cache (CacheList, DB) ->
+   case lists:member(DB, CacheList) of
+      true ->
+         delete_cache(DB),
+         lists:delete(DB, CacheList);
+      false ->
+         CacheList
+   end.
+
+add_cache (CacheList, DB, Heir) ->
+   case lists:member(DB, CacheList) of
+      true ->
+         ets:setopts(DB, {heir, Heir, DB}),
+         CacheList;
+
+      false ->
+         add_cache(DB, Heir),
+         [DB|CacheList]
+   end.
+
+get_timeout(battlemaps_db) ->
+   60000;
+get_timeout(_) ->
+   60000.
