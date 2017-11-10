@@ -17,33 +17,20 @@ handle (Req) ->
       ),
 %%   ok = users_manager:ping(UserToken),
    jiffy:encode(
-      {
+      [
          [
-            {
-               <<"types">>,
-               [
-                  <<"SET_MAP">>,
-                  lists:map(
-                     fun (_Char) ->
-                        <<"ADD_CHAR">>
-                     end,
-                     CharList
-                  )
-               ]
-            },
-            {
-               <<"data">>,
-               [
-                  battlemap_battlemap:encode_in_json(Battlemap)
-                  |
-                  lists:map(
-                     fun (Char) ->
-                        battlemap_character:encode_in_json(Char)
-                     end,
-                     CharList
-                  )
-               ]
-            }
+            <<"set_map">>,
+            battlemap_battlemap:encode_in_json(Battlemap)
          ]
-      }
+         |
+         lists:map(
+            fun (Char) ->
+               [
+                  <<"add_char">>,
+                  battlemap_character:encode_in_json(Char)
+               ]
+            end,
+            CharList
+         )
+      ]
    ).
