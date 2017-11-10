@@ -9,7 +9,7 @@
 handle (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    BattlemapID = maps:get(<<"battlemap_id">>, JSONReqMap),
-   io:format("~nLoading Battlemap ~p...", [BattlemapID]),
+   io:format("~nLoading Battlemap ~p...~n", [BattlemapID]),
    {Battlemap, CharList} =
       timed_cache_object:fetch(
          battlemaps_db,
@@ -34,7 +34,7 @@ handle (Req) ->
             {
                <<"data">>,
                [
-                  battlemap_battlemap:encode_to_json(Battlemap)
+                  battlemap_battlemap:encode_in_json(Battlemap)
                   |
                   lists:map(
                      fun (Char) ->

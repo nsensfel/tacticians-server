@@ -1,7 +1,8 @@
 -module(shim_database).
 -export([fetch/2]).
 
-fetch(battlemaps_db, _Object_ID) ->
+fetch(battlemaps_db, Object_ID) ->
+   io:format("~nGenerating neew Battlemap ~p... ~n", [Object_ID]),
    Width = (rand:uniform(54) + 10),
    Height = (rand:uniform(54) + 10),
    {ok,

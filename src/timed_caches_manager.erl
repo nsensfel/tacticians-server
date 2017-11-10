@@ -32,18 +32,32 @@
 delete_cache (DB) ->
    ets:delete(DB).
 
-add_cache (DB, Heir) ->
+add_cache (DB, none) ->
+   io:format("~nTimed Caches Manager added a new cache. ~n"),
    ets:new(
       DB,
       [
          set,
          public,
+         named_table,
+         {keypos, 1},
+         {read_concurrency, true},
+         {heir, none}
+      ]
+   );
+add_cache (DB, Heir) ->
+   io:format("~nTimed Caches Manager added a new cache. ~n"),
+   ets:new(
+      DB,
+      [
+         set,
+         public,
+         named_table,
          {keypos, 1},
          {read_concurrency, true},
          {heir, Heir, DB}
       ]
    ).
-
 
 inherit_cache (CacheList, DB, Heir) ->
    case lists:member(DB, CacheList) of
@@ -61,6 +75,7 @@ inherit_cache (CacheList, DB, Heir) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% gen_server
 init (CacheList) ->
+   io:format("~nStarting Timed Caches Manager..."),
    {ok,CacheList}.
 
 handle_call ({delete, CacheName}, _Caller, State) ->
@@ -108,6 +123,9 @@ delete_cache (CacheList, DB) ->
 
 add_cache (CacheList, DB, Heir) ->
    case lists:member(DB, CacheList) of
+      true when (Heir =:= none) ->
+         CacheList;
+
       true ->
          ets:setopts(DB, {heir, Heir, DB}),
          CacheList;
