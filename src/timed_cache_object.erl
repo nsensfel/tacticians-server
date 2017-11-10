@@ -17,7 +17,7 @@
 %%%% actual interface
 -export(
    [
-      fetch/3,
+      fetch/2,
       invalidate/2
    ]
 ).
@@ -25,9 +25,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-add_to_cache (DB, ObjectID, Timeout) ->
-   {ok, TimerPID} = gen_server:start(?MODULE, [{DB, ObjectID, Timeout}], []),
-   Data = nothing, %% Do the actual NoSQL Fetch here.
+add_to_cache (DB, ObjectID) ->
+   {ok, TimerPID} = gen_server:start(?MODULE, [{DB, ObjectID}], []),
+   {ok, Data} = shim_database:fetch(DB, ObjectID),
    ets:insert(DB, {ObjectID, TimerPID, Data}),
    Data.
 
@@ -36,20 +36,20 @@ add_to_cache (DB, ObjectID, Timeout) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% gen_server
 
-init ({DB, ObjectID, Timeout}) ->
-   {ok, {DB, ObjectID, Timeout}}.
+init ({DB, ObjectID}) ->
+   {ok, {DB, ObjectID}}.
 
 handle_call (invalidate, _, State) ->
    {stop, normal, State};
-handle_call (ping, _, {DB, ObjectID, Timeout}) ->
-   {noreply, {DB, ObjectID, Timeout}, Timeout}.
+handle_call (ping, _, {DB, ObjectID}) ->
+   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
 
 handle_cast (invalidate, State) ->
    {stop, normal, State};
-handle_cast (ping, {DB, ObjectID, Timeout}) ->
-   {noreply, {DB, ObjectID, Timeout}, Timeout}.
+handle_cast (ping, {DB, ObjectID}) ->
+   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
 
-terminate (_, {DB, ObjectID, _Timeout}) ->
+terminate (_, {DB, ObjectID}) ->
    ets:delete(DB, ObjectID).
 
 code_change (_, State, _) ->
@@ -60,13 +60,13 @@ format_status (_, [_, State]) ->
 
 handle_info(timeout, State) ->
    {stop, normal, State};
-handle_info(_, {DB, ObjectID, Timeout}) ->
-   {noreply, {DB, ObjectID, Timeout}, Timeout}.
+handle_info(_, {DB, ObjectID}) ->
+   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
 
 %%%% interface
-fetch (DB, ObjectID, Timeout) ->
+fetch (DB, ObjectID) ->
    case ets:lookup(DB, ObjectID) of
-      [] -> add_to_cache(DB, ObjectID, Timeout);
+      [] -> add_to_cache(DB, ObjectID);
 
       [{_, TimerPID, Data}] ->
          gen_server:cast(TimerPID, ping),
