@@ -13,7 +13,7 @@ generate_tile (1) ->
 generate_tile (2) ->
    {2, 99}.
 
-generate(_Prev, Result, 0, 0, _BaseWidth) ->
+generate(_Prev, Result, _X, 0, _BaseWidth) ->
    Result;
 generate(Prev, Result, 0, Y, BaseWidth) ->
    generate(Prev, Result, BaseWidth, (Y - 1), BaseWidth);
