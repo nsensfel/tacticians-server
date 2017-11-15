@@ -7,7 +7,7 @@
 ).
 
 generate_char (N, X, Y, Team) ->
-   IDAsString = integer_to_list(N),
+   IDAsString = list_to_binary(integer_to_list(N)),
    {
       IDAsString, % ID
       IDAsString, % Name

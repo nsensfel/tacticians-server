@@ -19,7 +19,7 @@ encode_in_json (
             {<<"id">>, ID},
             {<<"name">>, Name},
             {<<"icon">>, Icon},
-            {<<"portait">>, Portrait},
+            {<<"portrait">>, Portrait},
             {<<"loc_x">>, X},
             {<<"loc_y">>, Y},
             {<<"team">>, Team},
