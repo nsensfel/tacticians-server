@@ -5,7 +5,8 @@ handle (Req) ->
    UserToken = maps:get(<<"user_token">>, JSON_Req_Map),
    io:format("~nCharacter Turn for ~p...", [UserToken]),
 %%   ok = users_manager:ping(UserToken),
-   jiffy:encode(
+   jiffy:encode
+   (
       {
          [
             {<<"types">>, [<<"STATUS">>]},

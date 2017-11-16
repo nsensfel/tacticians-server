@@ -1,41 +1,86 @@
 <erl>
--record(input, {battlemap_id}).
+-record(input, {battlemap_id, instance_id}).
 
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
-   #input {
-      battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap)
+   #input
+   {
+      player_id = maps:get(<<"player_id">>, JSONReqMap),
+      battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
+      instance_id = maps:get(<<"instance_id">>, JSONReqMap)
    }.
 
-fetch_battlemap (Input) ->
-   {Battlemap, CharList} =
-      timed_cache:fetch(
-         battlemap_db,
-         Input#input.battlemap_id
-      ),
+generate_set_map (Battlemap) ->
+   jiffy:encode
+   (
+      {
+         [
+            {<<"width">>, Battlemap#battlemap.width},
+            {<<"height">>, Battlemap#battlemap.height},
+            {<<"content">>, array:to_list(Battlemap#battlemap.content)}
+         ]
+      }
+   ).
+
+generate_add_char (Char, CharInstance) ->
+   jiffy:encode
+   (
+      {
+         [
+            {<<"id">>, Char#character.id},
+            {<<"name">>, Char#character.name},
+            {<<"icon">>, Char#character.icon},
+            {<<"portrait">>, Char#character.portrait},
+            {<<"loc_x">>, CharInstance#character_instance.x},
+            {<<"loc_y">>, CharInstance#character_instance.y},
+            {<<"team">>, CharInstance#character_instance.team},
+            {<<"mov_pts">>, Char#character.mov_pts},
+            {<<"atk_rg">>, Char#character.atk_rg}
+         ]
+      }
+   ).
+
+generate_reply (Battlemap, _BattlemapInstance, Characters) ->
+   jiffy:encode
+   (
+      [
+         <<"set_map">>,
+         generate_set_map(Battlemap)
+      ]
+      |
+      lists:map
+      (
+         fun ({CharID, CharInstance}) ->
+            [
+               <<"add_char">>,
+               generate_add_char(CharID, CharInstance)
+            ]
+         end,
+         Characters
+      )
+   ).
 
 handle (Req) ->
    Input = parse_input(Req),
-   io:format("~nLoading Battlemap ~p...~n", [Input#input.battlemap_id]),
-%%   ok = users_manager:ping(UserToken),
-   jiffy:encode(
-      [
-         [
-            <<"set_map">>,
-            battlemap:encode_in_json(Battlemap)
-         ]
-         |
-         lists:map(
-            fun (Char) ->
-               [
-                  <<"add_char">>,
-                  character:encode_in_json(Char)
-               ]
-            end,
-            CharList
-         )
-      ]
-   ).
+   Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
+   BattlemapInstance =
+      timed_cache:fetch
+      (
+         battlemap_instances_db,
+         {Input#input.battlemap_id, Input#input.battlemap_instance_id}
+      ),
+   Characters =
+      list:map
+      (
+         fun ({CharID, CharInst}) ->
+            {
+               timed_cache:fetch(character_db, CharID),
+               CharInst
+            }
+         end,
+         dict:to_list(BattlemapInstance#battlemap_instance.chars)
+      ),
+   generate_reply(Battlemap, BattlemapInstance, Characters).
 
 out(A) ->
    {
