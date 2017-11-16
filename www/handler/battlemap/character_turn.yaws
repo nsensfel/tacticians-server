@@ -1,8 +1,38 @@
 <erl>
+handle (Req) ->
+   io:format("~nReceived~p...", [Req]),
+   JSON_Req_Map = jiffy:decode(Req, [return_maps]),
+   UserToken = maps:get(<<"user_token">>, JSON_Req_Map),
+   io:format("~nCharacter Turn for ~p...", [UserToken]),
+%%   ok = users_manager:ping(UserToken),
+   jiffy:encode(
+      {
+         [
+            {<<"types">>, [<<"STATUS">>]},
+            {
+               <<"data">>,
+               [
+                  jiffy:encode
+                  (
+                     {
+                        [
+                           {
+                              <<"status">>,
+                              <<"OK">>
+                           }
+                        ]
+                     }
+                  )
+               ]
+            }
+         ]
+      }
+   ).
+
 out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      battlemap_character_turn:handle(A#arg.clidata)
+      handle(A#arg.clidata)
    }.
 </erl>

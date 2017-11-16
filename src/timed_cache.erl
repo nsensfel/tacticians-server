@@ -1,4 +1,4 @@
--module(timed_cache_object).
+-module(timed_cache).
 -behavior(gen_server).
 
 %%%% gen_server exports
@@ -27,7 +27,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 add_to_cache (DB, ObjectID) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, ObjectID}, []),
-   {ok, Data} = shim_database:fetch(DB, ObjectID),
+   {ok, Data} = database_shim:fetch(DB, ObjectID),
    ets:insert(DB, {ObjectID, TimerPID, Data}),
    Data.
 

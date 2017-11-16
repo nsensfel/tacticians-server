@@ -1,4 +1,4 @@
--module(battlemap_battlemap).
+-module(battlemap).
 -export([encode_in_json/1]).
 
 encode_in_json (

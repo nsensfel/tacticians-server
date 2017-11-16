@@ -76,7 +76,7 @@ inherit_cache (CacheList, DB, Heir) ->
 %%%% gen_server
 init (CacheList) ->
    io:format("~nStarting Timed Caches Manager..."),
-   {ok,CacheList}.
+   {ok, CacheList}.
 
 handle_call ({delete, CacheName}, _Caller, State) ->
    {noreply, delete_cache(State, CacheName)};
@@ -135,7 +135,7 @@ add_cache (CacheList, DB, Heir) ->
          [DB|CacheList]
    end.
 
-get_timeout(battlemaps_db) ->
+get_timeout(battlemap_db) ->
    60000;
 get_timeout(_) ->
    60000.

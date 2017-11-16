@@ -1,4 +1,4 @@
--module(shim_battlemap_character).
+-module(character_shim).
 
 -export(
    [

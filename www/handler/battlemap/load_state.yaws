@@ -1,8 +1,46 @@
 <erl>
+-record(input, {battlemap_id}).
+
+parse_input (Req) ->
+   JSONReqMap = jiffy:decode(Req, [return_maps]),
+   #input {
+      battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap)
+   }.
+
+fetch_battlemap (Input) ->
+   {Battlemap, CharList} =
+      timed_cache:fetch(
+         battlemap_db,
+         Input#input.battlemap_id
+      ),
+
+handle (Req) ->
+   Input = parse_input(Req),
+   io:format("~nLoading Battlemap ~p...~n", [Input#input.battlemap_id]),
+%%   ok = users_manager:ping(UserToken),
+   jiffy:encode(
+      [
+         [
+            <<"set_map">>,
+            battlemap:encode_in_json(Battlemap)
+         ]
+         |
+         lists:map(
+            fun (Char) ->
+               [
+                  <<"add_char">>,
+                  character:encode_in_json(Char)
+               ]
+            end,
+            CharList
+         )
+      ]
+   ).
+
 out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      battlemap_load_state:handle(A#arg.clidata)
+      handle(A#arg.clidata)
    }.
 </erl>
