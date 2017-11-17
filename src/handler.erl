@@ -3,6 +3,7 @@
 
 start(_YawsParams) ->
    {ok, Pid} = gen_server:start(timed_caches_manager, [], []),
+   database_shim:generate_db(Pid),
    gen_server:cast(Pid, {add, battlemap_db, none}),
    gen_server:cast(Pid, {add, battlemap_instance_db, none}),
    gen_server:cast(Pid, {add, character_db, none}),

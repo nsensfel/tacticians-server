@@ -40,7 +40,7 @@ add_cache (DB, none) ->
          set,
          public,
          named_table,
-         {keypos, 1},
+         {keypos, 2},
          {read_concurrency, true},
          {heir, none}
       ]
@@ -53,7 +53,7 @@ add_cache (DB, Heir) ->
          set,
          public,
          named_table,
-         {keypos, 1},
+         {keypos, 2},
          {read_concurrency, true},
          {heir, Heir, DB}
       ]

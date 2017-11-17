@@ -1,43 +1,35 @@
 -module(character_shim).
-
--export(
+-export
+(
    [
-      generate/2
+      generate/1
    ]
 ).
 
-generate_char (N, X, Y, Team) ->
+-include("timed_cache_data.hrl").
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOCAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+generate_char (N) ->
    IDAsString = list_to_binary(integer_to_list(N)),
+   #character
    {
-      IDAsString, % ID
-      IDAsString, % Name
-      IDAsString, % Icon
-      IDAsString, % Portrait
-      {X, Y},
-      Team,
-      rand:uniform(10), % Movement Points
-      (rand:uniform(5) - 1) % Attack Range
+      id = IDAsString, % ID
+      name = IDAsString, % Name
+      icon = IDAsString, % Icon
+      portrait = IDAsString, % Portrait
+      mov_pts = rand:uniform(10), % Movement Points
+      atk_rg = (rand:uniform(5) - 1) % Attack Range
    }.
 
-generate (0, Result, _MaxX, _MaxY) ->
+generate (0, Result) ->
    Result;
-generate (N, Prev, MaxX, MaxY) ->
-   generate
-   (
-      (N - 1),
-      [
-         generate_char
-         (
-            N,
-            (rand:uniform(MaxX) - 1),
-            (rand:uniform(MaxY) - 1),
-            (N rem 2)
-         )
-         | Prev
-      ],
-      MaxX,
-      MaxY
-   ).
+generate (N, Prev) ->
+   generate((N - 1), [generate_char(N)|Prev]).
 
-generate (MaxX, MaxY) ->
-   generate(rand:uniform(14) + 2, [], MaxX, MaxY).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+generate (N) ->
+   generate(N, []).
