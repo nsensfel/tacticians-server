@@ -70,12 +70,12 @@ handle (Req) ->
    BattlemapInstance =
       timed_cache:fetch
       (
-         battlemap_instances_db,
+         battlemap_instance_db,
          <<"0">>
 %         {Input#input.battlemap_id, Input#input.battlemap_instance_id}
       ),
    Characters =
-      list:map
+      lists:map
       (
          fun ({CharID, CharInst}) ->
             {

@@ -2,7 +2,8 @@
 -behavior(gen_server).
 
 %%%% gen_server exports
--export(
+-export
+(
    [
       init/1,
       handle_cast/2,
@@ -15,7 +16,8 @@
 ).
 
 %%%% actual interface
--export(
+-export
+(
    [
       fetch/2,
       invalidate/2
@@ -65,6 +67,7 @@ handle_info(_, {DB, ObjectID}) ->
 
 %%%% interface
 fetch (DB, ObjectID) ->
+   io:format("~nfetch from cache: ~p.~n", [{DB, ObjectID}]),
    case ets:lookup(DB, ObjectID) of
       [] -> add_to_cache(DB, ObjectID);
 

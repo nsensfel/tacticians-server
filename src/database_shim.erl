@@ -23,10 +23,12 @@ create_db (_Heir) ->
          {keypos, 1},
          {read_concurrency, true}
       ]
-   ).
+   ),
+   io:format("~ndb_shim ets created.~n").
 
 add_to_db (ID, Val) ->
-   ets:store(db_shim, {ID, Val}).
+   io:format("~nadd to db_shim: ~p.~n", [{ID, Val}]),
+   ets:insert(db_shim, {ID, Val}).
 
 generate_char_instances (Battlemap, Characters) ->
    lists:map
@@ -72,7 +74,7 @@ generate_db (Heir) ->
    lists:map
    (
       fun (Char) ->
-         add_to_db({character_sb, Char#character.id}, Char)
+         add_to_db({character_db, Char#character.id}, Char)
       end,
       Characters
    ),
@@ -83,7 +85,7 @@ generate_db (Heir) ->
    ).
 
 fetch (DB, Object_ID) ->
-   ets:first(db_shim), %% It appears the db does not exist...
+   io:format("~ndb_shim lookup: ~p.~n", [{DB, Object_ID}]),
    case ets:lookup(db_shim, {DB, Object_ID}) of
       [{_Key, Value}] -> {ok, Value};
       [] -> nothing
