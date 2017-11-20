@@ -1,5 +1,5 @@
 <erl>
--record(input, {player_id, battlemap_id, instance_id}).
+-record(input, {session_token, player_id, battlemap_id, instance_id}).
 
 -include("/tmp/timed_cache_data.hrl").
 
@@ -7,6 +7,7 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    #input
    {
+      session_token = maps:get(<<"session_token">>, JSONReqMap),
       player_id = maps:get(<<"player_id">>, JSONReqMap),
       battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
       instance_id = maps:get(<<"instance_id">>, JSONReqMap)
@@ -65,7 +66,9 @@ generate_reply (Battlemap, _BattlemapInstance, Characters) ->
    ).
 
 handle (Req) ->
+   %%%% Parse
    Input = parse_input(Req),
+   %%%% Fetch
    Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
    BattlemapInstance =
       timed_cache:fetch
@@ -85,6 +88,9 @@ handle (Req) ->
          end,
          dict:to_list(BattlemapInstance#battlemap_instance.chars)
       ),
+   %%%% Calc
+   %%%% Commit
+   %%%% Reply
    generate_reply(Battlemap, BattlemapInstance, Characters).
 
 out(A) ->

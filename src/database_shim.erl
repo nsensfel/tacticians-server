@@ -3,7 +3,8 @@
 (
    [
       generate_db/1,
-      fetch/2
+      fetch/2,
+      commit/3
    ]
 ).
 
@@ -84,9 +85,13 @@ generate_db (Heir) ->
       BattlemapInstance
    ).
 
-fetch (DB, Object_ID) ->
-   io:format("~ndb_shim lookup: ~p.~n", [{DB, Object_ID}]),
-   case ets:lookup(db_shim, {DB, Object_ID}) of
+fetch (DB, ObjectID) ->
+   io:format("~ndb_shim lookup: ~p.~n", [{DB, ObjectID}]),
+   case ets:lookup(db_shim, {DB, ObjectID}) of
       [{_Key, Value}] -> {ok, Value};
       [] -> nothing
    end.
+
+commit (DB, ObjectID, Value) ->
+   add_to_db({DB, ObjectID}, Value),
+   timed_cache:invalidate(DB, ObjectID).

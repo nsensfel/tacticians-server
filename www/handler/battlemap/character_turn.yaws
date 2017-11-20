@@ -1,34 +1,69 @@
 <erl>
+-record
+(
+   input,
+   {
+      session_token,
+      player_id,
+      battlemap_id,
+      instance_id,
+      char_id,
+      path,
+      target_id
+   }
+).
+
+-include("/tmp/timed_cache_data.hrl").
+
+parse_input (Req) ->
+   JSONReqMap = jiffy:decode(Req, [return_maps]),
+   #input
+   {
+      session_token = maps:get(<<"session_token">>, JSONReqMap),
+      player_id = maps:get(<<"player_id">>, JSONReqMap),
+      battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
+      instance_id = maps:get(<<"instance_id">>, JSONReqMap),
+      path = maps:get(<<"path">>, JSONReqMap),
+      target_id = maps:get(<<"target_id">>, JSONReqMap)
+   }.
+
 handle (Req) ->
-   io:format("~nReceived~p...", [Req]),
-   JSON_Req_Map = jiffy:decode(Req, [return_maps]),
-   UserToken = maps:get(<<"user_token">>, JSON_Req_Map),
-   io:format("~nCharacter Turn for ~p...", [UserToken]),
-%%   ok = users_manager:ping(UserToken),
-   jiffy:encode
-   (
-      {
-         [
-            {<<"types">>, [<<"STATUS">>]},
-            {
-               <<"data">>,
-               [
-                  jiffy:encode
-                  (
-                     {
-                        [
-                           {
-                              <<"status">>,
-                              <<"OK">>
-                           }
-                        ]
-                     }
-                  )
-               ]
-            }
-         ]
-      }
-   ).
+   %%%% Parse
+   Input = parse_input(Req),
+   %%%% Fetch
+    Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
+    BattlemapInstance =
+      timed_cache:fetch
+      (
+         battlemap_instance_db,
+         <<"0">>
+      ),
+   {ok, CharInst} =
+      battlemap_instance:get_char_instance
+      (
+         BattlemapInstance,
+         Input#input.char_id
+      ),
+   %%%% Calc
+   {ok, {X, Y}} =
+      battlemap:cross
+      (
+         Battlemap,
+         CharInst,
+         Input#input.path,
+         battlemap_instance:get_char_instances(BattlemapInstance)
+      ),
+   NewBattlemapInstance =
+      battlemap_instance:set_char_instance
+      (
+         BattlemapInstance,
+         Input#input.char_id,
+         character_instance:set_location(CharInst, X, Y)
+      ),
+   %%%% Commit
+   database_shim:commit(battlemap_instance_db, <<"0">>, NewBattlemapInstance),
+   %%%% Reply
+   jiffy:encode([[<<"okay">>]]).
 
 out(A) ->
    {
