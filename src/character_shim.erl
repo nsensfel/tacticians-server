@@ -26,7 +26,7 @@ generate_char (N) ->
 generate (0, Result) ->
    Result;
 generate (N, Prev) ->
-   generate((N - 1), [generate_char(N)|Prev]).
+   generate((N - 1), [generate_char(N - 1)|Prev]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

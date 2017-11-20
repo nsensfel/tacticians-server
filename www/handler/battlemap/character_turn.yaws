@@ -23,6 +23,7 @@ parse_input (Req) ->
       player_id = maps:get(<<"player_id">>, JSONReqMap),
       battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
       instance_id = maps:get(<<"instance_id">>, JSONReqMap),
+      char_id = maps:get(<<"char_id">>, JSONReqMap),
       path = maps:get(<<"path">>, JSONReqMap),
       target_id = maps:get(<<"target_id">>, JSONReqMap)
    }.
