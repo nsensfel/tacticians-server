@@ -18,7 +18,7 @@ get_char_instances (BattlemapInstance) ->
    ).
 
 get_char_instance (BattlemapInstance, CharInstID) ->
-   {ok, dict:fetch(CharInstID, BattlemapInstance#battlemap_instance.chars)}.
+   dict:fetch(CharInstID, BattlemapInstance#battlemap_instance.chars).
 
 set_char_instance (BattlemapInstance, CharInstID, CharInst) ->
    BattlemapInstance#battlemap_instance

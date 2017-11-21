@@ -1,7 +1,7 @@
 <erl>
 -record(input, {session_token, player_id, battlemap_id, instance_id}).
 
--include("/tmp/timed_cache_data.hrl").
+-include("/my/src/tacticians-server/src/timed_cache_data.hrl").
 
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
@@ -20,7 +20,7 @@ generate_set_map (Battlemap) ->
          [
             {<<"width">>, Battlemap#battlemap.width},
             {<<"height">>, Battlemap#battlemap.height},
-            {<<"content">>, array:to_list(Battlemap#battlemap.content)}
+            {<<"content">>, array:sparse_to_list(Battlemap#battlemap.content)}
          ]
       }
    ).

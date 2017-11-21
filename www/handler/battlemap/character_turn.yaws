@@ -13,7 +13,7 @@
    }
 ).
 
--include("/tmp/timed_cache_data.hrl").
+-include("/my/src/tacticians-server/src/timed_cache_data.hrl").
 
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
@@ -32,25 +32,27 @@ handle (Req) ->
    %%%% Parse
    Input = parse_input(Req),
    %%%% Fetch
-    Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
-    BattlemapInstance =
+   Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
+   BattlemapInstance =
       timed_cache:fetch
       (
          battlemap_instance_db,
          <<"0">>
       ),
-   {ok, CharInst} =
+   Character = timed_cache:fetch(character_db, Input#input.char_id),
+   CharInst =
       battlemap_instance:get_char_instance
       (
          BattlemapInstance,
          Input#input.char_id
       ),
    %%%% Calc
-   {ok, {X, Y}} =
+   {X, Y} =
       battlemap:cross
       (
          Battlemap,
-         CharInst,
+         character_instance:get_location(CharInst),
+         character:get_movement_points(Character),
          Input#input.path,
          battlemap_instance:get_char_instances(BattlemapInstance)
       ),
