@@ -8,17 +8,46 @@
 
 -include("timed_cache_data.hrl").
 
-calc_new_loc (X, Y, [], _Points, _Map, _OtherChars) ->
-   {X, Y};
-calc_new_loc (X, Y, [Step|Path], Points, Map, OtherChars) ->
-   case Step of
-      <<"U">> -> calc_new_loc(X, (Y - 1), Path, Points, Map, OtherChars);
-      <<"D">> -> calc_new_loc(X, (Y + 1), Path, Points, Map, OtherChars);
-      <<"L">> -> calc_new_loc((X - 1), Y, Path, Points, Map, OtherChars);
-      <<"R">> -> calc_new_loc((X + 1), Y, Path, Points, Map, OtherChars);
-      _ -> calc_new_loc(X, Y, Path, Points, Map, OtherChars)
+next_loc (X, Y, <<"L">>) -> {(X - 1), Y};
+next_loc (X, Y, <<"R">>) -> {(X + 1), Y};
+next_loc (X, Y, <<"U">>) -> {X, (Y - 1)};
+next_loc (X, Y, <<"D">>) -> {X, (Y + 1)}.
+
+loc_to_index(X, Y, Map) ->
+   if
+      (X < 0) -> error;
+      (Y < 0) -> error;
+      (X >= Map#battlemap.width) -> error;
+      true -> ((Y * Map#battlemap.width) + X)
    end.
+
+calc_new_loc (X, Y, [], Points, _Map, _OtherCharsLocs) ->
+   true = (Points >= 0),
+   {X, Y};
+calc_new_loc (X, Y, [Step|Path], Points, Map, OtherCharsLocs) ->
+   {NX, NY} = next_loc(X, Y, Step),
+   NPoints =
+      (
+         Points
+         -
+         tile:get_cost
+         (
+            array:get
+            (
+               loc_to_index(X, Y, Map),
+               Map#battlemap.content
+            )
+         )
+      ),
+   false = lists:member({NX, NY}, OtherCharsLocs),
+   calc_new_loc(NX, NY, Path, NPoints, Map, OtherCharsLocs).
 
 cross (Battlemap, CharInst, Path, OtherChars) ->
    {X, Y} = character_instance:get_location(CharInst),
-   {ok, calc_new_loc(X, Y, Path, 99, Battlemap, OtherChars)}.
+   OtherCharsLocs =
+      lists:map
+      (
+         fun character_instance:get_location/1,
+         OtherChars
+      ),
+   {ok, calc_new_loc(X, Y, Path, 99, Battlemap, OtherCharsLocs)}.

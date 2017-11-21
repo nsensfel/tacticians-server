@@ -16,8 +16,8 @@ generate(_Prev, Result, _X, 0, _BaseWidth) ->
 generate(Prev, Result, 0, Y, BaseWidth) ->
    generate(Prev, Result, BaseWidth, (Y - 1), BaseWidth);
 generate(Prev, Result, X, Y, BaseWidth) ->
-   case rand:uniform(6) of
-      N when (N > 3) ->
+   case rand:uniform(32) of
+      N when (N >= 16) ->
          generate(Prev, [Prev|Result], (X - 1), Y, BaseWidth);
 
       N ->
