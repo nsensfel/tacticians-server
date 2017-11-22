@@ -3,7 +3,8 @@
 (
    [
       set_location/3,
-      get_location/1
+      get_location/1,
+      get_owner/1
    ]
 ).
 
@@ -18,3 +19,5 @@ set_location (CharInst, X, Y) ->
 
 get_location (CharInst) ->
    {CharInst#character_instance.x, CharInst#character_instance.y}.
+
+get_owner (CharInst) -> CharInst#character_instance.team.

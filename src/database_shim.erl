@@ -53,8 +53,19 @@ generate_map_instance (CharInts) ->
    {
       id = <<"0">>,
       chars = dict:from_list(CharInts),
-      curr_player = <<"0">>,
-      rem_chars = [],
+      curr_player = 0,
+      players = array:from_list([<<"0">>, <<"1">>]),
+      rem_chars =
+         lists:filtermap
+         (
+            fun ({K, V}) ->
+               case character_instance:get_owner(V) of
+                  0 -> {true, K};
+                  _ -> false
+               end
+            end,
+            CharInts
+         ),
       last_turn = []
    }.
 

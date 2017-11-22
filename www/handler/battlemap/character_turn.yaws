@@ -51,8 +51,8 @@ handle (Req) ->
       battlemap_instance:can_play_char_instance
       (
          BattlemapInstance,
-         Input#input.char_id,
-         Input#input.player_id
+         Input#input.player_id,
+         Input#input.char_id
       ),
    {X, Y} =
       battlemap:cross
@@ -66,7 +66,11 @@ handle (Req) ->
    NewBattlemapInstance =
       battlemap_instance:set_char_instance
       (
-         BattlemapInstance,
+         battlemap_instance:post_play_char_instance
+         (
+            BattlemapInstance,
+            Input#input.char_id
+         ),
          Input#input.char_id,
          character_instance:set_location(CharInst, X, Y)
       ),
