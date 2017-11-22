@@ -47,6 +47,13 @@ handle (Req) ->
          Input#input.char_id
       ),
    %%%% Calc
+   true =
+      battlemap_instance:can_play_char_instance
+      (
+         BattlemapInstance,
+         Input#input.char_id,
+         Input#input.player_id
+      ),
    {X, Y} =
       battlemap:cross
       (
