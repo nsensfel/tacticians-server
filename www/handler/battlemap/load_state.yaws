@@ -44,8 +44,8 @@ generate_add_char (Char, CharInstance, BattlemapInstance, PlayerID) ->
                battlemap_instance:can_play_char_instance
                (
                   BattlemapInstance,
-                  Char#character.id,
-                  PlayerID
+                  PlayerID,
+                  Char#character.id
                )
             }
          ]
