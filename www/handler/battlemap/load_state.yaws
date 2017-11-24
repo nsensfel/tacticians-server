@@ -25,7 +25,7 @@ generate_set_map (Battlemap) ->
       }
    ).
 
-generate_add_char (Char, CharInstance) ->
+generate_add_char (Char, CharInstance, BattlemapInstance, PlayerID) ->
    jiffy:encode
    (
       {
@@ -38,12 +38,21 @@ generate_add_char (Char, CharInstance) ->
             {<<"loc_y">>, CharInstance#character_instance.y},
             {<<"team">>, CharInstance#character_instance.team},
             {<<"mov_pts">>, Char#character.mov_pts},
-            {<<"atk_rg">>, Char#character.atk_rg}
+            {<<"atk_rg">>, Char#character.atk_rg},
+            {
+               <<"enabled">>,
+               battlemap_instance:can_play_char_instance
+               (
+                  BattlemapInstance,
+                  Char#character.id,
+                  PlayerID
+               )
+            }
          ]
       }
    ).
 
-generate_reply (Battlemap, _BattlemapInstance, Characters) ->
+generate_reply (Battlemap, BattlemapInstance, Characters, PlayerID) ->
    jiffy:encode
    (
       [
@@ -57,7 +66,13 @@ generate_reply (Battlemap, _BattlemapInstance, Characters) ->
             fun ({CharID, CharInstance}) ->
                [
                   <<"add_char">>,
-                  generate_add_char(CharID, CharInstance)
+                  generate_add_char
+                  (
+                     CharID,
+                     CharInstance,
+                     BattlemapInstance,
+                     PlayerID
+                  )
                ]
             end,
             Characters
@@ -91,7 +106,13 @@ handle (Req) ->
    %%%% Calc
    %%%% Commit
    %%%% Reply
-   generate_reply(Battlemap, BattlemapInstance, Characters).
+   generate_reply
+   (
+      Battlemap,
+      BattlemapInstance,
+      Characters,
+      Input#input.player_id
+   ).
 
 out(A) ->
    {
