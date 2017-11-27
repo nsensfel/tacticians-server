@@ -79,7 +79,7 @@ generate_db (Heir) ->
       ok -> ok
    end,
    Battlemap = battlemap_shim:generate(),
-   Characters = character_shim:generate(rand:uniform(14) + 2),
+   Characters = character_shim:generate(rand:uniform(12) + 4),
    CharacterInsts = generate_char_instances(Battlemap, Characters),
    BattlemapInstance = generate_map_instance(CharacterInsts),
    add_to_db({battlemap_db, Battlemap#battlemap.id}, Battlemap),

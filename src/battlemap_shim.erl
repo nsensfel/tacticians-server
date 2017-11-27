@@ -16,8 +16,8 @@ generate(_Prev, Result, _X, 0, _BaseWidth) ->
 generate(Prev, Result, 0, Y, BaseWidth) ->
    generate(Prev, Result, BaseWidth, (Y - 1), BaseWidth);
 generate(Prev, Result, X, Y, BaseWidth) ->
-   case rand:uniform(64) of
-      N when (N >= 16) ->
+   case rand:uniform(100) of
+      N when (N >= 10) ->
          generate(Prev, [Prev|Result], (X - 1), Y, BaseWidth);
 
       N ->
@@ -36,8 +36,8 @@ generate(Prev, Result, X, Y, BaseWidth) ->
 %% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 generate () ->
-   Width = (rand:uniform(54) + 10),
-   Height = (rand:uniform(54) + 10),
+   Width = (rand:uniform(48) + 16),
+   Height = (rand:uniform(48) + 16),
    #battlemap
    {
       id = <<"0">>,

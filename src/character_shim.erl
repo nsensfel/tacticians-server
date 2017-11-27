@@ -19,7 +19,7 @@ generate_char (N) ->
       name = IDAsString, % Name
       icon = IDAsString, % Icon
       portrait = IDAsString, % Portrait
-      mov_pts = rand:uniform(10), % Movement Points
+      mov_pts = (rand:uniform(10) + 10), % Movement Points
       atk_rg = (rand:uniform(5) - 1) % Attack Range
    }.
 
