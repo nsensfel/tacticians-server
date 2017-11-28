@@ -1,4 +1,22 @@
 -module(battlemap_instance).
+-record
+(
+   battlemap_instance,
+   {
+      id,
+      chars,
+      curr_player,
+      players,
+      rem_chars,
+      last_turn
+   }
+).
+-export
+(
+   [
+      list_characters/1
+   ]
+).
 -export
 (
    [
@@ -10,7 +28,8 @@
    ]
 ).
 
--include("timed_cache_data.hrl").
+list_characters (BattlemapInstance) ->
+   dict:to_list(BattlemapInstance#battlemap_instance.chars).
 
 get_char_instances (BattlemapInstance) ->
    lists:map

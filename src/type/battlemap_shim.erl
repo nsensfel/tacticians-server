@@ -1,12 +1,21 @@
 -module(battlemap_shim).
+-record
+(
+   battlemap,
+   {
+      id,
+      width,
+      height,
+      content,
+      instances
+   }
+).
 -export
 (
    [
-      generate/0
+      generate_random/0
    ]
 ).
-
--include("timed_cache_data.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,7 +44,7 @@ generate(Prev, Result, X, Y, BaseWidth) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-generate () ->
+generate_random () ->
    Width = (rand:uniform(48) + 16),
    Height = (rand:uniform(48) + 16),
    #battlemap

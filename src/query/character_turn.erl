@@ -1,4 +1,4 @@
-<erl>
+-module(character_turn).
 -record
 (
    input,
@@ -26,9 +26,7 @@
       target_char_inst
    }
 ).
-
-
--include("/my/src/tacticians-server/src/timed_cache_data.hrl").
+-export([out/1]).
 
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
@@ -179,4 +177,3 @@ out(A) ->
       "application/json; charset=UTF-8",
       handle(A#arg.clidata)
    }.
-</erl>

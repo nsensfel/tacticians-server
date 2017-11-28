@@ -3,7 +3,7 @@ SRC_DIR ?= src
 BIN_DIR ?= ebin
 CONF_DIR ?= conf
 
-YAWS_CONF = $(CONF_DIR)/yaws.conf
+YAWS_CONF ?= $(CONF_DIR)/yaws.conf
 
 ## Binaries
 YAWS ?= yaws
@@ -11,9 +11,18 @@ ERLC ?= erlc
 
 ################################################################################
 SRC_FILES = $(wildcard $(SRC_DIR)/*.erl)
-MODULES = $(patsubst $(SRC_DIR)/%.erl,%,$(SRC_FILES))
+MODULES = $(patsubst %.erl,%,$(SRC_FILES))
+SUB_DIRS = $(filter-out $(MODULES),$(sort $(dir $(wildcard $(SRC_DIR)/*/))))
 BIN_FILES = $(patsubst $(SRC_DIR)/%.erl,$(BIN_DIR)/%.beam,$(SRC_FILES))
+
+export
 ################################################################################
+all:
+	for subdir in $(SUB_DIRS) ; do \
+		echo "Building dir $$subdir" ; \
+		$(MAKE) build SRC_DIR=$$subdir || exit 1;\
+	done
+
 build: $(BIN_DIR) $(BIN_FILES)
 
 run: $(BIN_FILES)

@@ -8,8 +8,6 @@
    ]
 ).
 
--include("timed_cache_data.hrl").
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,39 +34,20 @@ generate_char_instances (Battlemap, Characters) ->
    (
       fun (Char) ->
          {
-            Char#character.id,
-            #character_instance
-            {
-               x = rand:uniform(Battlemap#battlemap.width - 1),
-               y = rand:uniform(Battlemap#battlemap.height - 1),
-               team = (rand:uniform(2) - 1),
-               health = Char#character.health
-            }
+            character:get_id(Char),
+            character_instance:new_instance_of
+            (
+               Char,
+               (rand:uniform(2) - 1), % team,
+               {
+                  rand:uniform(battlemap:get_width(Battlemap) - 1), % X
+                  rand:uniform(battlemap:get_heigth(Battlemap) - 1)  % Y
+               }
+            )
          }
       end,
       Characters
    ).
-
-generate_map_instance (CharInts) ->
-   #battlemap_instance
-   {
-      id = <<"0">>,
-      chars = dict:from_list(CharInts),
-      curr_player = 0,
-      players = array:from_list([<<"0">>, <<"1">>]),
-      rem_chars =
-         lists:filtermap
-         (
-            fun ({K, V}) ->
-               case character_instance:get_owner(V) of
-                  0 -> {true, K};
-                  _ -> false
-               end
-            end,
-            CharInts
-         ),
-      last_turn = []
-   }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,21 +58,27 @@ generate_db (Heir) ->
    receive
       ok -> ok
    end,
-   Battlemap = battlemap_shim:generate(),
-   Characters = character_shim:generate(rand:uniform(12) + 4),
+   Players = [<<"0">>, <<"1">>],
+   Battlemap = battlemap_shim:generate_random(),
+   Characters = character_shim:generate_random(rand:uniform(12) + 4),
    CharacterInsts = generate_char_instances(Battlemap, Characters),
-   BattlemapInstance = generate_map_instance(CharacterInsts),
-   add_to_db({battlemap_db, Battlemap#battlemap.id}, Battlemap),
+   BattlemapInstance =
+      battlemap_instance_shim:generate_random
+      (
+         CharacterInsts,
+         Players
+      ),
+   add_to_db({battlemap_db, battlemap:get_id(Battlemap)}, Battlemap),
    lists:map
    (
       fun (Char) ->
-         add_to_db({character_db, Char#character.id}, Char)
+         add_to_db({character_db, character:get_id(Char)}, Char)
       end,
       Characters
    ),
    add_to_db
    (
-      {battlemap_instance_db, BattlemapInstance#battlemap_instance.id},
+      {battlemap_instance_db, battlemap_instance:get_id(BattlemapInstance)},
       BattlemapInstance
    ).
 

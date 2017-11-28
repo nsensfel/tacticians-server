@@ -1,7 +1,6 @@
-<erl>
+-module(load_state).
 -record(input, {session_token, player_id, battlemap_id, instance_id}).
-
--include("/my/src/tacticians-server/src/timed_cache_data.hrl").
+-export([out/1]).
 
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
@@ -18,34 +17,36 @@ generate_set_map (Battlemap) ->
    (
       {
          [
-            {<<"width">>, Battlemap#battlemap.width},
-            {<<"height">>, Battlemap#battlemap.height},
-            {<<"content">>, array:sparse_to_list(Battlemap#battlemap.content)}
+            {<<"width">>, battlemap:get_width(Battlemap)},
+            {<<"height">>, battlemap:get_height(Battlemap)},
+            {<<"content">>, battlemap:list_tiles(Battlemap)}
          ]
       }
    ).
 
 generate_add_char (Char, CharInstance, BattlemapInstance, PlayerID) ->
+   {X, Y} = character_instance:get_location(CharInstance),
+   CharID = character:get_id(Char),
    jiffy:encode
    (
       {
          [
-            {<<"id">>, Char#character.id},
-            {<<"name">>, Char#character.name},
-            {<<"icon">>, Char#character.icon},
-            {<<"portrait">>, Char#character.portrait},
-            {<<"loc_x">>, CharInstance#character_instance.x},
-            {<<"loc_y">>, CharInstance#character_instance.y},
-            {<<"team">>, CharInstance#character_instance.team},
-            {<<"mov_pts">>, Char#character.mov_pts},
-            {<<"atk_rg">>, Char#character.atk_rg},
+            {<<"id">>, character:get_id(Char)},
+            {<<"name">>, character:get_name(Char)},
+            {<<"icon">>, character:get_icon(Char)},
+            {<<"portrait">>, character:get_portrait(Char)},
+            {<<"loc_x">>, X},
+            {<<"loc_y">>, Y},
+            {<<"team">>, character_instance:get_owner(CharInstance)},
+            {<<"mov_pts">>, character:get_movement_points(Char)},
+            {<<"atk_rg">>, character:get_attack_range(Char)},
             {
                <<"enabled">>,
                battlemap_instance:can_play_char_instance
                (
                   BattlemapInstance,
                   PlayerID,
-                  Char#character.id
+                  CharID
                )
             }
          ]
@@ -101,7 +102,7 @@ handle (Req) ->
                CharInst
             }
          end,
-         dict:to_list(BattlemapInstance#battlemap_instance.chars)
+         battlemap_instance:list_characters(BattlemapInstance)
       ),
    %%%% Calc
    %%%% Commit
@@ -120,4 +121,3 @@ out(A) ->
       "application/json; charset=UTF-8",
       handle(A#arg.clidata)
    }.
-</erl>
