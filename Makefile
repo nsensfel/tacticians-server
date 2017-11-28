@@ -38,7 +38,7 @@ clean:
 
 
 $(INCLUDE_DIR)/yaws_api.hrl: $(YAWS_API_HEADER) $(INCLUDE_DIR)
-	cp $^ $@
+	cp $< $@
 
 $(BIN_DIR):
 	mkdir -p $@
