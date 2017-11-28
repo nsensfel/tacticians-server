@@ -37,7 +37,7 @@ clean:
 	rm -rf $(BIN_DIR)/*
 
 
-$(INCLUDE_DIR)/yaws_api.hrl: $(INCLUDE_DIR) $(YAWS_API_HEADER)
+$(INCLUDE_DIR)/yaws_api.hrl: $(YAWS_API_HEADER) $(INCLUDE_DIR)
 	cp $^ $@
 
 $(BIN_DIR):
