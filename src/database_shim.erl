@@ -41,7 +41,8 @@ generate_char_instances (Battlemap, Characters) ->
             {
                x = rand:uniform(Battlemap#battlemap.width - 1),
                y = rand:uniform(Battlemap#battlemap.height - 1),
-               team = (rand:uniform(2) - 1)
+               team = (rand:uniform(2) - 1),
+               health = Char#character.health
             }
          }
       end,

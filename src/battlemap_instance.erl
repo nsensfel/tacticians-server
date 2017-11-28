@@ -27,13 +27,13 @@ can_play_char_instance
 ) ->
    (
       (
-            array:get
-            (
-               BattlemapInstance#battlemap_instance.curr_player,
-               BattlemapInstance#battlemap_instance.players
-            )
-            =:=
-            PlayerID
+         array:get
+         (
+            BattlemapInstance#battlemap_instance.curr_player,
+            BattlemapInstance#battlemap_instance.players
+         )
+         =:=
+         PlayerID
       )
       and
       lists:member(CharInstID, BattlemapInstance#battlemap_instance.rem_chars)
