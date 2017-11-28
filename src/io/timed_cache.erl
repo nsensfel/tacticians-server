@@ -48,16 +48,13 @@ init ({DB, ObjectID}) ->
    {ok, {DB, ObjectID}}.
 
 handle_call (invalidate, _, State) ->
-   {stop, normal, State};
-handle_call (ping, _, {DB, ObjectID}) ->
-   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
+   {stop, normal, State}.
 
 handle_cast (invalidate, State) ->
-   {stop, normal, State};
-handle_cast (ping, {DB, ObjectID}) ->
-   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
+   {stop, normal, State}.
 
 terminate (_, {DB, ObjectID}) ->
+   io:format("~nCache entry timed out: ~p.~n", [{DB, ObjectID}]),
    ets:delete(DB, ObjectID).
 
 code_change (_, State, _) ->
@@ -78,7 +75,6 @@ fetch (DB, ObjectID) ->
       [] -> add_to_cache(DB, ObjectID);
 
       [{_, TimerPID, Data}] ->
-         gen_server:cast(TimerPID, ping),
          Data
    end.
 
@@ -89,3 +85,7 @@ invalidate (DB, ObjectID) ->
       [{_, TimerPID, _}] ->
          gen_server:stop(TimerPID)
    end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Notes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -12,7 +12,8 @@
    [
       generate_db/1,
       fetch/2,
-      commit/3
+      commit/3,
+      assert_session_is_valid/2
    ]
 ).
 
@@ -100,3 +101,10 @@ fetch (DB, ObjectID) ->
 commit (DB, ObjectID, Value) ->
    add_to_db({DB, ObjectID}, Value),
    timed_cache:invalidate(DB, ObjectID).
+
+assert_session_is_valid (_PlayerID, _SessionToken) ->
+   % Ask PlayerID's login server if SessionToken is correct.
+   % If so, update last login time to prevent relogin within
+   % (database_timeout * 2).
+   % If not, crash.
+   ok.

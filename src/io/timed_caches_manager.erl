@@ -45,7 +45,7 @@ add_cache (DB, none) ->
          set,
          public,
          named_table,
-         {keypos, 2},
+         {keypos, 1},
          {read_concurrency, true},
          {heir, none}
       ]
@@ -58,7 +58,7 @@ add_cache (DB, Heir) ->
          set,
          public,
          named_table,
-         {keypos, 2},
+         {keypos, 1},
          {read_concurrency, true},
          {heir, Heir, DB}
       ]
@@ -139,7 +139,5 @@ add_cache (CacheList, DB, Heir) ->
          [DB|CacheList]
    end.
 
-get_timeout(battlemap_db) ->
-   60000;
 get_timeout(_) ->
-   60000.
+   300000. % 5min.

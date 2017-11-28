@@ -44,10 +44,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
+   PlayerID = maps:get(<<"player_id">>, JSONReqMap),
+   SessionToken =  maps:get(<<"session_token">>, JSONReqMap),
+   database_shim:assert_session_is_valid(PlayerID, SessionToken),
    #input
    {
-      session_token = maps:get(<<"session_token">>, JSONReqMap),
-      player_id = maps:get(<<"player_id">>, JSONReqMap),
+      player_id = PlayerID,
       battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
       instance_id = maps:get(<<"instance_id">>, JSONReqMap),
       char_id = maps:get(<<"char_id">>, JSONReqMap),

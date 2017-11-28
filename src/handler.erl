@@ -22,6 +22,6 @@ start (_YawsParams) ->
    gen_server:cast(Pid, {add, battlemap_db, none}),
    gen_server:cast(Pid, {add, battlemap_instance_db, none}),
    gen_server:cast(Pid, {add, character_db, none}),
-   gen_server:cast(Pid, {add, character_turn_db, none}),
-   gen_server:cast(Pid, {add, player_data_db, none}),
+%   gen_server:cast(Pid, {add, character_turn_db, none, character_turn:keypos()}),
+%   gen_server:cast(Pid, {add, player_data_db, none, player_data:keypos()}),
    ok.
