@@ -1,5 +1,9 @@
+%%
+%% battlemap:cross/5
+%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% LOCAL %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 next_loc (X, Y, <<"L">>) -> {(X - 1), Y};
 next_loc (X, Y, <<"R">>) -> {(X + 1), Y};
@@ -21,7 +25,7 @@ calc_new_loc (X, Y, [], Points, _Map, _CharInstsLocs) ->
 calc_new_loc (X, Y, [Step|Path], Points, Map, CharInstsLocs) ->
    io:format("~nStep - Points remaining: ~p ~n", [Points]),
    {NX, NY} = next_loc(X, Y, Step),
-   TileCost = 
+   TileCost =
       tile:get_cost
       (
          array:get
@@ -41,9 +45,8 @@ calc_new_loc (X, Y, [Step|Path], Points, Map, CharInstsLocs) ->
    calc_new_loc(NX, NY, Path, NPoints, Map, CharInstsLocs).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 cross (Battlemap, {X, Y}, Points, Path, CharInsts) ->
    calc_new_loc
    (
