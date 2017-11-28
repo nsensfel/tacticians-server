@@ -41,7 +41,7 @@ generate_char_instances (Battlemap, Characters) ->
                (rand:uniform(2) - 1), % team,
                {
                   rand:uniform(battlemap:get_width(Battlemap) - 1), % X
-                  rand:uniform(battlemap:get_heigth(Battlemap) - 1)  % Y
+                  rand:uniform(battlemap:get_height(Battlemap) - 1)  % Y
                }
             )
          }

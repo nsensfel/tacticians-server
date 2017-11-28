@@ -14,6 +14,7 @@
 -export
 (
    [
+      get_id/1,
       list_characters/1
    ]
 ).
@@ -27,6 +28,8 @@
       post_play_char_instance/2
    ]
 ).
+
+get_id (BattlemapInstance) -> BattlemapInstance#battlemap_instance.id.
 
 list_characters (BattlemapInstance) ->
    dict:to_list(BattlemapInstance#battlemap_instance.chars).

@@ -26,6 +26,7 @@
       target_char_inst
    }
 ).
+-include("../../include/yaws_api.hrl").
 -export([out/1]).
 
 parse_input (Req) ->

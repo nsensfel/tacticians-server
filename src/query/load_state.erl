@@ -1,5 +1,6 @@
 -module(load_state).
 -record(input, {session_token, player_id, battlemap_id, instance_id}).
+-include("../../include/yaws_api.hrl").
 -export([out/1]).
 
 parse_input (Req) ->
