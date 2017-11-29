@@ -166,11 +166,21 @@ handle_target (QueryState)
    QueryState;
 handle_target (QueryState) ->
    TargetLoc =
-      character_instance:get_location(QueryState#query_state.main_char_inst),
+      character_instance:get_location(QueryState#query_state.target_char_inst),
    Dist =
       battlemap:dist(QueryState#query_state.main_char_new_loc, TargetLoc),
-   true =
-      (Dist =< character:get_attack_range(QueryState#query_state.main_char)),
+   AttackRange = character:get_attack_range(QueryState#query_state.main_char),
+   io:format
+   (
+      "~nAttack from ~p to ~p (dist: ~p, range: ~p).~n",
+      [
+         QueryState#query_state.main_char_new_loc,
+         TargetLoc,
+         Dist,
+         AttackRange
+      ]
+   ),
+   true = (Dist =< AttackRange),
    %% TODO: test for (and handle) riposte.
    QueryState#query_state
    {
@@ -182,8 +192,8 @@ handle_target (QueryState) ->
             character_instance:mod_health
             (
                QueryState#query_state.target_char_inst,
-               -1,
-               character:get_max_health(QueryState#query_state.main_char)
+               character:get_max_health(QueryState#query_state.main_char),
+               -1
             )
          )
    }.

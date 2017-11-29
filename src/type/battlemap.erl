@@ -57,4 +57,4 @@ get_instances (Battlemap) -> Battlemap#battlemap.instances.
 -include("battlemap/cross_5.erl").
 
 dist ({OX, OY}, {DX, DY}) ->
-   (abs(OX - DX) + abs(OY + DY)).
+   (abs(OX - DX) + abs(OY - DY)).
