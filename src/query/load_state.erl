@@ -109,20 +109,26 @@ handle (Req) ->
    %%%% Parse
    Input = parse_input(Req),
    %%%% Fetch
-   Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
+   Battlemap =
+      timed_cache:fetch
+      (
+         battlemap_db,
+         Input#input.player_id,
+         Input#input.battlemap_id
+      ),
    BattlemapInstance =
       timed_cache:fetch
       (
          battlemap_instance_db,
+         Input#input.player_id,
          <<"0">>
-%         {Input#input.battlemap_id, Input#input.battlemap_instance_id}
       ),
    Characters =
       lists:map
       (
          fun ({CharID, CharInst}) ->
             {
-               timed_cache:fetch(character_db, CharID),
+               timed_cache:fetch(character_db, Input#input.player_id, CharID),
                CharInst
             }
          end,

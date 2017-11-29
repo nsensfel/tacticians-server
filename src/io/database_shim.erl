@@ -12,7 +12,7 @@
    [
       generate_db/1,
       fetch/2,
-      commit/3,
+      commit/4,
       assert_session_is_valid/2
    ]
 ).
@@ -98,9 +98,9 @@ fetch (DB, ObjectID) ->
       [] -> nothing
    end.
 
-commit (DB, ObjectID, Value) ->
+commit (DB, Owner, ObjectID, Value) ->
    add_to_db({DB, ObjectID}, Value),
-   timed_cache:invalidate(DB, ObjectID).
+   timed_cache:invalidate(DB, Owner, ObjectID).
 
 assert_session_is_valid (_PlayerID, _SessionToken) ->
    % Ask PlayerID's login server if SessionToken is correct.

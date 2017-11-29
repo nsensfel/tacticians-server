@@ -17,11 +17,9 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start (_YawsParams) ->
-   {ok, Pid} = gen_server:start(timed_caches_manager, [], []),
+   {ok, Pid} = timed_caches_manager:start(),
    database_shim:generate_db(Pid),
-   gen_server:cast(Pid, {add, battlemap_db, none}),
-   gen_server:cast(Pid, {add, battlemap_instance_db, none}),
-   gen_server:cast(Pid, {add, character_db, none}),
-%   gen_server:cast(Pid, {add, character_turn_db, none, character_turn:keypos()}),
-%   gen_server:cast(Pid, {add, player_data_db, none, player_data:keypos()}),
+   timed_caches_manager:new_cache(Pid, battlemap_db, none),
+   timed_caches_manager:new_cache(Pid, battlemap_instance_db, none),
+   timed_caches_manager:new_cache(Pid, character_db, none),
    ok.

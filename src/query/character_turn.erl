@@ -58,14 +58,27 @@ parse_input (Req) ->
    }.
 
 fetch_data (Input) ->
-   Battlemap = timed_cache:fetch(battlemap_db, Input#input.battlemap_id),
+   Battlemap =
+      timed_cache:fetch
+      (
+         battlemap_db,
+         Input#input.player_id,
+         Input#input.battlemap_id
+      ),
    BattlemapInst =
       timed_cache:fetch
       (
          battlemap_instance_db,
+         Input#input.player_id,
          <<"0">>
       ),
-   MainChar = timed_cache:fetch(character_db, Input#input.char_id),
+   MainChar =
+      timed_cache:fetch
+      (
+         character_db,
+         Input#input.player_id,
+         Input#input.char_id
+      ),
    MainCharInst =
       battlemap_instance:get_char_instance
       (
@@ -78,7 +91,13 @@ fetch_data (Input) ->
          TargetCharInst = nothing;
 
       TargetID ->
-         TargetChar = timed_cache:fetch(character_db, TargetID),
+         TargetChar =
+            timed_cache:fetch
+            (
+               character_db,
+               Input#input.player_id,
+               TargetID
+            ),
          TargetCharInst =
             battlemap_instance:get_char_instance
             (
@@ -182,6 +201,7 @@ handle (Req) ->
    (
       battlemap_instance_db,
       <<"0">>,
+      Input#input.player_id,
       NQueryState#query_state.battlemap_inst
    ),
    %%%% Reply

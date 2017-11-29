@@ -26,18 +26,18 @@
 -export
 (
    [
-      fetch/2,
-      invalidate/2
+      fetch/3,
+      invalidate/3
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-add_to_cache (DB, ObjectID) ->
-   {ok, TimerPID} = gen_server:start(?MODULE, {DB, ObjectID}, []),
+add_to_cache (DB, Owner, ObjectID) ->
+   {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
    {ok, Data} = database_shim:fetch(DB, ObjectID),
-   ets:insert(DB, {ObjectID, TimerPID, Data}),
+   ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,13 +48,21 @@ init ({DB, ObjectID}) ->
    {ok, {DB, ObjectID}}.
 
 handle_call (invalidate, _, State) ->
-   {stop, normal, State}.
+   {stop, normal, State};
+handle_call (ping, _, State) ->
+   {noreply, State, timed_caches_manager:get_timeout()}.
 
 handle_cast (invalidate, State) ->
-   {stop, normal, State}.
+   {stop, normal, State};
+handle_cast (ping, State) ->
+   {noreply, State, timed_caches_manager:get_timeout()}.
 
 terminate (_, {DB, ObjectID}) ->
-   io:format("~nCache entry timed out: ~p.~n", [{DB, ObjectID}]),
+   io:format
+   (
+      "~nCache entry timed out or was invalidated: ~p.~n",
+      [{DB, ObjectID}]
+   ),
    ets:delete(DB, ObjectID).
 
 code_change (_, State, _) ->
@@ -66,20 +74,21 @@ format_status (_, [_, State]) ->
 handle_info(timeout, State) ->
    {stop, normal, State};
 handle_info(_, {DB, ObjectID}) ->
-   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout(DB)}.
+   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout()}.
 
 %%%% Interface Functions
-fetch (DB, ObjectID) ->
-   io:format("~nfetch from cache: ~p.~n", [{DB, ObjectID}]),
-   case ets:lookup(DB, ObjectID) of
-      [] -> add_to_cache(DB, ObjectID);
+fetch (DB, Owner, ObjectID) ->
+   io:format("~nfetch from cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
+   case ets:lookup(DB, {Owner, ObjectID}) of
+      [] -> add_to_cache(DB, Owner, ObjectID);
 
       [{_, TimerPID, Data}] ->
+         gen_server:cast(TimerPID, ping),
          Data
    end.
 
-invalidate (DB, ObjectID) ->
-   case ets:lookup(DB, ObjectID) of
+invalidate (DB, Owner, ObjectID) ->
+   case ets:lookup(DB, {Owner, ObjectID}) of
       [] -> ok;
 
       [{_, TimerPID, _}] ->
