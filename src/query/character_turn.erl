@@ -47,6 +47,11 @@ parse_input (Req) ->
    PlayerID = maps:get(<<"player_id">>, JSONReqMap),
    SessionToken =  maps:get(<<"session_token">>, JSONReqMap),
    database_shim:assert_session_is_valid(PlayerID, SessionToken),
+   Target =
+      case maps:get(<<"targets_id">>, JSONReqMap) of
+         [] -> "";
+         [T] -> T
+      end,
    #input
    {
       player_id = PlayerID,
@@ -54,7 +59,7 @@ parse_input (Req) ->
       instance_id = maps:get(<<"instance_id">>, JSONReqMap),
       char_id = maps:get(<<"char_id">>, JSONReqMap),
       path = maps:get(<<"path">>, JSONReqMap),
-      target_id = maps:get(<<"target_id">>, JSONReqMap)
+      target_id = Target
    }.
 
 fetch_data (Input) ->
