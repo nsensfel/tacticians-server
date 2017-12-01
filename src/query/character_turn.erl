@@ -49,7 +49,7 @@ parse_input (Req) ->
    database_shim:assert_session_is_valid(PlayerID, SessionToken),
    Target =
       case maps:get(<<"targets_id">>, JSONReqMap) of
-         [] -> "";
+         [] -> <<"">>;
          [T] -> T
       end,
    #input
@@ -186,6 +186,13 @@ handle_target (QueryState) ->
       ]
    ),
    true = (Dist =< AttackRange),
+   NewTargetCharInst =
+      character_instance:mod_health
+      (
+         QueryState#query_state.target_char_inst,
+         character:get_max_health(QueryState#query_state.main_char),
+         -1
+      ),
    %% TODO: test for (and handle) riposte.
    QueryState#query_state
    {
@@ -194,14 +201,32 @@ handle_target (QueryState) ->
          (
             QueryState#query_state.battlemap_inst,
             QueryState#query_state.input#input.target_id,
-            character_instance:mod_health
+            NewTargetCharInst
+         ),
+      target_char_inst = NewTargetCharInst
+   }.
+
+generate_reply (QueryState) ->
+   case QueryState#query_state.target_char_inst of
+      nothing -> [<<"okay">>];
+
+      CharInst ->
+         add_char:generate
+         (
+            QueryState#query_state.target_char,
+            CharInst,
             (
-               QueryState#query_state.target_char_inst,
-               character:get_max_health(QueryState#query_state.main_char),
-               -1
+               battlemap_instance:can_play_char_instance
+               (
+                  QueryState#query_state.battlemap_inst,
+                  QueryState#query_state.input#input.player_id,
+                  QueryState#query_state.input#input.target_id
+               )
+               and
+               (not character_instance:is_dead(CharInst))
             )
          )
-   }.
+   end.
 
 handle (Req) ->
    %%%% Parse
@@ -220,7 +245,7 @@ handle (Req) ->
       NQueryState#query_state.battlemap_inst
    ),
    %%%% Reply
-   jiffy:encode([[<<"okay">>]]).
+   jiffy:encode([generate_reply(NQueryState)]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

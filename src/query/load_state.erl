@@ -36,71 +36,30 @@ parse_input (Req) ->
       instance_id = maps:get(<<"instance_id">>, JSONReqMap)
    }.
 
-generate_set_map (Battlemap) ->
-   jiffy:encode
-   (
-      {
-         [
-            {<<"width">>, battlemap:get_width(Battlemap)},
-            {<<"height">>, battlemap:get_height(Battlemap)},
-            {<<"content">>, battlemap:list_tiles(Battlemap)}
-         ]
-      }
-   ).
-
-generate_add_char (Char, CharInstance, BattlemapInstance, PlayerID) ->
-   {X, Y} = character_instance:get_location(CharInstance),
-   CharID = character:get_id(Char),
-   jiffy:encode
-   (
-      {
-         [
-            {<<"id">>, character:get_id(Char)},
-            {<<"name">>, character:get_name(Char)},
-            {<<"icon">>, character:get_icon(Char)},
-            {<<"portrait">>, character:get_portrait(Char)},
-            {<<"health">>, character_instance:get_current_health(CharInstance)},
-            {<<"max_health">>, character:get_max_health(Char)},
-            {<<"loc_x">>, X},
-            {<<"loc_y">>, Y},
-            {<<"team">>, character_instance:get_owner(CharInstance)},
-            {<<"mov_pts">>, character:get_movement_points(Char)},
-            {<<"atk_rg">>, character:get_attack_range(Char)},
-            {
-               <<"enabled">>,
-               battlemap_instance:can_play_char_instance
-               (
-                  BattlemapInstance,
-                  PlayerID,
-                  CharID
-               )
-            }
-         ]
-      }
-   ).
-
 generate_reply (Battlemap, BattlemapInstance, Characters, PlayerID) ->
    jiffy:encode
    (
       [
-         [
-            <<"set_map">>,
-            generate_set_map(Battlemap)
-         ]
+         set_map:generate(Battlemap)
          |
          lists:map
          (
-            fun ({CharID, CharInstance}) ->
-               [
-                  <<"add_char">>,
-                  generate_add_char
+            fun ({Char, CharInstance}) ->
+               add_char:generate
+               (
+                  Char,
+                  CharInstance,
                   (
-                     CharID,
-                     CharInstance,
-                     BattlemapInstance,
-                     PlayerID
+                     battlemap_instance:can_play_char_instance
+                     (
+                        BattlemapInstance,
+                        PlayerID,
+                        character:get_id(Char)
+                     )
+                     and
+                     (not character_instance:is_dead(CharInstance))
                   )
-               ]
+               )
             end,
             Characters
          )
