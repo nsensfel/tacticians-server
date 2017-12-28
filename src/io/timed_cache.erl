@@ -88,10 +88,21 @@ fetch (DB, Owner, ObjectID) ->
    end.
 
 invalidate (DB, Owner, ObjectID) ->
-   case ets:lookup(DB, {Owner, ObjectID}) of
-      [] -> ok;
+   case ets:lookup(db, {Owner, ObjectID}) of
+      [] ->
+         io:format
+         (
+            "~nInvalidation request on non-stored entry: ~p.~n",
+            [{DB, Owner, ObjectID}]
+         ),
+         ok;
 
       [{_, TimerPID, _}] ->
+         io:format
+         (
+            "~nInvalidation request on stored entry: ~p.~n",
+            [{DB, Owner, ObjectID}]
+         ),
          gen_server:stop(TimerPID)
    end.
 

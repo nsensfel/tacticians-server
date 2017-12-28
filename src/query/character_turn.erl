@@ -240,8 +240,8 @@ handle (Req) ->
    database_shim:commit
    (
       battlemap_instance_db,
-      <<"0">>,
       Input#input.player_id,
+      <<"0">>,
       NQueryState#query_state.battlemap_inst
    ),
    %%%% Reply
