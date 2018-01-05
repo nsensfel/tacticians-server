@@ -88,7 +88,7 @@ fetch (DB, Owner, ObjectID) ->
    end.
 
 invalidate (DB, Owner, ObjectID) ->
-   case ets:lookup(db, {Owner, ObjectID}) of
+   case ets:lookup(DB, {Owner, ObjectID}) of
       [] ->
          io:format
          (
