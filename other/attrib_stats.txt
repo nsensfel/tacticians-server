@@ -1,0 +1,124 @@
+{Attributes
+   Constitution
+   Dexterity
+   Intelligence
+   Mind
+   Speed
+   Strength
+}
+{Stats
+   {Movement Points
+      Controlled by: Speed
+   }
+   {Health
+      Controlled by: Constitution
+   }
+   {Dodges
+      Controlled by: average(Dexterity, Mind, Speed)
+   }
+   {Parries
+      Controlled by: average(Dexterity, Speed, Strength)
+      Melee only
+   }
+   {Physical Weapons
+      {Damage
+         Controlled by: Strength
+      }
+      {Accuracy
+         Controlled by: Dexterity
+      }
+      {Double Hits
+         Controlled by: Speed
+      }
+      {Critical Hits
+         Controlled by: Intelligence
+      }
+   }
+   {Magical Weapons
+      {Damage
+         Controlled by: Intelligence
+      }
+      {Accuracy
+         Controlled by: Mind
+      }
+      {Double Hits
+         Controlled by: Speed
+      }
+      {Critical Hits
+         Controlled by: Dexterity
+      }
+   }
+}
+{Physical Attack
+   {Damage Type
+      Bludgeoning
+      Piercing
+      Slashing
+   }
+   {Ranged
+      {Short Bow
+         Minimal Range: 2
+         Maximal Range: 4
+         Damage Type: Arrow dependent
+      }
+      {Long Bow
+         Minimal Range: 2
+         Maximal Range: 6
+         Damage Type: Arrow dependent
+         Attribute Penalty: Speed
+      }
+      {Crossbow
+         Minimal Range: 2
+         Maximal Range: 4
+         Damage Type: Bolt dependent
+         Attribute Penalty: Dexterity
+         Misc: High damage
+      }
+      {Arbalest
+         Minimal Range: 2
+         Maximal Range: 6
+         Damage Type: Bolt dependent
+         Attribute Penalty: Dexterity, Speed
+         Misc: High damage
+      }
+   }
+   {Melee
+      {Sword
+         Minimal Range: 1
+         Maximal Range: 1
+         Damage Type: Slashing
+      }
+      {Claymore
+         Minimal Range: 1
+         Maximal Range: 2
+         Damage Type: Slashing
+         Attribute Penalty: Speed
+      }
+      {Mace
+         Minimal Range: 1
+         Maximal Range: 1
+         Damage Type: Bludgeoning
+      }
+      {War Hammer
+         Minimal Range: 1
+         Maximal Range: 2
+         Damage Type: Bludgeoning
+         Attribute Penalty: Speed
+      }
+      {Dagger
+         Minimal Range: 1
+         Maximal Range: 1
+         Damage Type: Piercing
+      }
+      {Spear
+         Minimal Range: 1
+         Maximal Range: 2
+         Damage Type: Piercing
+         Attribute Penalty: Speed
+      }
+   }
+}
+{Base Accuracy
+   Melee: Base Accuracy bonus.
+   Ranged: No Base Accuracy bonus.
+}
