@@ -13,7 +13,10 @@
       portrait,
       health,
       mov_pts,
-      atk_rg
+      atk_rg,
+      weapons,
+      glyphs,
+      armors
    }
 ).
 
