@@ -9,16 +9,22 @@
 {Stats
    {Movement Points
       Controlled by: Speed
+      ((Speed)^1.8)/20
    }
    {Health
       Controlled by: Constitution
+      ((Constitution)^1.8)/20
    }
    {Dodges
       Controlled by: average(Dexterity, Mind, Speed)
+      Max: 75%
+      Min: 5%
    }
    {Parries
       Controlled by: average(Dexterity, Speed, Strength)
       Melee only
+      Max: 75%
+      Min: 0%
    }
    {Physical Weapons
       {Damage
@@ -26,12 +32,18 @@
       }
       {Accuracy
          Controlled by: Dexterity
+         Max: 100%
+         Min: 15%
       }
       {Double Hits
          Controlled by: Speed
+         Max: 100%
+         Min: 0%
       }
       {Critical Hits
          Controlled by: Intelligence
+         Max: 100%
+         Min: 0%
       }
    }
    {Magical Weapons
@@ -40,12 +52,18 @@
       }
       {Accuracy
          Controlled by: Mind
+         Max: 100%
+         Min: 15%
       }
       {Double Hits
          Controlled by: Speed
+         Max: 100%
+         Min: 0%
       }
       {Critical Hits
          Controlled by: Dexterity
+         Max: 100%
+         Min: 0%
       }
    }
 }
