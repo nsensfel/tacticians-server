@@ -19,16 +19,20 @@
       Controlled by: average(Dexterity, Mind, Speed)
       Max: 75%
       Min: 5%
+      min(75,max(5,(4^(x/25))))
+      ((average(Dexterity, Mind, Speed))^1.8)/40
    }
    {Parries
       Controlled by: average(Dexterity, Speed, Strength)
       Melee only
       Max: 75%
       Min: 0%
+      min(75,(4^(x/25)))
    }
    {Physical Weapons
       {Damage
          Controlled by: Strength
+         limits + (((Strength - 50)/75) limits)
       }
       {Accuracy
          Controlled by: Dexterity
