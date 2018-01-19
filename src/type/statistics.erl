@@ -48,7 +48,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+float_to_int (F) -> trunc(math:ceil(F)).
+min_max (Min, Max, V) -> min(Max, max(Min, V)).
 
+average ([]) -> 0;
+average (L) -> lists:sum(L) / length(L).
+
+% V | 010 | 030 | 050 | 070 | 100 |
+% F | 004 | 023 | 058 | 104 | 200 |
+gentle_squared_growth (V) -> float_to_int(math:pow(V, 1.8) / 20).
+
+% V | 010 | 030 | 050 | 070 | 100 |
+% F | 001 | 005 | 018 | 041 | 100 |
+sudden_squared_growth (V) -> float_to_int(math:pow(V, 2.5) / 1000).
+
+% V | 010 | 030 | 050 | 070 | 100 |
+% F | 002 | 006 | 016 | 049 | 256 |
+sudden_exp_growth (V) -> float_to_int(math:pow(4, V / 25)).
+
+% V | 010 | 030 | 050 | 070 | 100 |
+% F | 040 | 066 | 079 | 088 | 099 |
+% Seems too generous, values for attributes below 50 should dip faster and
+% lower.
+already_high_slow_growth (V) -> float_to_int(30 * math:log((V + 5)/4)).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,14 +88,16 @@ get_critical_hits (Stats) -> Stats#statistics.critical_hits.
 calc_for (Att, Wp) ->
    #statistics
    {
-      movement_points =
-         trunc(math:ceil(math:pow(attributes:get_speed(Att), 1.8) / 20)),
-      health =
-         trunc(math:ceil(math:pow(attributes:get_constitution(Att), 1.8) / 20)),
+      movement_points = gentle_squared_growth(attributes:get_speed(Att)),
+      health = gentle_squared_growth(attributes:get_constitution(Att)),
       dodges =
-         min(75, max(5, trunc(math:ceil(math:pow(4,
+         min_max
+         (
+            5,
+            75,
+            sudden_exp_growth
             (
-               lists:sum
+               average
                (
                   [
                      attributes:get_dexterity(Att),
@@ -81,12 +105,16 @@ calc_for (Att, Wp) ->
                      attributes:get_speed(Att)
                   ]
                )
-               / 3
-            )))))),
+            )
+         ),
       parries =
-         min(75, trunc(math:ceil(math:pow(4,
+         min_max
+         (
+            0,
+            75,
+            sudden_exp_growth
             (
-               lists:sum
+               average
                (
                   [
                      attributes:get_dexterity(Att),
@@ -94,19 +122,14 @@ calc_for (Att, Wp) ->
                      attributes:get_strength(Att)
                   ]
                )
-               / 3
-            ))))),
+            )
+         ),
       damage_min = 0,
       damage_max = 100,
-      accuracy = min(75, max(5, trunc(math:ceil(30 * math:log((x + 5) / 4))))),
+      accuracy =
+         already_high_slow_growth(attributes:get_dexterity(Att)),
       double_hits =
-         min(100, trunc(math:ceil(
-            math:pow(attributes:get_speed(Att), 2.5)
-            / 1000
-         ))),
+         min_max(0, 100, sudden_squared_growth(attributes:get_speed(Att))),
       critical_hits =
-         min(100, trunc(math:ceil(
-            math:pow(attributes:get_intelligence(Att), 2.5)
-            / 1000
-        )))
+         min_max(0, 100, sudden_squared_growth(attributes:get_intelligence(Att)))
    }.

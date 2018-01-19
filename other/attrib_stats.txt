@@ -37,8 +37,9 @@
       {Accuracy
          Controlled by: Dexterity
          Max: 100%
-         Min: 15%
-         (30 * (log((x + 5)/4)))
+         Min: 0%
+         (30 * (log((x + 5)/4))) // Might be too generous
+         Note: failing that roll halves the damages.
       }
       {Double Hits
          Controlled by: Speed
@@ -61,8 +62,9 @@
       {Accuracy
          Controlled by: Mind
          Max: 100%
-         Min: 15%
-         (30 * (log((x + 5)/4)))
+         Min: 0%
+         (30 * (log((x + 5)/4))) // Might be too generous
+         Note: failing that roll halves the damages.
       }
       {Double Hits
          Controlled by: Speed
