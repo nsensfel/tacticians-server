@@ -38,36 +38,43 @@
          Controlled by: Dexterity
          Max: 100%
          Min: 15%
+         (30 * (log((x + 5)/4)))
       }
       {Double Hits
          Controlled by: Speed
          Max: 100%
          Min: 0%
+         (x^2.5)/1000
       }
       {Critical Hits
          Controlled by: Intelligence
          Max: 100%
          Min: 0%
+         (x^2.5)/1000
       }
    }
    {Magical Weapons
       {Damage
          Controlled by: Intelligence
+         limits + (((Strength - 50)/75) limits)
       }
       {Accuracy
          Controlled by: Mind
          Max: 100%
          Min: 15%
+         (30 * (log((x + 5)/4)))
       }
       {Double Hits
          Controlled by: Speed
          Max: 100%
          Min: 0%
+         (x^2.5)/1000
       }
       {Critical Hits
          Controlled by: Dexterity
          Max: 100%
          Min: 0%
+         (x^2.5)/1000
       }
    }
 }
