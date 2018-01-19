@@ -67,7 +67,46 @@ calc_for (Att, Wp) ->
    #statistics
    {
       movement_points =
-         trunc(math:ceil(math:pow(attributes:get_speed(Att), 1.8)/20)),
+         trunc(math:ceil(math:pow(attributes:get_speed(Att), 1.8) / 20)),
       health =
-         trunc(math:ceil(math:pow(attributes:get_constitution(Att), 1.8)/20))
+         trunc(math:ceil(math:pow(attributes:get_constitution(Att), 1.8) / 20)),
+      dodges =
+         min(75, max(5, trunc(math:ceil(math:pow(4,
+            (
+               lists:sum
+               (
+                  [
+                     attributes:get_dexterity(Att),
+                     attributes:get_mind(Att),
+                     attributes:get_speed(Att)
+                  ]
+               )
+               / 3
+            )))))),
+      parries =
+         min(75, trunc(math:ceil(math:pow(4,
+            (
+               lists:sum
+               (
+                  [
+                     attributes:get_dexterity(Att),
+                     attributes:get_speed(Att),
+                     attributes:get_strength(Att)
+                  ]
+               )
+               / 3
+            ))))),
+      damage_min = 0,
+      damage_max = 100,
+      accuracy = min(75, max(5, trunc(math:ceil(30 * math:log((x + 5) / 4))))),
+      double_hits =
+         min(100, trunc(math:ceil(
+            math:pow(attributes:get_speed(Att), 2.5)
+            / 1000
+         ))),
+      critical_hits =
+         min(100, trunc(math:ceil(
+            math:pow(attributes:get_intelligence(Att), 2.5)
+            / 1000
+        )))
    }.
