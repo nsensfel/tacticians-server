@@ -12,9 +12,7 @@
       icon,
       type,
       pwr_min,
-      pwr_max,
-      prof_max,
-      rel_attribs
+      pwr_max
    }
 ).
 
@@ -30,9 +28,7 @@
       get_icon/1,
       get_type/1,
       get_max_power/1,
-      get_min_power/1,
-      get_max_prof/1,
-      get_rel_attribs/1
+      get_min_power/1
    ]
 ).
 
@@ -79,8 +75,6 @@ get_icon (Wp) -> Wp#weapon.icon.
 get_type (Wp) -> Wp#weapon.type.
 get_max_power (Wp) -> Wp#weapon.pwr_max.
 get_min_power (Wp) -> Wp#weapon.pwr_min.
-get_max_prof (Wp) -> Wp#weapon.prof_max.
-get_rel_attribs (Wp) -> Wp#weapon.rel_attribs.
 
 get_ranges (Wp) -> ranges_of_type(Wp#weapon.type).
 get_category (Wp) -> category_of_type(Wp#weapon.type).

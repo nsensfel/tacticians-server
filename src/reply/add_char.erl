@@ -14,6 +14,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 encode (Char, CharInstance, IsEnabled) ->
    {X, Y} = character_instance:get_location(CharInstance),
+   Stats = character_instance:get_statistics(CharInstance),
+   ActWeapon = character_instance:get_active_weapon(CharInstance, Char),
+   {_MinRg, MaxRg} = weapon:get_ranges(ActWeapon),
    jiffy:encode
    (
       {
@@ -23,12 +26,12 @@ encode (Char, CharInstance, IsEnabled) ->
             {<<"icon">>, character:get_icon(Char)},
             {<<"portrait">>, character:get_portrait(Char)},
             {<<"health">>, character_instance:get_current_health(CharInstance)},
-            {<<"max_health">>, character:get_max_health(Char)},
             {<<"loc_x">>, X},
             {<<"loc_y">>, Y},
             {<<"team">>, character_instance:get_owner(CharInstance)},
-            {<<"mov_pts">>, character:get_movement_points(Char)},
-            {<<"atk_rg">>, character:get_attack_range(Char)},
+            {<<"max_health">>, statistics:get_health(Stats)},
+            {<<"mov_pts">>, statistics:get_movement_points(Stats)},
+            {<<"atk_rg">>, MaxRg},
             {<<"enabled">>, IsEnabled}
          ]
       }

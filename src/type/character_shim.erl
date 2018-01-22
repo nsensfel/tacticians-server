@@ -11,9 +11,7 @@
       name,
       icon,
       portrait,
-      health,
-      mov_pts,
-      atk_rg,
+      attributes,
       weapons,
       glyphs,
       armors
@@ -41,9 +39,10 @@ generate_char (N) ->
       name = IDAsString, % Name
       icon = IDAsString, % Icon
       portrait = IDAsString, % Portrait
-      health = (rand:uniform(5) + 1),
-      mov_pts = (rand:uniform(10) + 10), % Movement Points
-      atk_rg = (rand:uniform(5) - 1) % Attack Range
+      attributes = attributes_shim:rand(),
+      weapons = {weapon_shim:rand(), weapon_shim:rand()},
+      glyphs = [],
+      armors = []
    }.
 
 generate (0, Result) ->

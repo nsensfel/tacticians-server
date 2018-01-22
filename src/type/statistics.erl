@@ -48,7 +48,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-float_to_int (F) -> trunc(math:ceil(F)).
+ceil (F) ->
+   I = trunc(F),
+   case (F > I) of
+      true -> (I + 1);
+      _ -> I
+   end.
+
+float_to_int (F) -> trunc(ceil(F)).
 min_max (Min, Max, V) -> min(Max, max(Min, V)).
 
 average ([]) -> 0;
@@ -85,7 +92,7 @@ get_accuracy (Stats) -> Stats#statistics.accuracy.
 get_double_hits (Stats) -> Stats#statistics.double_hits.
 get_critical_hits (Stats) -> Stats#statistics.critical_hits.
 
-calc_for (Att, Wp) ->
+calc_for (Att, _Wp) ->
    #statistics
    {
       movement_points = gentle_squared_growth(attributes:get_speed(Att)),
