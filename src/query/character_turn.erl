@@ -138,7 +138,13 @@ handle_main_char_movement (QueryState) ->
       (
          QueryState#query_state.battlemap,
          character_instance:get_location(QueryState#query_state.main_char_inst),
-         character:get_movement_points(QueryState#query_state.main_char),
+         statistics:get_movement_points
+         (
+            character_instance:get_statistics
+            (
+               QueryState#query_state.main_char_inst
+            )
+         ),
          QueryState#query_state.input#input.path,
          battlemap_instance:get_char_instances
          (
