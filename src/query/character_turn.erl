@@ -180,7 +180,15 @@ handle_target (QueryState) ->
       character_instance:get_location(QueryState#query_state.target_char_inst),
    Dist =
       battlemap:dist(QueryState#query_state.main_char_new_loc, TargetLoc),
-   AttackRange = character:get_attack_range(QueryState#query_state.main_char),
+   {_, AttackRange} =
+      weapon:get_ranges
+      (
+         character_instance:get_active_weapon
+         (
+            QueryState#query_state.main_char_inst,
+            QueryState#query_state.main_char
+         )
+      ),
    io:format
    (
       "~nAttack from ~p to ~p (dist: ~p, range: ~p).~n",
@@ -192,11 +200,16 @@ handle_target (QueryState) ->
       ]
    ),
    true = (Dist =< AttackRange),
+   TargetStatistics =
+      character_instance:get_statistics
+      (
+         QueryState#query_state.target_char_inst
+      ),
    NewTargetCharInst =
       character_instance:mod_health
       (
          QueryState#query_state.target_char_inst,
-         character:get_max_health(QueryState#query_state.main_char),
+         statistics:get_health(TargetStatistics),
          -1
       ),
    %% TODO: test for (and handle) riposte.
