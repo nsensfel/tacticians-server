@@ -42,6 +42,6 @@ rand () ->
       dexterity = random_attribute(10, 100),
       intelligence = random_attribute(10, 100),
       mind = random_attribute(10, 100),
-      speed = random_attribute(40, 100),
+      speed = random_attribute(10, 100),
       strength = random_attribute(10, 100)
    }.
