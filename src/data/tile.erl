@@ -26,6 +26,6 @@ cost_when_oob () -> 255.
 
 get_cost (N) ->
    if
-      (N =< 200) -> (N + 1);
+      (N =< 200) -> (N + 8);
       true -> cost_when_oob()
    end.
