@@ -183,10 +183,13 @@ handle_target (QueryState) ->
    {_, AttackRange} =
       weapon:get_ranges
       (
-         character_instance:get_active_weapon
+         weapon:from_id
          (
-            QueryState#query_state.main_char_inst,
-            QueryState#query_state.main_char
+            character_instance:get_active_weapon
+            (
+               QueryState#query_state.main_char_inst,
+               QueryState#query_state.main_char
+            )
          )
       ),
    io:format

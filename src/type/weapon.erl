@@ -35,6 +35,7 @@
 -export
 (
    [
+      from_id/1,
       get_category/1,
       get_ranges/1
    ]
@@ -78,3 +79,13 @@ get_min_power (Wp) -> Wp#weapon.pwr_min.
 
 get_ranges (Wp) -> ranges_of_type(Wp#weapon.type).
 get_category (Wp) -> category_of_type(Wp#weapon.type).
+
+from_id (0) ->
+   #weapon{
+      id = 0,
+      name = "Shim Weapon 0",
+      icon = "0",
+      type = sword,
+      pwr_min = 10,
+      pwr_max = 90
+   }.

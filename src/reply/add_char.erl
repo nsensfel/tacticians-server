@@ -27,8 +27,8 @@ attributes_as_json (Atts) ->
 encode (Char, CharInstance, IsEnabled) ->
    {X, Y} = character_instance:get_location(CharInstance),
    Atts = character:get_attributes(Char),
+   {Wp0, Wp1} = character:get_weapons(Char),
    ActWeapon = character_instance:get_active_weapon(CharInstance, Char),
-   {_MinRg, MaxRg} = weapon:get_ranges(ActWeapon),
    jiffy:encode
    (
       {
@@ -43,7 +43,9 @@ encode (Char, CharInstance, IsEnabled) ->
             {<<"team">>, character_instance:get_owner(CharInstance)},
             {<<"enabled">>, IsEnabled},
             {<<"att">>, attributes_as_json(Atts)},
-            {<<"atk_rg">>, MaxRg}
+            {<<"wp_0">>, Wp0},
+            {<<"wp_1">>, Wp1},
+            {<<"act_wp">>, ActWeapon}
          ]
       }
    ).
