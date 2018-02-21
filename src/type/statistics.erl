@@ -100,8 +100,8 @@ calc_for (Att, _Wp) ->
       dodges =
          min_max
          (
-            5,
-            75,
+            0,
+            100,
             sudden_exp_growth
             (
                average
@@ -134,7 +134,22 @@ calc_for (Att, _Wp) ->
       damage_min = 0,
       damage_max = 100,
       accuracy =
-         already_high_slow_growth(attributes:get_dexterity(Att)),
+         % Hitting should involve this stat (not with this formula though), but
+         % also the target's dodge stat, with three possible results:
+         % - Missed
+         % - Grazed (Halved damage)
+         % - Hit
+         % Stat = (target.dodge - char.accuracy)
+         % Roll = RAND(0, 100)
+         % if (Roll >= (Stat * 2)): Hit
+         % else if (Roll >= Stat): Grazed
+         % else: Missed.
+         min_max
+         (
+            0,
+            100,
+            sudden_squared_growth(attributes:get_dexterity(Att))
+         ),
       double_hits =
          min_max(0, 100, sudden_squared_growth(attributes:get_speed(Att))),
       critical_hits =
