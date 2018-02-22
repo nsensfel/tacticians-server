@@ -180,40 +180,41 @@ handle_target (QueryState) ->
       character_instance:get_location(QueryState#query_state.target_char_inst),
    Dist =
       battlemap:dist(QueryState#query_state.main_char_new_loc, TargetLoc),
-   {_, AttackRange} =
-      weapon:get_ranges
+   AtkWeapon =
+      weapon:from_id
       (
-         weapon:from_id
+         character_instance:get_active_weapon
          (
-            character_instance:get_active_weapon
-            (
-               QueryState#query_state.main_char_inst,
-               QueryState#query_state.main_char
-            )
+            QueryState#query_state.main_char_inst,
+            QueryState#query_state.main_char
          )
       ),
+   {_, AtkRange} = weapon:get_ranges(AtkWeapon),
    io:format
    (
-      "~nAttack from ~p to ~p (dist: ~p, range: ~p).~n",
+      "~nAttack from ~p to ~p (wp: ~p, dist: ~p, range: ~p).~n",
       [
          QueryState#query_state.main_char_new_loc,
          TargetLoc,
+         weapon:get_id(AtkWeapon),
          Dist,
-         AttackRange
+         AtkRange
       ]
    ),
-   true = (Dist =< AttackRange),
+   true = (Dist =< AtkRange),
    TargetStatistics =
       character_instance:get_statistics
       (
          QueryState#query_state.target_char_inst
       ),
+   {MinDamage, MaxDamage} = weapon:get_damages(AtkWeapon),
+   Diff = max(1, MaxDamage - MinDamage),
    NewTargetCharInst =
       character_instance:mod_health
       (
          QueryState#query_state.target_char_inst,
          statistics:get_health(TargetStatistics),
-         -1
+         (MinDamage + rand:uniform(Diff) - 1)
       ),
    %% TODO: test for (and handle) riposte.
    QueryState#query_state
