@@ -12,7 +12,7 @@
       character_instances,
       players,
       current_player_turn,
-      last_player_turn
+      last_turns_effects
    }
 ).
 
@@ -28,13 +28,13 @@
       get_character_instances/1,
       get_players/1,
       get_current_player_turn/1,
-      get_last_player_turn/1,
+      get_last_turns_effects/1,
 
       set_battlemap/2,
       set_character_instances/2,
       set_players/2,
       set_current_player_turn/2,
-      set_last_player_turn/2
+      set_last_turns_effects/2
    ]
 ).
 
@@ -60,8 +60,8 @@ get_players (BattlemapInstance) ->
 get_current_player_turn (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.current_player_turn.
 
-get_last_player_turn (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.last_player_turn.
+get_last_turns_effects (BattlemapInstance) ->
+   BattlemapInstance#battlemap_instance.last_turns_effects.
 
 set_battlemap (Battlemap, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
@@ -87,8 +87,8 @@ set_current_player_turn (PlayerTurn, BattlemapInstance) ->
       current_player_turn = PlayerTurn
    }.
 
-set_last_player_turn (PlayerTurn, BattlemapInstance) ->
+set_last_turns_effects (Effects, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
-      last_player_turn = PlayerTurn
+      last_turns_effects = Effects
    }.

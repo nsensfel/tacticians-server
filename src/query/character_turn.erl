@@ -142,20 +142,37 @@ handle_character_instance_switching_weapons (QueryState) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
       character_instance:get_character(ControlledCharacterInstance),
+   ControlledCharacterAttributes =
+      character:get_attributes(ControlledCharacter),
    {PrimaryWeapon, SecondaryWeapon} =
       character:get_weapons(ControlledCharacter),
+
+   UpdatedWeapons = {SecondaryWeapon, PrimaryWeapon},
+   UpdatedControlledCharacterStatistics =
+      statistics:new
+      (
+         ControlledCharacterAttributes,
+         UpdatedWeapons
+      ),
+   UpdatedControlledCharacter =
+      character:set_statistics
+      (
+         UpdatedControlledCharacterStatistics,
+         character:set_weapons
+         (
+            ControlledCharacter
+         )
+      ),
+   UpdatedControlledCharacterInstance =
+      character_instance:set_character
+      (
+         UpdatedControlledCharacter,
+         ControlledCharacterInstance
+      ),
+
    QueryState#query_state
    {
-      character_instance =
-         character_instance:set_character
-         (
-            character:set_weapons
-            (
-               {SecondaryWeapon, PrimaryWeapon},
-               ControlledCharacter
-            ),
-            ControlledCharacterInstance
-         )
+      character_instance = UpdatedControlledCharacterInstance
    }.
 
 -include("character_turn/handle_character_instance_attacking_2.erl").

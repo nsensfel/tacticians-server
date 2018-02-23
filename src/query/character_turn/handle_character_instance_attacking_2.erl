@@ -58,6 +58,7 @@ handle_parry (AttackerStatistics, DefenderStatistics) ->
          []
    end.
 
+%% FIXME: parry not working as intended
 handle_attacks ([], _AttackerStatistics, _DefenderStatistics, Results) ->
    Results;
 handle_attacks
@@ -323,11 +324,11 @@ handle_character_instance_attacking (QueryState, Input) ->
    Actions =
       case {CanDefend, CanParry} of
          {true, true} ->
-            [second, counter, parry, first];
+            [{second, parry}, counter, {first, parry}];
          {true, false} ->
-            [second, counter, first];
+            [{second, no_parry}, counter, {fist, no_parry}];
          {false, _} ->
-            [second, first]
+            [{second, no_parry}, {first, no_parry}]
       end,
    Effects =
       handle_attacks

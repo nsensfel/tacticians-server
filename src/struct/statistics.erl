@@ -34,14 +34,16 @@
       get_damage_max/1,
       get_accuracy/1,
       get_double_hits/1,
-      get_critical_hits/1
+      get_critical_hits/1,
+
+      get_damages/1
    ]
 ).
 
 -export
 (
    [
-      calc_for/2
+      new/2
    ]
 ).
 
@@ -78,6 +80,12 @@ sudden_exp_growth (V) -> float_to_int(math:pow(4, V / 25)).
 % Seems too generous, values for attributes below 50 should dip faster and
 % lower.
 already_high_slow_growth (V) -> float_to_int(30 * math:log((V + 5)/4)).
+
+damage_base_modifier (Strength) -> ((math:pow(Strength, 1.8) / 2000.0) - 0.75).
+
+apply_damage_base_modifier (Modifier, BaseValue) ->
+   max(0, float_to_int(BaseValue + (BaseValue * Modifier))).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,28 +100,36 @@ get_accuracy (Stats) -> Stats#statistics.accuracy.
 get_double_hits (Stats) -> Stats#statistics.double_hits.
 get_critical_hits (Stats) -> Stats#statistics.critical_hits.
 
-calc_for (Att, _Wp) ->
+get_damages (Stats) ->
+   {
+      Stats#statistics.damage_min,
+      Stats#statistics.damage_max
+   }.
+
+new (BaseAttributes, WeaponIDs) ->
+   {ActiveWeaponID, _} = WeaponIDs,
+   ActiveWeapon = weapon:from_id(ActiveWeaponID),
+   {MinDamage, MaxDamage} = weapon:get_damages(ActiveWeapon),
+   Attributes = weapon:apply_to_attributes(ActiveWeapon, BaseAttributes),
+   Constitution = attributes:get_constitution(Attributes),
+   Dexterity = attributes:get_dexterity(Attributes),
+   Intelligence = attributes:get_intelligence(Attributes),
+   Mind = attributes:get_mind(Attributes),
+   Speed = attributes:get_speed(Attributes),
+   Strength = attributes:get_strength(Attributes),
+   DamageBaseModifier = damage_base_modifier(Strength),
+
    #statistics
    {
-      movement_points = gentle_squared_growth(attributes:get_speed(Att)),
-      health = gentle_squared_growth(attributes:get_constitution(Att)),
-      dodges =
-         min_max
+      movement_points =
+         gentle_squared_growth
          (
-            0,
-            100,
-            sudden_exp_growth
-            (
-               average
-               (
-                  [
-                     attributes:get_dexterity(Att),
-                     attributes:get_mind(Att),
-                     attributes:get_speed(Att)
-                  ]
-               )
-            )
+            average([Mind, Constitution, Constitution, Speed, Speed, Speed])
          ),
+      health =
+         gentle_squared_growth(average([Mind, Constitution, Constitution])),
+      dodges =
+         min_max(0, 100, sudden_exp_growth(average([Dexterity, Mind, Speed]))),
       parries =
          min_max
          (
@@ -121,37 +137,13 @@ calc_for (Att, _Wp) ->
             75,
             sudden_exp_growth
             (
-               average
-               (
-                  [
-                     attributes:get_dexterity(Att),
-                     attributes:get_speed(Att),
-                     attributes:get_strength(Att)
-                  ]
-               )
+               average([Dexterity, Intelligence, Speed, Strength])
             )
          ),
-      damage_min = 0,
-      damage_max = 100,
-      accuracy =
-         % Hitting should involve this stat (not with this formula though), but
-         % also the target's dodge stat, with three possible results:
-         % - Missed
-         % - Grazed (Halved damage)
-         % - Hit
-         % Stat = (target.dodge - char.accuracy)
-         % Roll = RAND(0, 100)
-         % if (Roll >= (Stat * 2)): Hit
-         % else if (Roll >= Stat): Grazed
-         % else: Missed.
-         min_max
-         (
-            0,
-            100,
-            sudden_squared_growth(attributes:get_dexterity(Att))
-         ),
+      damage_min = apply_damage_base_modifier(DamageBaseModifier, MinDamage),
+      damage_max = apply_damage_base_modifier(DamageBaseModifier, MaxDamage),
+      accuracy = min_max(0, 100, sudden_squared_growth(Dexterity)),
       double_hits =
-         min_max(0, 100, sudden_squared_growth(attributes:get_speed(Att))),
-      critical_hits =
-         min_max(0, 100, sudden_squared_growth(attributes:get_intelligence(Att)))
+         min_max(0, 100, sudden_squared_growth(average([Mind, Speed]))),
+      critical_hits = min_max(0, 100, sudden_squared_growth(Intelligence))
    }.

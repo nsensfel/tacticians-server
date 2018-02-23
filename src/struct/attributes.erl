@@ -54,15 +54,15 @@ get_mind (Att) -> Att#attributes.mind.
 get_speed (Att) -> Att#attributes.speed.
 get_strength (Att) -> Att#attributes.strength.
 
-set_constitution (Att, Val) ->
+set_constitution (Val, Att) ->
    Att#attributes{ constitution = Val }.
-set_dexterity (Att, Val) ->
+set_dexterity (Val, Att) ->
    Att#attributes{ dexterity = Val }.
-set_intelligence (Att, Val) ->
+set_intelligence (Val, Att) ->
    Att#attributes{ intelligence = Val }.
-set_mind (Att, Val) ->
+set_mind (Val, Att) ->
    Att#attributes{ mind = Val }.
-set_speed (Att, Val) ->
+set_speed (Val, Att) ->
    Att#attributes{ speed = Val }.
-set_strength (Att, Val) ->
+set_strength (Val, Att) ->
    Att#attributes{ strength = Val }.

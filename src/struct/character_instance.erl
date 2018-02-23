@@ -7,120 +7,88 @@
 (
    character_instance,
    {
-      x,
-      y,
-      health,
-      team,
-      active_wp,
-      stats
+      character,
+      location,
+      current_health,
+      active
    }
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-export
+(
+   [
+      new/2
+   ]
+).
+
 %%%% Accessors
 -export
 (
    [
+      get_character/1,
       get_location/1,
       get_current_health/1,
-      get_owner/1,
-      get_active_weapon/2,
-      get_statistics/1,
-      set_location/3,
-      mod_health/3
-   ]
-).
+      get_is_active/1,
 
-%%%% Utils
--export
-(
-   [
-      new_instance_of/3,
-      switch_weapon/2,
-      is_dead/1 % is_alive is reserved.
+      set_character/2,
+      set_location/2,
+      set_current_health/2,
+      set_is_active/2
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-get_new_weapon(CharInst, Char) ->
-   case CharInst#character_instance.active_wp of
-      0 ->
-         {_, Weapon} = character:get_weapons(Char),
-         {1, Weapon};
-
-      1 ->
-         {Weapon, _} = character:get_weapons(Char),
-         {0, Weapon}
-   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
-get_location (CharInst) ->
-   {CharInst#character_instance.x, CharInst#character_instance.y}.
+get_character (CharInst) -> CharInst#character_instance.character.
+get_location (CharInst) -> CharInst#character_instance.location.
+get_current_health (CharInst) -> CharInst#character_instance.current_health.
+get_is_active (CharInst) ->
+   (
+      CharInst#character_instance.active
+      and
+      (CharInst#character_instance.current_health > 0)
+   ).
 
-get_current_health (CharInst) -> CharInst#character_instance.health.
-
-get_owner (CharInst) -> CharInst#character_instance.team.
-
-get_active_weapon (CharInst, Char) ->
-   case CharInst#character_instance.active_wp of
-      0 ->
-         {_, Weapon} = character:get_weapons(Char),
-         Weapon;
-
-      1 ->
-         {Weapon, _} = character:get_weapons(Char),
-         Weapon
-   end.
-
-get_statistics (CharInst) -> CharInst#character_instance.stats.
-
-set_location (CharInst, X, Y) ->
+set_character (Char, CharInst) ->
    CharInst#character_instance
    {
-      x = X,
-      y = Y
+      character = Char
    }.
 
-mod_health (CharInst, MaxHealth, HealthMod) ->
-   NewHealth = (CharInst#character_instance.health + HealthMod),
-   if
-      (NewHealth < 0) ->
-         CharInst#character_instance{ health = 0 };
+set_location (Location, CharInst) ->
+   CharInst#character_instance
+   {
+      location = Location
+   }.
 
-      (NewHealth > MaxHealth) ->
-         CharInst#character_instance{ health = MaxHealth };
+set_current_health (Health, CharInst) ->
+   CharInst#character_instance
+   {
+      current_health = Health
+   }.
 
-      true ->
-         CharInst#character_instance{ health = NewHealth }
-   end.
+set_is_active (Active, CharInst) ->
+   CharInst#character_instance
+   {
+      active = Active
+   }.
 
 %%%% Utils
-new_instance_of (Char, Owner, {X, Y}) ->
-   {Weapon, _} = character:get_weapons(Char),
-   Stats = statistics:calc_for(character:get_attributes(Char), Weapon),
+new (Char, Location) ->
+   Stats = character:get_statistics(Char),
    #character_instance
    {
-      x = X,
-      y = Y,
-      health = statistics:get_health(Stats),
-      team = Owner,
-      stats = Stats,
-      active_wp = 0
+      character = Char,
+      location = Location,
+      current_health = statistics:get_health(Stats),
+      active = false
    }.
-
-switch_weapon (CharInst, Char) ->
-   {NewWpIndex, Weapon} = get_new_weapon(CharInst, Char),
-   CharInst#character_instance
-   {
-      active_wp = NewWpIndex,
-      stats = statistics:calc_for(character:get_attributes(Char), Weapon)
-   }.
-
-is_dead (CharInst) -> (CharInst#character_instance.health == 0).
