@@ -12,9 +12,9 @@
       player_id,
       session_token,
       battlemap_instance_id,
-      character_instance_id,
+      character_instance_ix,
       path,
-      target_id
+      target_ix
    }
 ).
 
@@ -23,8 +23,17 @@
    query_state,
    {
       battlemap_instance,
-      character_instance,
-      rolls
+      character_instance
+   }
+).
+
+-record
+(
+   query_result,
+   {
+      is_new_turn,
+      updated_character_instance_ixs,
+      updated_battlemap_instance
    }
 ).
 
@@ -38,16 +47,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
-   CharacterInstanceID = binary_to_integer(maps:get(<<"cid">>, JSONReqMap)),
-   TargetID = binary_to_integer(maps:get(<<"tid">>, JSONReqMap)),
+   CharacterInstanceIX = binary_to_integer(maps:get(<<"cix">>, JSONReqMap)),
+   TargetIX = binary_to_integer(maps:get(<<"tix">>, JSONReqMap)),
    #input
    {
       player_id = maps:get(<<"pid">>, JSONReqMap),
       session_token = maps:get(<<"stk">>, JSONReqMap),
       battlemap_instance_id = maps:get(<<"bmp">>, JSONReqMap),
-      character_instance_id = CharacterInstanceID,
+      character_instance_ix = CharacterInstanceIX,
       path = maps:get(<<"p">>, JSONReqMap),
-      target_id = TargetID
+      target_ix = TargetIX
    }.
 
 fetch_data (Input) ->
@@ -61,17 +70,16 @@ fetch_data (Input) ->
    CharacterInstance =
       array:get
       (
-         Input#input.character_instance_id,
+         Input#input.character_instance_ix,
          battlemap_instance:get_character_instances(BattlemapInstance)
       ),
    #query_state
    {
       battlemap_instance = BattlemapInstance,
-      character_instance = CharacterInstance,
-      rolls = []
+      character_instance = CharacterInstance
    }.
 
-assert_character_can_be_played (QueryState, Input) ->
+assert_character_instance_can_be_played (QueryState, Input) ->
    %%% Var
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    PlayerID = Input#input.player_id,
@@ -80,20 +88,20 @@ assert_character_can_be_played (QueryState, Input) ->
    PlayerID =
       arrays:get
       (
-         player_turn:get_player_id
+         player_turn:get_player_ix
          (
             battlemap_instance:get_player_turn(BattlemapInstance)
          ),
-         battlemap_instance:get_players(BattlemapInstance)
+         battlemap_instance:get_player_ids(BattlemapInstance)
       ),
    PlayerID =
-      character:get_owner
+      character:get_owner_id
       (
          character_instance:get_character(ControlledCharacterInstance)
       ),
-   true = character_instance:is_active(ControlledCharacterInstance).
+   true = character_instance:get_is_active(ControlledCharacterInstance).
 
-handle_character_moving (QueryState, Input) ->
+handle_character_instance_moving (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
@@ -130,10 +138,12 @@ handle_character_moving (QueryState, Input) ->
          )
    }.
 
-handle_character_switching_weapons (QueryState) ->
+handle_character_instance_switching_weapons (QueryState) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
       character_instance:get_character(ControlledCharacterInstance),
+   {PrimaryWeapon, SecondaryWeapon} =
+      character:get_weapons(ControlledCharacter),
    QueryState#query_state
    {
       character_instance =
@@ -141,20 +151,17 @@ handle_character_switching_weapons (QueryState) ->
          (
             character:set_weapons
             (
-               weapon_set:switch
-               (
-                  character:get_weapons(ControlledCharacter)
-               ),
+               {SecondaryWeapon, PrimaryWeapon},
                ControlledCharacter
             ),
             ControlledCharacterInstance
          )
    }.
 
--include("character_turn/handle_character_attacking_2.erl").
+-include("character_turn/handle_character_instance_attacking_2.erl").
 
 get_type_of_turn (Input) ->
-   case {Input#input.path, Input#input.target_id} of
+   case {Input#input.path, Input#input.target_ix} of
       {[], -1} -> [nothing, nothing];
       {[], _} -> [nothing, attack];
       {[<<"S">>], -1} -> [switch, nothing];
@@ -174,131 +181,137 @@ finalize_character_instance (QueryState, Input) ->
    QueryState#query_state
    {
       battlemap_instance =
-         battlemap_instance:set_characters
+         battlemap_instance:set_character_instances
          (
             array:set
             (
-               Input#input.character_instance_id,
+               Input#input.character_instance_ix,
                FinalizedCharacterInstance,
-               battlemap_instance:get_characters(BattlemapInstance)
+               battlemap_instance:get_character_instances(BattlemapInstance)
             ),
             BattlemapInstance
          ),
       character_instance = FinalizedCharacterInstance
    }.
 
-unnamed_function (IDs, CharacterInstances, _Owner, -1) ->
-   {IDs, CharacterInstances};
-unnamed_function (IDs, CharacterInstances, Owner, I) ->
-   CharacterInstance = array:get(I, CharacterInstances),
+activate_relevant_character_instances (IXs, CharacterInstances, _Owner, -1) ->
+   {IXs, CharacterInstances};
+activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
+   CharacterInstance = array:get(IX, CharacterInstances),
    Character = character_instance:get_character(CharacterInstance),
-   case character:get_owner(Character) of
+   case character:get_owner_id(Character) of
       OwnerID when (OwnerID == Owner) ->
-         unnamed_function
+         activate_relevant_character_instances
          (
-            [I|IDs],
+            [IX|IXs],
             array:set
             (
-               I,
+               IX,
                character_instance:set_is_active(true, CharacterInstance),
                CharacterInstances
             ),
             Owner,
-            (I - 1)
+            (IX - 1)
          );
 
       _ ->
-         unnamed_function
+         activate_relevant_character_instances
          (
-            IDs,
+            IXs,
             CharacterInstances,
             Owner,
-            (I - 1)
+            (IX - 1)
          )
    end.
 
 start_next_players_turn (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
-   Players = battlemap_instance:get_players(BattlemapInstance),
+   PlayerIDs = battlemap_instance:get_player_ids(BattlemapInstance),
    PlayerTurn = battlemap_instance:get_player_turn(BattlemapInstance),
-   CurrentPlayerID = player_turn:get_player_id(PlayerTurn),
+   CurrentPlayerIX = player_turn:get_player_ix(PlayerTurn),
    CurrentTurnNumber = player_turn:get_number(PlayerTurn),
    CharacterInstances =
       battlemap_instance:get_character_instances(BattlemapInstance),
 
-   NextPlayer = ((CurrentPlayerID + 1) rem (array:size(Players))),
+   NextPlayerIX = ((CurrentPlayerIX + 1) rem (array:size(PlayerIDs))),
    NextPlayerTurn =
       player_turn:new
       (
-         case NextPlayer of
+         case NextPlayerIX of
             0 -> (CurrentTurnNumber + 1);
             _ -> CurrentTurnNumber
          end,
-         NextPlayer
+         NextPlayerIX
       ),
 
-   {ActivatedCharacterInstancesID, UpdatedCharacterInstances} =
-      unnamed_function
+   {ActivatedCharacterInstanceIXs, UpdatedCharacterInstances} =
+      activate_relevant_character_instances
       (
          [],
          CharacterInstances,
-         array:get(NextPlayer, Players),
+         array:get(NextPlayerIX, PlayerIDs),
          array:size(CharacterInstances)
       ),
-   {
-      ActivatedCharacterInstancesID,
-      QueryState#query_state
-      {
-         battlemap_instance =
-            battlemap_instance:set_character_instances
-            (
-               UpdatedCharacterInstances,
-               battlemap_instance:set_player_turn
-               (
-                  NextPlayerTurn,
-                  BattlemapInstance
-               )
-            )
-      }
-   }.
+   UpdatedBattlemapInstance =
+      battlemap_instance:set_character_instances
+      (
+         UpdatedCharacterInstances,
+         battlemap_instance:set_player_turn
+         (
+            NextPlayerTurn,
+            BattlemapInstance
+         )
+      ),
+   {ActivatedCharacterInstanceIXs, UpdatedBattlemapInstance}.
 
 finalize_character_turn (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
-   Players = battlemap_instance:get_players(BattlemapInstance),
+   CharacterInstances =
+      battlemap_instance:get_character_instances(BattlemapInstance),
 
-   CharacterInstanceRemains =
+   AnActiveCharacterInstanceRemains =
       array:foldl
       (
-         fun (_I, CharacterInstance, Prev) ->
+         fun (_IX, CharacterInstance, Prev) ->
             (Prev or character_instance:get_is_active(CharacterInstance))
          end,
-         Players
+         CharacterInstances
       ),
 
-   case CharacterInstanceRemains of
-      true -> {false, {[], QueryState}};
-      false -> {true, start_next_players_turn(QueryState, Input)}
+   case AnActiveCharacterInstanceRemains of
+      true ->
+         #query_result
+         {
+            is_new_turn = false,
+            updated_character_instance_ixs = [],
+            updated_battlemap_instance = BattlemapInstance
+         };
+      false ->
+         {UpdatedCharacterInstanceIXs, UpdatedBattlemapInstance} =
+            start_next_players_turn(QueryState, Input),
+         #query_result
+         {
+            is_new_turn = true,
+            updated_character_instance_ixs = UpdatedCharacterInstanceIXs,
+            updated_battlemap_instance = UpdatedBattlemapInstance
+         }
    end.
 
-play (QueryState, [], Input) ->
-   finalize_character_turn
-   (
-      finalize_character_instance(QueryState, Input),
-      Input
-   );
+play (QueryState, [], _Input) ->
+   QueryState;
 play (QueryState, [nothing|Next], Input) ->
    play(QueryState, Next, Input);
 play (QueryState, [move|Next], Input) ->
    play
    (
-      handle_character_moving(QueryState, Input),
+      handle_character_instance_moving(QueryState, Input),
       Next,
       Input
    );
 play (QueryState, [switch|Next], Input) ->
    play
    (
-      handle_character_switching_weapons(QueryState),
+      handle_character_instance_switching_weapons(QueryState),
       Next,
       Input
    );
@@ -306,32 +319,41 @@ play (QueryState, [switch|Next], Input) ->
 play (QueryState, [attack|Next], Input) ->
    play
    (
-      handle_character_attacking(QueryState, Input),
+      handle_character_instance_attacking(QueryState, Input),
       Next,
       Input
    ).
 
-send_to_database (QueryState, TurnType, Input) ->
+send_to_database (QueryResult, TurnType, Input) ->
    unimplemented.
 
-update_cache (QueryState, TurnType, Input) ->
+update_cache (QueryResult, TurnType, Input) ->
    unimplemented.
 
-generate_reply (QueryState, TurnType, Input) ->
+generate_reply (QueryResult, TurnType, Input) ->
    jiffy:encode([[<<"ok">>]]).
 
 handle (Req) ->
    Input = parse_input(Req),
    security:assert_identity(Req#input.player_id, Req#input.session_token),
+   security:lock_queries(Req#input.player_id),
    QueryState = fetch_data(Input),
-   assert_character_can_be_played(Input, QueryState),
+   assert_character_instance_can_be_played(Input, QueryState),
    TurnType = get_type_of_turn(Input),
-   {IsNewTurn, {UpdatedCharacterInstancesID, PostPlayQueryState}} =
-      play(QueryState, TurnType, Input),
-   send_to_database(PostPlayQueryState, TurnType, Input),
-   update_cache(PostPlayQueryState, TurnType, Input),
-   generate_reply(PostPlayQueryState, TurnType, Input).
-
+   QueryResult =
+      finalize_character_turn
+      (
+         finalize_character_instance
+         (
+            play(QueryState, TurnType, Input),
+            Input
+         ),
+         Input
+      ),
+   send_to_database(QueryResult, TurnType, Input),
+   update_cache(QueryResult, TurnType, Input),
+   security:unlock_queries(Req#input.player_id),
+   generate_reply(QueryResult, TurnType, Input).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
