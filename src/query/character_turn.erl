@@ -45,8 +45,7 @@
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"player_id">>, JSONReqMap),
-   SessionToken =  maps:get(<<"session_token">>, JSONReqMap),
-   database_shim:assert_session_is_valid(PlayerID, SessionToken),
+   SessionToken = maps:get(<<"session_token">>, JSONReqMap),
    Target =
       case maps:get(<<"targets_id">>, JSONReqMap) of
          [] -> <<"">>;
@@ -254,6 +253,7 @@ generate_reply (QueryState) ->
 handle (Req) ->
    %%%% Parse
    Input = parse_input(Req),
+   assert_player_identity(Req),
    %%%% Fetch
    QueryState = fetch_data(Input),
    %%%% Calc
