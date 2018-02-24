@@ -9,13 +9,19 @@
 (
    input,
    {
-      session_token,
       player_id,
-      battlemap_id,
-      instance_id
+      session_token,
+      battlemap_instance_id
    }
 ).
 
+-record
+(
+   query_state,
+   {
+      battlemap_instance
+   }
+).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,12 +34,13 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"player_id">>, JSONReqMap),
    SessionToken =  maps:get(<<"session_token">>, JSONReqMap),
-   database_shim:assert_session_is_valid(PlayerID, SessionToken),
+   BattlemapInstanceID = maps:get(<<"battlemap_id">>, JSONReqMap),
+
    #input
    {
       player_id = PlayerID,
-      battlemap_id = maps:get(<<"battlemap_id">>, JSONReqMap),
-      instance_id = maps:get(<<"instance_id">>, JSONReqMap)
+      session_token = SessionToken,
+      battlemap_instance_id = BattlemapInstanceID
    }.
 
 generate_reply (Battlemap, BattlemapInstance, Characters, PlayerID) ->
@@ -67,9 +74,9 @@ generate_reply (Battlemap, BattlemapInstance, Characters, PlayerID) ->
    ).
 
 handle (Req) ->
-   %%%% Parse
    Input = parse_input(Req),
-   %%%% Fetch
+   security:assert_identity(Input#input.player_id, Input#input.session_token),
+   security:lock_queries(Input#input.player_id),
    Battlemap =
       timed_cache:fetch
       (

@@ -352,8 +352,8 @@ generate_reply (QueryResult, TurnType, Input) ->
 
 handle (Req) ->
    Input = parse_input(Req),
-   security:assert_identity(Req#input.player_id, Req#input.session_token),
-   security:lock_queries(Req#input.player_id),
+   security:assert_identity(Input#input.player_id, Input#input.session_token),
+   security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
    assert_character_instance_can_be_played(Input, QueryState),
    TurnType = get_type_of_turn(Input),
@@ -369,7 +369,7 @@ handle (Req) ->
       ),
    send_to_database(QueryResult, TurnType, Input),
    update_cache(QueryResult, TurnType, Input),
-   security:unlock_queries(Req#input.player_id),
+   security:unlock_queries(Input#input.player_id),
    generate_reply(QueryResult, TurnType, Input).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

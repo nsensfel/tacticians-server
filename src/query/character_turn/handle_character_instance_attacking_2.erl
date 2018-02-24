@@ -1,14 +1,7 @@
 roll_hits (AttackerStatistics, DefenderStatistics) ->
-   MissChance =
-      max
-      (
-         0,
-         (
-            statistics:get_dodges(DefenderStatistics)
-            -
-            statistics:get_accuracy(AttackerStatistics)
-         )
-      ),
+   DefenderDodges = statistics:get_dodges(DefenderStatistics),
+   AttackerAccuracy = statistics:get_accuracy(AttackerStatistics),
+   MissChance = max(0, (DefenderDodges - AttackerAccuracy)),
    case roll:percentage() of
       X when (X =< MissChance) -> misses;
       X when (X =< (MissChance * 2)) -> grazes;
@@ -21,60 +14,23 @@ roll_damage (AttackerStatistics, _DefenderStatistics) ->
    BaseDamage = MinimumDamage + (rand:uniform(MaximumRoll) - 1),
    CriticalHitChance = statistics:get_critical_hits(AttackerStatistics),
    case roll:percentage() of
-      X when (X =< CriticalHitChance) ->
-         {critical, (BaseDamage * 2)};
-      _ ->
-         {basic, BaseDamage}
+      X when (X =< CriticalHitChance) -> {critical, (BaseDamage * 2)};
+      _ -> {basic, BaseDamage}
    end.
 
 handle_attack (AttackerStatistics, DefenderStatistics) ->
    Hits = roll_hits(AttackerStatistics, DefenderStatistics),
    {Critical, Damage} = roll_damage(AttackerStatistics, DefenderStatistics),
    case Hits of
-      misses ->
-         {Hits, Critical, 0};
-
-      grazes ->
-         {
-            Hits,
-            Critical,
-            trunc(Damage / 2)
-         };
-
-      _ ->
-         {
-            Hits,
-            Critical,
-            Damage
-         }
+      misses -> {Hits, Critical, 0};
+      grazes -> {Hits, Critical, trunc(Damage / 2)};
+      hits -> {Hits, Critical, Damage}
    end.
 
-handle_parry (AttackerStatistics, DefenderStatistics) ->
-   ParryChance = statistics:get_parries(DefenderStatistics),
-   case roll:percentage() of
-      X when (X =< ParryChance) ->
-         [{parry, handle_attack(DefenderStatistics, AttackerStatistics)}];
-      _ ->
-         []
-   end.
 
 %% FIXME: parry not working as intended
 handle_attacks ([], _AttackerStatistics, _DefenderStatistics, Results) ->
    Results;
-handle_attacks
-(
-   [nothing|Next],
-   AttackerStatistics,
-   DefenderStatistics,
-   Results
-) ->
-   handle_attacks
-   (
-      Next,
-      AttackerStatistics,
-      DefenderStatistics,
-      Results
-   );
 handle_attacks
 (
    [first|Next],
@@ -82,19 +38,13 @@ handle_attacks
    DefenderStatistics,
    Results
 ) ->
+   AttackResult = handle_attack(AttackerStatistics, DefenderStatistics),
    handle_attacks
    (
       Next,
       AttackerStatistics,
       DefenderStatistics,
-      [
-         {
-            first,
-            handle_attack(AttackerStatistics, DefenderStatistics)
-         }
-         |
-         Results
-      ]
+      [{first, AttackResult} | Results]
    );
 handle_attacks
 (
@@ -103,37 +53,83 @@ handle_attacks
    DefenderStatistics,
    Results
 ) ->
-   handle_attacks
-   (
-      Next,
-      AttackerStatistics,
-      DefenderStatistics,
-      [
-         {
-            second,
-            handle_attack(AttackerStatistics, DefenderStatistics)
-         }
-         |
-         Results
-      ]
-   );
+   SecondHitChance = statistics:get_second_hits(AttackerStatistics),
+   UpdatedResults =
+      case roll:percentage() of
+         X when (X =< SecondHitChance) ->
+            [
+               {second, handle_attack(AttackerStatistics, DefenderStatistics)}
+               |
+               Results
+            ];
+
+         _ ->
+            Results
+      end,
+   handle_attacks(Next, AttackerStatistics, DefenderStatistics, UpdatedResults);
 handle_attacks
 (
-   [parry|Next],
+   [{first, parry}|Next],
    AttackerStatistics,
    DefenderStatistics,
    Results
 ) ->
+   ParryChance = statistics:get_parries(DefenderStatistics),
+   AttackResult =
+      case roll:percentage() of
+         X when (X =< ParryChance) ->
+            {
+               {first, parry},
+               handle_attack(DefenderStatistics, AttackerStatistics)
+            };
+
+         _ ->
+            {first, handle_attack(AttackerStatistics, DefenderStatistics)}
+      end,
    handle_attacks
    (
       Next,
       AttackerStatistics,
       DefenderStatistics,
-      (
-         handle_parry(AttackerStatistics, DefenderStatistics)
-         ++
-         Results
-      )
+      [AttackResult|Results]
+   );
+handle_attacks
+(
+   [{second, parry}|Next],
+   AttackerStatistics,
+   DefenderStatistics,
+   Results
+) ->
+   SecondHitChance = statistics:get_second_hits(AttackerStatistics),
+   ParryChance = statistics:get_parries(DefenderStatistics),
+   AttackResult =
+      case roll:percentage() of
+         X when (X =< SecondHitChance) ->
+            case roll:percentage() of
+               Y when (Y =< ParryChance) ->
+                  {
+                     {second, parry},
+                     handle_attack(DefenderStatistics, AttackerStatistics)
+                  };
+
+               _ ->
+                  {
+                     second,
+                     handle_attack(AttackerStatistics, DefenderStatistics)
+                  }
+            end;
+
+         _ -> nothing
+      end,
+   handle_attacks
+   (
+      Next,
+      AttackerStatistics,
+      DefenderStatistics,
+      case AttackResult of
+         nothing -> Results;
+         _ -> [AttackResult|Results]
+      end
    );
 handle_attacks
 (
@@ -148,10 +144,7 @@ handle_attacks
       AttackerStatistics,
       DefenderStatistics,
       [
-         {
-            counter,
-            handle_attack(DefenderStatistics, AttackerStatistics)
-         }
+         {counter, handle_attack(DefenderStatistics, AttackerStatistics)}
          |
          Results
       ]
@@ -161,11 +154,12 @@ apply_attacks_to_healths ([], AttackerHealth, DefenderHealth, ValidEffects) ->
    {ValidEffects, AttackerHealth, DefenderHealth};
 apply_attacks_to_healths
 (
-   [{first, Effect}|Next],
+   [{Action, Effect}|Next],
    AttackerHealth,
    DefenderHealth,
    ValidEffects
-) ->
+)
+when ((Action == first) or (Action == second)) ->
    {_Hit, _Critical, Damage} = Effect,
    case (AttackerHealth > 0) of
       true ->
@@ -174,37 +168,24 @@ apply_attacks_to_healths
             Next,
             AttackerHealth,
             max(0, (DefenderHealth - Damage)),
-            [{first, Effect}|ValidEffects]
+            [{Action, Effect}|ValidEffects]
          );
+
       false ->
          ValidEffects
    end;
 apply_attacks_to_healths
 (
-   [{second, Effect}|Next],
+   [{Action, Effect}|Next],
    AttackerHealth,
    DefenderHealth,
    ValidEffects
-) ->
-   {_Hit, _Critical, Damage} = Effect,
-   case (AttackerHealth > 0) of
-      true ->
-         apply_attacks_to_healths
-         (
-            Next,
-            AttackerHealth,
-            max(0, (DefenderHealth - Damage)),
-            [{second, Effect}|ValidEffects]
-         );
-      false ->
-         ValidEffects
-   end;
-apply_attacks_to_healths
+)
+when
 (
-   [{counter, Effect}|Next],
-   AttackerHealth,
-   DefenderHealth,
-   ValidEffects
+   (Action == counter)
+   or (Action == {first, parry})
+   or (Action == {second, parry})
 ) ->
    {_Hit, _Critical, Damage} = Effect,
    case (DefenderHealth > 0) of
@@ -214,28 +195,9 @@ apply_attacks_to_healths
             Next,
             max(0, (AttackerHealth - Damage)),
             DefenderHealth,
-            [{counter, Effect}|ValidEffects]
+            [{Action, Effect}|ValidEffects]
          );
-      false ->
-         ValidEffects
-   end;
-apply_attacks_to_healths
-(
-   [{parry, Effect}|Next],
-   AttackerHealth,
-   DefenderHealth,
-   ValidEffects
-) ->
-   {_Hit, _Critical, Damage} = Effect,
-   case (DefenderHealth > 0) of
-      true ->
-         apply_attacks_to_healths
-         (
-            Next,
-            max(0, (AttackerHealth - Damage)),
-            DefenderHealth,
-            [{parry, Effect}|ValidEffects]
-         );
+
       false ->
          ValidEffects
    end.
@@ -324,11 +286,11 @@ handle_character_instance_attacking (QueryState, Input) ->
    Actions =
       case {CanDefend, CanParry} of
          {true, true} ->
-            [{second, parry}, counter, {first, parry}];
+            [{attack, parry}, counter, {attack, parry}];
          {true, false} ->
-            [{second, no_parry}, counter, {fist, no_parry}];
+            [second, counter, no_parry];
          {false, _} ->
-            [{second, no_parry}, {first, no_parry}]
+            [second, first]
       end,
    Effects =
       handle_attacks
