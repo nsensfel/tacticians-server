@@ -17,9 +17,9 @@ encode (Battlemap) ->
    (
       {
          [
-            {<<"width">>, battlemap:get_width(Battlemap)},
-            {<<"height">>, battlemap:get_height(Battlemap)},
-            {<<"content">>, battlemap:list_tiles(Battlemap)}
+            {<<"w">>, battlemap:get_width(Battlemap)},
+            {<<"h">>, battlemap:get_height(Battlemap)},
+            {<<"t">>, array:to_list(battlemap:list_tiles(Battlemap))}
          ]
       }
    ).

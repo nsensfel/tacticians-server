@@ -77,40 +77,12 @@ handle (Req) ->
    Input = parse_input(Req),
    security:assert_identity(Input#input.player_id, Input#input.session_token),
    security:lock_queries(Input#input.player_id),
-   Battlemap =
-      timed_cache:fetch
-      (
-         battlemap_db,
-         Input#input.player_id,
-         Input#input.battlemap_id
-      ),
-   BattlemapInstance =
-      timed_cache:fetch
-      (
-         battlemap_instance_db,
-         Input#input.player_id,
-         <<"0">>
-      ),
-   Characters =
-      lists:map
-      (
-         fun ({CharID, CharInst}) ->
-            {
-               timed_cache:fetch(character_db, Input#input.player_id, CharID),
-               CharInst
-            }
-         end,
-         battlemap_instance:list_characters(BattlemapInstance)
-      ),
-   %%%% Calc
-   %%%% Commit
-   %%%% Reply
+   QueryState = fetch_data(Input),
+   security:unlock_queries(Input#input.player_id),
    generate_reply
    (
-      Battlemap,
-      BattlemapInstance,
-      Characters,
-      Input#input.player_id
+      QueryState,
+      Input
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

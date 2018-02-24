@@ -12,40 +12,43 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-attributes_as_json (Atts) ->
+attributes_as_json (Attributes) ->
    {
       [
-         {<<"con">>, attributes:get_constitution(Atts)},
-         {<<"dex">>, attributes:get_dexterity(Atts)},
-         {<<"int">>, attributes:get_intelligence(Atts)},
-         {<<"min">>, attributes:get_mind(Atts)},
-         {<<"spe">>, attributes:get_speed(Atts)},
-         {<<"str">>, attributes:get_strength(Atts)}
+         {<<"con">>, attributes:get_constitution(Attributes)},
+         {<<"dex">>, attributes:get_dexterity(Attributes)},
+         {<<"int">>, attributes:get_intelligence(Attributes)},
+         {<<"min">>, attributes:get_mind(Attributes)},
+         {<<"spe">>, attributes:get_speed(Attributes)},
+         {<<"str">>, attributes:get_strength(Attributes)}
       ]
    }.
 
-encode (Char, CharInstance, IsEnabled) ->
-   {X, Y} = character_instance:get_location(CharInstance),
-   Atts = character:get_attributes(Char),
-   {Wp0, Wp1} = character:get_weapons(Char),
-   ActWeapon = character_instance:get_active_weapon(CharInstance, Char),
+encode (IX, CharacterInstance) ->
+   Character = character_instance:get_character(CharacterInstance),
+   {X, Y} = character_instance:get_location(CharacterInstance),
+   Attributes = character:get_attributes(Char),
+   {ActiveWeapon, SecondaryWeapon} = character:get_weapons(Char),
+
    jiffy:encode
    (
       {
          [
-            {<<"id">>, character:get_id(Char)},
-            {<<"name">>, character:get_name(Char)},
-            {<<"icon">>, character:get_icon(Char)},
-            {<<"portrait">>, character:get_portrait(Char)},
-            {<<"health">>, character_instance:get_current_health(CharInstance)},
-            {<<"loc_x">>, X},
-            {<<"loc_y">>, Y},
-            {<<"team">>, character_instance:get_owner(CharInstance)},
-            {<<"enabled">>, IsEnabled},
-            {<<"att">>, attributes_as_json(Atts)},
-            {<<"wp_0">>, Wp0},
-            {<<"wp_1">>, Wp1},
-            {<<"act_wp">>, ActWeapon}
+            {<<"ix">>, IX},
+            {<<"nam">>, character:get_name(Character)},
+            {<<"ico">>, character:get_icon(Character)},
+            {<<"prt">>, character:get_portrait(Character)},
+            {
+               <<"hea">>,
+               character_instance:get_current_health(CharacterInstance)
+            },
+            {<<"lcx">>, X},
+            {<<"lcy">>, Y},
+            {<<"tem">>, character:get_owner_id(Character)},
+            {<<"ena">>, character_instance:get_is_active(CharacterInstance)},
+            {<<"att">>, attributes_as_json(Attributes)},
+            {<<"awp">>, ActiveWeapon},
+            {<<"swp">>, SecondaryWeapon}
          ]
       }
    ).
@@ -53,5 +56,5 @@ encode (Char, CharInstance, IsEnabled) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-generate (Char, CharInstance, IsEnabled) ->
-   [<<"add_char">>, encode(Char, CharInstance, IsEnabled)].
+generate (IX, CharacterInstance) ->
+   [<<"add_char">>, encode(IX, CharacterInstance)].
