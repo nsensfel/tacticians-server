@@ -19,7 +19,5 @@
 start (_YawsParams) ->
    {ok, Pid} = timed_caches_manager:start(),
    database_shim:generate_db(Pid),
-   timed_caches_manager:new_cache(Pid, battlemap_db, none),
    timed_caches_manager:new_cache(Pid, battlemap_instance_db, none),
-   timed_caches_manager:new_cache(Pid, character_db, none),
    ok.

@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/3]).
+-export([generate/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,8 +27,8 @@ attributes_as_json (Attributes) ->
 encode (IX, CharacterInstance) ->
    Character = character_instance:get_character(CharacterInstance),
    {X, Y} = character_instance:get_location(CharacterInstance),
-   Attributes = character:get_attributes(Char),
-   {ActiveWeapon, SecondaryWeapon} = character:get_weapons(Char),
+   Attributes = character:get_attributes(Character),
+   {ActiveWeapon, SecondaryWeapon} = character:get_weapons(Character),
 
    jiffy:encode
    (

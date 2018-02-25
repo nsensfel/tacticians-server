@@ -53,26 +53,31 @@ parse_input (Req) ->
    {
       player_id = maps:get(<<"pid">>, JSONReqMap),
       session_token = maps:get(<<"stk">>, JSONReqMap),
-      battlemap_instance_id = maps:get(<<"bmp">>, JSONReqMap),
+      battlemap_instance_id = maps:get(<<"bmi">>, JSONReqMap),
       character_instance_ix = CharacterInstanceIX,
       path = maps:get(<<"p">>, JSONReqMap),
       target_ix = TargetIX
    }.
 
 fetch_data (Input) ->
+   PlayerID = Input#input.player_id,
+   BattlemapInstanceID = Input#input.battlemap_instance_id,
+   CharacterInstanceIX = Input#input.character_instance_ix,
+
    BattlemapInstance =
       timed_cache:fetch
       (
          battlemap_instance_db,
-         Input#input.player_id,
-         Input#input.battlemap_instance_id
+         PlayerID,
+         BattlemapInstanceID
       ),
    CharacterInstance =
       array:get
       (
-         Input#input.character_instance_ix,
+         CharacterInstanceIX,
          battlemap_instance:get_character_instances(BattlemapInstance)
       ),
+
    #query_state
    {
       battlemap_instance = BattlemapInstance,
@@ -241,7 +246,7 @@ activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
          )
    end.
 
-start_next_players_turn (QueryState, Input) ->
+start_next_players_turn (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    PlayerIDs = battlemap_instance:get_player_ids(BattlemapInstance),
    PlayerTurn = battlemap_instance:get_player_turn(BattlemapInstance),
@@ -281,7 +286,7 @@ start_next_players_turn (QueryState, Input) ->
       ),
    {ActivatedCharacterInstanceIXs, UpdatedBattlemapInstance}.
 
-finalize_character_turn (QueryState, Input) ->
+finalize_character_turn (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    CharacterInstances =
       battlemap_instance:get_character_instances(BattlemapInstance),
@@ -305,7 +310,7 @@ finalize_character_turn (QueryState, Input) ->
          };
       false ->
          {UpdatedCharacterInstanceIXs, UpdatedBattlemapInstance} =
-            start_next_players_turn(QueryState, Input),
+            start_next_players_turn(QueryState),
          #query_result
          {
             is_new_turn = true,
@@ -341,14 +346,14 @@ play (QueryState, [attack|Next], Input) ->
       Input
    ).
 
-send_to_database (QueryResult, TurnType, Input) ->
+send_to_database (_QueryResult, _TurnType, _Input) ->
    unimplemented.
 
-update_cache (QueryResult, TurnType, Input) ->
+update_cache (_QueryResult, _TurnType, _Input) ->
    unimplemented.
 
-generate_reply (QueryResult, TurnType, Input) ->
-   jiffy:encode([[<<"ok">>]]).
+generate_reply (_QueryResult, _TurnType, _Input) ->
+   unimplemented.
 
 handle (Req) ->
    Input = parse_input(Req),
@@ -364,8 +369,7 @@ handle (Req) ->
          (
             play(QueryState, TurnType, Input),
             Input
-         ),
-         Input
+         )
       ),
    send_to_database(QueryResult, TurnType, Input),
    update_cache(QueryResult, TurnType, Input),

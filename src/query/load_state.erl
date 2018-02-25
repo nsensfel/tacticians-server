@@ -32,9 +32,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
-   PlayerID = maps:get(<<"player_id">>, JSONReqMap),
-   SessionToken =  maps:get(<<"session_token">>, JSONReqMap),
-   BattlemapInstanceID = maps:get(<<"battlemap_id">>, JSONReqMap),
+   PlayerID = maps:get(<<"pid">>, JSONReqMap),
+   SessionToken =  maps:get(<<"stk">>, JSONReqMap),
+   BattlemapInstanceID = maps:get(<<"bmi">>, JSONReqMap),
 
    #input
    {
@@ -43,32 +43,39 @@ parse_input (Req) ->
       battlemap_instance_id = BattlemapInstanceID
    }.
 
-generate_reply (Battlemap, BattlemapInstance, Characters, PlayerID) ->
+fetch_data (Input) ->
+   PlayerID = Input#input.player_id,
+   BattlemapInstanceID = Input#input.battlemap_instance_id,
+
+   BattlemapInstance =
+      timed_cache:fetch
+      (
+         battlemap_instance_db,
+         PlayerID,
+         BattlemapInstanceID
+      ),
+
+   #query_state
+   {
+      battlemap_instance = BattlemapInstance
+   }.
+
+generate_reply (QueryState) ->
+   BattlemapInstance = QueryState#query_state.battlemap_instance,
    jiffy:encode
    (
       [
-         set_map:generate(Battlemap)
+         set_map:generate(battlemap_instange:get_battlemap(BattlemapInstance))
          |
-         lists:map
+         array:to_list
          (
-            fun ({Char, CharInstance}) ->
-               add_char:generate
-               (
-                  Char,
-                  CharInstance,
-                  (
-                     battlemap_instance:can_play_char_instance
-                     (
-                        BattlemapInstance,
-                        PlayerID,
-                        character:get_id(Char)
-                     )
-                     and
-                     (not character_instance:is_dead(CharInstance))
-                  )
-               )
-            end,
-            Characters
+            array:map
+            (
+               fun (CharacterInstance) ->
+                  add_char:generate(CharacterInstance)
+               end,
+               battlemap_instance:get_character_instances(BattlemapInstance)
+            )
          )
       ]
    ).
@@ -79,11 +86,7 @@ handle (Req) ->
    security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
    security:unlock_queries(Input#input.player_id),
-   generate_reply
-   (
-      QueryState,
-      Input
-   ).
+   generate_reply(QueryState).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
