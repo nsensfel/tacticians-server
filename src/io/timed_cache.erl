@@ -27,6 +27,7 @@
 (
    [
       fetch/3,
+      update/4,
       invalidate/3
    ]
 ).
@@ -39,6 +40,10 @@ add_to_cache (DB, Owner, ObjectID) ->
    {ok, Data} = database_shim:fetch(DB, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
+
+add_update_to_cache (DB, Owner, ObjectID, Data) ->
+   {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
+   ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,6 +91,17 @@ fetch (DB, Owner, ObjectID) ->
          gen_server:cast(TimerPID, ping),
          Data
    end.
+
+update (DB, Owner, ObjectID, Data) ->
+   io:format("~nUpdating cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
+   case ets:lookup(DB, {Owner, ObjectID}) of
+      [] -> ok;
+
+      [{_OwnerID, TimerPID, _Data}] ->
+         gen_server:stop(TimerPID),
+   end,
+   add_update_to_cache(DB, Owner, ObjectID);
+
 
 invalidate (DB, Owner, ObjectID) ->
    case ets:lookup(DB, {Owner, ObjectID}) of
