@@ -8,7 +8,7 @@
    player_turn,
    {
       number,
-      player_id
+      player_ix
    }
 ).
 
@@ -27,7 +27,7 @@
 (
    [
       get_number/1,
-      get_player_id/1
+      get_player_ix/1
    ]
 ).
 
@@ -39,13 +39,13 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
-new (Number, PlayerID) ->
+new (Number, PlayerIX) ->
    #player_turn
    {
       number = Number,
-      player_id = PlayerID
+      player_ix = PlayerIX
    }.
 
 get_number (PlayerTurn) -> PlayerTurn#player_turn.number.
 
-get_player_id (PlayerTurn) -> PlayerTurn#player_turn.player_id.
+get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.

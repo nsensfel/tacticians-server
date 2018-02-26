@@ -91,11 +91,11 @@ assert_character_instance_can_be_played (QueryState, Input) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    %%% Asserts
    PlayerID =
-      arrays:get
+      array:get
       (
          player_turn:get_player_ix
          (
-            battlemap_instance:get_player_turn(BattlemapInstance)
+            battlemap_instance:get_current_player_turn(BattlemapInstance)
          ),
          battlemap_instance:get_player_ids(BattlemapInstance)
       ),
@@ -111,6 +111,8 @@ handle_character_instance_moving (QueryState, Input) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
       character_instance:get_character(ControlledCharacterInstance),
+   ControlledCharacterIX = Input#input.character_instance_ix,
+
    Path = Input#input.path,
    Battlemap = battlemap_instance:get_battlemap(BattlemapInstance),
    ControlledCharacterStatistics =
@@ -121,7 +123,9 @@ handle_character_instance_moving (QueryState, Input) ->
    ForbiddenLocations =
       array:map
       (
-         fun character_instance:get_location/1,
+         fun (_IX, CharacterInstance) ->
+            character_instance:get_location(CharacterInstance)
+         end,
          battlemap_instance:get_character_instances(BattlemapInstance)
       ),
    {NewLocation, Cost} =
@@ -133,19 +137,35 @@ handle_character_instance_moving (QueryState, Input) ->
          character_instance:get_location(ControlledCharacterInstance)
       ),
 
+   io:format
+   (
+      "~nMoving from ~p to ~p (cost ~p) with ~p movement points.~n",
+      [
+         character_instance:get_location(ControlledCharacterInstance),
+         NewLocation,
+         Cost,
+         ControlledCharacterMovementPoints
+      ]
+   ),
+
    true = (Cost =< ControlledCharacterMovementPoints),
 
-   QueryState#query_state
+   UpdatedQueryState =
+      QueryState#query_state
+      {
+         character_instance =
+            character_instance:set_location
+            (
+               NewLocation,
+               ControlledCharacterInstance
+            )
+      },
    {
-      character_instance =
-         character_instance:set_location
-         (
-            NewLocation,
-            ControlledCharacterInstance
-         )
+      [{move, ControlledCharacterIX, NewLocation}],
+      UpdatedQueryState
    }.
 
-handle_character_instance_switching_weapons (QueryState) ->
+handle_character_instance_switching_weapons (QueryState, Input) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
       character_instance:get_character(ControlledCharacterInstance),
@@ -153,6 +173,7 @@ handle_character_instance_switching_weapons (QueryState) ->
       character:get_attributes(ControlledCharacter),
    {PrimaryWeapon, SecondaryWeapon} =
       character:get_weapons(ControlledCharacter),
+   ControlledCharacterIX = Input#input.character_instance_ix,
 
    UpdatedWeapons = {SecondaryWeapon, PrimaryWeapon},
    UpdatedControlledCharacterStatistics =
@@ -176,10 +197,15 @@ handle_character_instance_switching_weapons (QueryState) ->
          UpdatedControlledCharacter,
          ControlledCharacterInstance
       ),
+   UpdatedQueryState =
+      QueryState#query_state
+      {
+         character_instance = UpdatedControlledCharacterInstance
+      },
 
-   QueryState#query_state
    {
-      character_instance = UpdatedControlledCharacterInstance
+      [{switch_weapons, ControlledCharacterIX}],
+      UpdatedQueryState
    }.
 
 -include("character_turn/handle_character_instance_attacking_2.erl").
@@ -197,7 +223,7 @@ get_type_of_turn (Input) ->
 finalize_character_instance (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    FinalizedCharacterInstance =
-      character_instance:set_active
+      character_instance:set_is_active
       (
          false,
          QueryState#query_state.character_instance
@@ -251,7 +277,7 @@ activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
 start_next_players_turn (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    PlayerIDs = battlemap_instance:get_player_ids(BattlemapInstance),
-   PlayerTurn = battlemap_instance:get_player_turn(BattlemapInstance),
+   PlayerTurn = battlemap_instance:get_current_player_turn(BattlemapInstance),
    CurrentPlayerIX = player_turn:get_player_ix(PlayerTurn),
    CurrentTurnNumber = player_turn:get_number(PlayerTurn),
    CharacterInstances =
@@ -299,6 +325,7 @@ finalize_character_turn (QueryState) ->
          fun (_IX, CharacterInstance, Prev) ->
             (Prev or character_instance:get_is_active(CharacterInstance))
          end,
+         false,
          CharacterInstances
       ),
 
@@ -321,29 +348,38 @@ finalize_character_turn (QueryState) ->
          }
    end.
 
-play (QueryState, [], _Input) ->
-   QueryState;
-play (QueryState, [nothing|Next], Input) ->
-   play(QueryState, Next, Input);
-play (QueryState, [move|Next], Input) ->
+play (DiffUpdate, QueryState, [], _Input) ->
+   {DiffUpdate, QueryState};
+play (DiffUpdate, QueryState, [nothing|Next], Input) ->
+   play(DiffUpdate, QueryState, Next, Input);
+play (DiffUpdate, QueryState, [move|Next], Input) ->
+   {AddedDiffContent, NewQueryState} =
+      handle_character_instance_moving(QueryState, Input),
    play
    (
-      handle_character_instance_moving(QueryState, Input),
+      (AddedDiffContent ++ DiffUpdate),
+      NewQueryState,
       Next,
       Input
    );
-play (QueryState, [switch|Next], Input) ->
+play (DiffUpdate, QueryState, [switch|Next], Input) ->
+   {AddedDiffContent, NewQueryState} =
+      handle_character_instance_switching_weapons(QueryState, Input),
    play
    (
-      handle_character_instance_switching_weapons(QueryState),
+      (AddedDiffContent ++ DiffUpdate),
+      NewQueryState,
       Next,
       Input
    );
 
-play (QueryState, [attack|Next], Input) ->
+play (DiffUpdate, QueryState, [attack|Next], Input) ->
+   {AddedDiffContent, NewQueryState} =
+      handle_character_instance_attacking(QueryState, Input),
    play
    (
-      handle_character_instance_attacking(QueryState, Input),
+      (AddedDiffContent ++ DiffUpdate),
+      NewQueryState,
       Next,
       Input
    ).
@@ -375,29 +411,36 @@ update_cache (QueryResult, Input) ->
       BattlemapInstance
    ).
 
-generate_reply (_QueryResult, _TurnType, _Input) ->
-   unimplemented.
+generate_reply (_QueryResult, DiffUpdate, _TurnType, _Input) ->
+   %% TODO
+   jiffy:encode
+   (
+      [
+         [
+            <<"raw">>,
+            list_to_binary(io_lib:format("~p", [DiffUpdate]))
+         ]
+      ]
+   ).
 
 handle (Req) ->
    Input = parse_input(Req),
    security:assert_identity(Input#input.player_id, Input#input.session_token),
    security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
-   assert_character_instance_can_be_played(Input, QueryState),
+   assert_character_instance_can_be_played(QueryState, Input),
    TurnType = get_type_of_turn(Input),
+   {DiffUpdate, UpdatedQueryState} = play([], QueryState, TurnType, Input),
    QueryResult =
       finalize_character_turn
       (
-         finalize_character_instance
-         (
-            play(QueryState, TurnType, Input),
-            Input
-         )
+         finalize_character_instance(UpdatedQueryState, Input)
       ),
    send_to_database(QueryResult, TurnType, Input),
    update_cache(QueryResult, Input),
+   io:format("~nCharacter turn result:~n~p~n", [DiffUpdate]),
    security:unlock_queries(Input#input.player_id),
-   generate_reply(QueryResult, TurnType, Input).
+   generate_reply(QueryResult, DiffUpdate, TurnType, Input).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

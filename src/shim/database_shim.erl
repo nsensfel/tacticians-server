@@ -70,7 +70,12 @@ generate_random_characters
    TotalCharacterCount,
    Result
 ) ->
-   NewCharacter = character:random(TotalCharacterCount, MaxPlayerID),
+   NewCharacter =
+      character:random
+      (
+         TotalCharacterCount,
+         list_to_binary(integer_to_list(MaxPlayerID))
+      ),
    generate_random_characters
    (
       MaxPlayerID,
@@ -95,7 +100,7 @@ generate_db (Heir) ->
    Characters = generate_random_characters(1, 7, 8, 0, []),
    PlayersAsList = [<<"0">>, <<"1">>],
    BattlemapInstance =
-      battlemap_instance_shim:random
+      battlemap_instance:random
       (
          <<"0">>,
          PlayersAsList,

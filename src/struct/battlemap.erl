@@ -68,5 +68,5 @@ random (ID, Width, Height) ->
       id = ID,
       width = Width,
       height = Height,
-      tile_ids = TileIDs
+      tile_ids = array:from_list(TileIDs)
    }.

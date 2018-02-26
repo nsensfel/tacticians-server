@@ -28,7 +28,7 @@ encode (IX, CharacterInstance) ->
    Character = character_instance:get_character(CharacterInstance),
    {X, Y} = character_instance:get_location(CharacterInstance),
    Attributes = character:get_attributes(Character),
-   {ActiveWeapon, SecondaryWeapon} = character:get_weapons(Character),
+   {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
 
    jiffy:encode
    (
@@ -44,7 +44,7 @@ encode (IX, CharacterInstance) ->
             },
             {<<"lcx">>, X},
             {<<"lcy">>, Y},
-            {<<"tem">>, character:get_owner_id(Character)},
+            {<<"pla">>, character:get_owner_id(Character)},
             {<<"ena">>, character_instance:get_is_active(CharacterInstance)},
             {<<"att">>, attributes_as_json(Attributes)},
             {<<"awp">>, ActiveWeapon},

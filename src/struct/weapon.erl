@@ -24,16 +24,17 @@
 (
    [
       get_id/1,
-      random_id/0
+      get_range_type/1,
+      get_ranges/1,
+      get_damages/1
    ]
 ).
 
 -export
 (
    [
+      random_id/0,
       from_id/1,
-      get_ranges/1,
-      get_damages/1,
       apply_to_attributes/2
    ]
 ).
@@ -56,6 +57,8 @@ damages_of_type (melee, light) -> {15, 30}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 get_id (Wp) -> Wp#weapon.id.
+
+get_range_type (Wp) -> Wp#weapon.range_type.
 
 get_ranges (Wp) ->
    ranges_of_type(Wp#weapon.range_type, Wp#weapon.range_mod).
@@ -293,7 +296,7 @@ random_id () ->
 
 apply_to_attributes (Attributes, Weapon) ->
    Dexterity = attributes:get_dexterity(Attributes),
-   Speed = attributes:get_dexterity(Attributes),
+   Speed = attributes:get_speed(Attributes),
    RangeModifier = Weapon#weapon.range_mod,
    DamageModifier = Weapon#weapon.damage_mod,
    WithRangeModifier =

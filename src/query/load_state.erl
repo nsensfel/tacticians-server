@@ -65,15 +65,13 @@ generate_reply (QueryState) ->
    jiffy:encode
    (
       [
-         set_map:generate(battlemap_instange:get_battlemap(BattlemapInstance))
+         set_map:generate(battlemap_instance:get_battlemap(BattlemapInstance))
          |
-         array:to_list
+         array:sparse_to_list
          (
             array:map
             (
-               fun (CharacterInstance) ->
-                  add_char:generate(CharacterInstance)
-               end,
+               fun add_char:generate/2,
                battlemap_instance:get_character_instances(BattlemapInstance)
             )
          )

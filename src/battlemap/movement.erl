@@ -41,12 +41,13 @@ location_to_array_index (ArrayWidth, X, Y) ->
 cross (_Battlemap, _ForbiddenLocations, [], Cost, X, Y) ->
    {{X, Y}, Cost};
 cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, X, Y) ->
-   BattlemapTiles = battlemap:get_tiles(Battlemap),
+   BattlemapWidth = battlemap:get_width(Battlemap),
+   BattlemapTiles = battlemap:get_tile_ids(Battlemap),
 
    {NextX, NextY} = location_after_step(Step, X, Y),
    NextTileIX =
-      location_to_array_index(array:size(BattlemapTiles), NextX, NextY),
-   NextTile = array:get(array:get(NextTileIX, BattlemapTiles)),
+      location_to_array_index(BattlemapWidth, NextX, NextY),
+   NextTile = array:get(NextTileIX, BattlemapTiles),
    NextCost = (Cost + tile:get_cost(NextTile)),
    IsForbidden =
       array:foldl
@@ -54,6 +55,7 @@ cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, X, Y) ->
          fun (_IX, Location, Prev) ->
             (Prev or ({NextX, NextY} == Location))
          end,
+         false,
          ForbiddenLocations
       ),
 

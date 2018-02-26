@@ -1,3 +1,4 @@
+%% FIXME: parry not working as intended
 roll_hits (AttackerStatistics, DefenderStatistics) ->
    DefenderDodges = statistics:get_dodges(DefenderStatistics),
    AttackerAccuracy = statistics:get_accuracy(AttackerStatistics),
@@ -28,7 +29,6 @@ handle_attack (AttackerStatistics, DefenderStatistics) ->
    end.
 
 
-%% FIXME: parry not working as intended
 handle_attacks ([], _AttackerStatistics, _DefenderStatistics, Results) ->
    Results;
 handle_attacks
@@ -53,7 +53,7 @@ handle_attacks
    DefenderStatistics,
    Results
 ) ->
-   SecondHitChance = statistics:get_second_hits(AttackerStatistics),
+   SecondHitChance = statistics:get_double_hits(AttackerStatistics),
    UpdatedResults =
       case roll:percentage() of
          X when (X =< SecondHitChance) ->
@@ -100,7 +100,7 @@ handle_attacks
    DefenderStatistics,
    Results
 ) ->
-   SecondHitChance = statistics:get_second_hits(AttackerStatistics),
+   SecondHitChance = statistics:get_double_hits(AttackerStatistics),
    ParryChance = statistics:get_parries(DefenderStatistics),
    AttackResult =
       case roll:percentage() of
@@ -172,7 +172,7 @@ when ((Action == first) or (Action == second)) ->
          );
 
       false ->
-         ValidEffects
+         {ValidEffects, AttackerHealth, DefenderHealth}
    end;
 apply_attacks_to_healths
 (
@@ -199,7 +199,7 @@ when
          );
 
       false ->
-         ValidEffects
+         {ValidEffects, AttackerHealth, DefenderHealth}
    end.
 
 set_new_healths_in_query_state
@@ -231,16 +231,18 @@ set_new_healths_in_query_state
                TargettedCharacterInstanceIX,
                character_instance:set_current_health
                (
-                  TargettedCharacterInstance,
-                  RemainingDefenderHealth
-               )
-            )
+                  RemainingDefenderHealth,
+                  TargettedCharacterInstance
+               ),
+               CharacterInstances
+            ),
+            BattlemapInstance
          ),
       character_instance =
          character_instance:set_current_health
          (
-            ControlledCharacterInstance,
-            RemainingAttackerHealth
+            RemainingAttackerHealth,
+            ControlledCharacterInstance
          )
    }.
 
@@ -286,9 +288,9 @@ handle_character_instance_attacking (QueryState, Input) ->
    Actions =
       case {CanDefend, CanParry} of
          {true, true} ->
-            [{attack, parry}, counter, {attack, parry}];
+            [{second, parry}, counter, {first, parry}];
          {true, false} ->
-            [second, counter, no_parry];
+            [second, counter, first];
          {false, _} ->
             [second, first]
       end,
@@ -313,9 +315,9 @@ handle_character_instance_attacking (QueryState, Input) ->
       RemainingEffects,
       set_new_healths_in_query_state
       (
-         QueryState,
          RemainingAttackerHealth,
          RemainingDefenderHealth,
+         QueryState,
          Input
       )
    }.

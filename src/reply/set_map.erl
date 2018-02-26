@@ -19,7 +19,7 @@ encode (Battlemap) ->
          [
             {<<"w">>, battlemap:get_width(Battlemap)},
             {<<"h">>, battlemap:get_height(Battlemap)},
-            {<<"t">>, array:to_list(battlemap:list_tiles(Battlemap))}
+            {<<"t">>, array:sparse_to_list(battlemap:get_tile_ids(Battlemap))}
          ]
       }
    ).

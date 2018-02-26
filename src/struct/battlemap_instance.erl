@@ -10,7 +10,7 @@
       id,
       battlemap,
       character_instances,
-      players,
+      player_ids,
       current_player_turn,
       last_turns_effects
    }
@@ -26,13 +26,13 @@
       get_id/1,
       get_battlemap/1,
       get_character_instances/1,
-      get_players/1,
+      get_player_ids/1,
       get_current_player_turn/1,
       get_last_turns_effects/1,
 
       set_battlemap/2,
       set_character_instances/2,
-      set_players/2,
+      set_player_ids/2,
       set_current_player_turn/2,
       set_last_turns_effects/2
    ]
@@ -61,8 +61,8 @@ get_battlemap (BattlemapInstance) ->
 get_character_instances (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.character_instances.
 
-get_players (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.players.
+get_player_ids (BattlemapInstance) ->
+   BattlemapInstance#battlemap_instance.player_ids.
 
 get_current_player_turn (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.current_player_turn.
@@ -82,10 +82,10 @@ set_character_instances (CharacterInstances, BattlemapInstance) ->
       character_instances = CharacterInstances
    }.
 
-set_players (Players, BattlemapInstance) ->
+set_player_ids (Players, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
-      players = Players
+      player_ids = Players
    }.
 
 set_current_player_turn (PlayerTurn, BattlemapInstance) ->
@@ -103,10 +103,11 @@ set_last_turns_effects (Effects, BattlemapInstance) ->
 random (ID, PlayersAsList, Battlemap, Characters) ->
    BattlemapWidth = battlemap:get_width(Battlemap),
    BattlemapHeight = battlemap:get_height(Battlemap),
-   CharacterInstancesAsList =
+   {CharacterInstancesAsList, _ForbiddenLocations} =
       lists:mapfoldl
       (
          fun (Character, ForbiddenLocations) ->
+            CharacterOwner = character:get_owner_id(Character),
             NewCharacterInstance =
                character_instance:random
                (
@@ -115,13 +116,26 @@ random (ID, PlayersAsList, Battlemap, Characters) ->
                   BattlemapHeight,
                   ForbiddenLocations
                ),
+            NewCharacterInstanceActive =
+               case CharacterOwner of
+                  <<"0">> ->
+                     character_instance:set_is_active
+                     (
+                        true,
+                        NewCharacterInstance
+                     );
+
+                  _ ->
+                     NewCharacterInstance
+               end,
             NewCharacterInstanceLocation =
-               character_instance:get_location(NewCharacterInstance),
+               character_instance:get_location(NewCharacterInstanceActive),
             {
-               NewCharacterInstance,
+               NewCharacterInstanceActive,
                [NewCharacterInstanceLocation|ForbiddenLocations]
             }
          end,
+         [],
          Characters
       ),
 
@@ -130,7 +144,7 @@ random (ID, PlayersAsList, Battlemap, Characters) ->
       id = ID,
       battlemap = Battlemap,
       character_instances = array:from_list(CharacterInstancesAsList),
-      players = array:from_list(PlayersAsList),
+      player_ids = array:from_list(PlayersAsList),
       current_player_turn = player_turn:new(0, 0),
       last_turns_effects = []
    }.
