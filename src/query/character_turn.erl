@@ -300,13 +300,13 @@ start_next_players_turn (QueryState) ->
          [],
          CharacterInstances,
          array:get(NextPlayerIX, PlayerIDs),
-         array:size(CharacterInstances)
+         (array:size(CharacterInstances) - 1)
       ),
    UpdatedBattlemapInstance =
       battlemap_instance:set_character_instances
       (
          UpdatedCharacterInstances,
-         battlemap_instance:set_player_turn
+         battlemap_instance:set_current_player_turn
          (
             NextPlayerTurn,
             BattlemapInstance
@@ -331,6 +331,7 @@ finalize_character_turn (QueryState) ->
 
    case AnActiveCharacterInstanceRemains of
       true ->
+         io:format("~nThere are still active characters.~n"),
          #query_result
          {
             is_new_turn = false,
@@ -338,6 +339,7 @@ finalize_character_turn (QueryState) ->
             updated_battlemap_instance = BattlemapInstance
          };
       false ->
+         io:format("~nThere are no more active characters.~n"),
          {UpdatedCharacterInstanceIXs, UpdatedBattlemapInstance} =
             start_next_players_turn(QueryState),
          #query_result
