@@ -12,8 +12,7 @@
    [
       generate_db/1,
       fetch/2,
-      commit/4,
-      assert_session_is_valid/2
+      commit/4
    ]
 ).
 
@@ -38,24 +37,47 @@ add_to_db (ID, Val) ->
    io:format("~nadd to db_shim: ~p.~n", [{ID, Val}]),
    ets:insert(db_shim, {ID, Val}).
 
-generate_char_instances (Battlemap, Characters) ->
-   lists:map
+generate_random_characters
+(
+   0,
+   0,
+   _CharactersPerPlayer,
+   _TotalCharacterCount,
+   Result
+) ->
+   Result;
+generate_random_characters
+(
+   MaxPlayerID,
+   0,
+   CharactersPerPlayer,
+   TotalCharacterCount,
+   Result
+) ->
+   generate_random_characters
    (
-      fun (Char) ->
-         {
-            character:get_id(Char),
-            character_instance:new_instance_of
-            (
-               Char,
-               (rand:uniform(2) - 1), % team,
-               {
-                  rand:uniform(battlemap:get_width(Battlemap) - 1), % X
-                  rand:uniform(battlemap:get_height(Battlemap) - 1)  % Y
-               }
-            )
-         }
-      end,
-      Characters
+      (MaxPlayerID - 1),
+      CharactersPerPlayer,
+      CharactersPerPlayer,
+      TotalCharacterCount,
+      Result
+   );
+generate_random_characters
+(
+   MaxPlayerID,
+   PlayerCharacterCount,
+   CharactersPerPlayer,
+   TotalCharacterCount,
+   Result
+) ->
+   NewCharacter = character:random(TotalCharacterCount, MaxPlayerID),
+   generate_random_characters
+   (
+      MaxPlayerID,
+      (PlayerCharacterCount - 1),
+      CharactersPerPlayer,
+      (TotalCharacterCount + 1),
+      [NewCharacter|Result]
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,29 +89,21 @@ generate_db (Heir) ->
    receive
       ok -> ok
    end,
-   Players = [<<"0">>, <<"1">>],
-   Battlemap = battlemap_shim:generate_random(),
-   Characters = character_shim:generate_random(rand:uniform(12) + 4),
-   CharacterInsts = generate_char_instances(Battlemap, Characters),
+   BattlemapWidth = roll:between(16, 64),
+   BattlemapHeight = roll:between(16, 64),
+   Battlemap = battlemap:random(0, BattlemapWidth, BattlemapHeight),
+   Characters = generate_random_characters(1, 7, 8, 0, []),
+   PlayersAsList = [<<"0">>, <<"1">>],
    BattlemapInstance =
-      battlemap_instance_shim:generate_random
+      battlemap_instance_shim:random
       (
-         CharacterInsts,
-         Players
+         <<"0">>,
+         PlayersAsList,
+         Battlemap,
+         Characters
       ),
-   add_to_db({battlemap_db, battlemap:get_id(Battlemap)}, Battlemap),
-   lists:map
-   (
-      fun (Char) ->
-         add_to_db({character_db, character:get_id(Char)}, Char)
-      end,
-      Characters
-   ),
-   add_to_db
-   (
-      {battlemap_instance_db, battlemap_instance:get_id(BattlemapInstance)},
-      BattlemapInstance
-   ).
+
+   add_to_db({battlemap_instance_db, <<"0">>}, BattlemapInstance).
 
 fetch (DB, ObjectID) ->
    io:format("~ndb_shim lookup: ~p.~n", [{DB, ObjectID}]),
@@ -98,13 +112,5 @@ fetch (DB, ObjectID) ->
       [] -> nothing
    end.
 
-commit (DB, Owner, ObjectID, Value) ->
-   add_to_db({DB, ObjectID}, Value),
-   timed_cache:invalidate(DB, Owner, ObjectID).
-
-assert_session_is_valid (_PlayerID, _SessionToken) ->
-   % Ask PlayerID's login server if SessionToken is correct.
-   % If so, update last login time to prevent relogin within
-   % (database_timeout * 2).
-   % If not, crash.
-   ok.
+commit (DB, _Owner, ObjectID, Value) ->
+   add_to_db({DB, ObjectID}, Value).

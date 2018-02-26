@@ -98,9 +98,9 @@ update (DB, Owner, ObjectID, Data) ->
       [] -> ok;
 
       [{_OwnerID, TimerPID, _Data}] ->
-         gen_server:stop(TimerPID),
+         gen_server:stop(TimerPID)
    end,
-   add_update_to_cache(DB, Owner, ObjectID);
+   add_update_to_cache(DB, Owner, ObjectID, Data).
 
 
 invalidate (DB, Owner, ObjectID) ->

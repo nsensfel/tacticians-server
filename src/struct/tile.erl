@@ -1,22 +1,8 @@
--module(character_shim).
+-module(tile).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--record
-(
-   character,
-   {
-      id,
-      name,
-      icon,
-      portrait,
-      attributes,
-      weapons,
-      glyphs,
-      armors
-   }
-).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,34 +10,32 @@
 -export
 (
    [
-      generate_random/1
+      get_cost/1,
+      cost_when_oob/0
+   ]
+).
+
+-export
+(
+   [
+      random_id/0
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-generate_char (N) ->
-   IDAsString = list_to_binary(integer_to_list(N)),
-   #character
-   {
-      id = IDAsString, % ID
-      name = IDAsString, % Name
-      icon = IDAsString, % Icon
-      portrait = IDAsString, % Portrait
-      attributes = attributes_shim:rand(),
-      weapons = {weapon_shim:rand(), weapon_shim:rand()},
-      glyphs = [],
-      armors = []
-   }.
-
-generate (0, Result) ->
-   Result;
-generate (N, Prev) ->
-   generate((N - 1), [generate_char(N - 1)|Prev]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-generate_random (N) ->
-   generate(N, []).
+cost_when_oob () -> 255.
+
+get_cost (N) ->
+   if
+      (N =< 200) -> (N + 8);
+      true -> cost_when_oob()
+   end.
+
+random_id () ->
+   roll:between(0, 15).

@@ -113,26 +113,28 @@ handle_character_instance_moving (QueryState, Input) ->
       character_instance:get_character(ControlledCharacterInstance),
    Path = Input#input.path,
    Battlemap = battlemap_instance:get_battlemap(BattlemapInstance),
+   ControlledCharacterStatistics =
+      character:get_statistics(ControlledCharacter),
+   ControlledCharacterMovementPoints =
+      statistics:get_movement_points(ControlledCharacterStatistics),
+
    ForbiddenLocations =
       array:map
       (
-         fun (CharacterInstance) ->
-            character_instance:get_location(CharacterInstance)
-         end,
+         fun character_instance:get_location/1,
          battlemap_instance:get_character_instances(BattlemapInstance)
       ),
-   {ok, NewLocation, _} =
+   {NewLocation, Cost} =
       movement:cross
       (
          Battlemap,
-         character_instance:get_location(ControlledCharacterInstance),
-         statistics:get_movement_points
-         (
-            character:get_statistics(ControlledCharacter)
-         ),
+         ForbiddenLocations,
          Path,
-         ForbiddenLocations
+         character_instance:get_location(ControlledCharacterInstance)
       ),
+
+   true = (Cost =< ControlledCharacterMovementPoints),
+
    QueryState#query_state
    {
       character_instance =
@@ -346,11 +348,32 @@ play (QueryState, [attack|Next], Input) ->
       Input
    ).
 
-send_to_database (_QueryResult, _TurnType, _Input) ->
-   unimplemented.
+send_to_database (QueryResult, _TurnType, Input) ->
+   PlayerID = Input#input.player_id,
+   BattlemapInstanceID = Input#input.battlemap_instance_id,
+   BattlemapInstance = QueryResult#query_result.updated_battlemap_instance,
 
-update_cache (_QueryResult, _TurnType, _Input) ->
-   unimplemented.
+   %% TODO: differential commit
+   database_shim:commit
+   (
+      battlemap_instance_db,
+      PlayerID,
+      BattlemapInstanceID,
+      BattlemapInstance
+   ).
+
+update_cache (QueryResult, Input) ->
+   PlayerID = Input#input.player_id,
+   BattlemapInstanceID = Input#input.battlemap_instance_id,
+   BattlemapInstance = QueryResult#query_result.updated_battlemap_instance,
+
+   timed_cache:update
+   (
+      battlemap_instance_db,
+      PlayerID,
+      BattlemapInstanceID,
+      BattlemapInstance
+   ).
 
 generate_reply (_QueryResult, _TurnType, _Input) ->
    unimplemented.
@@ -372,7 +395,7 @@ handle (Req) ->
          )
       ),
    send_to_database(QueryResult, TurnType, Input),
-   update_cache(QueryResult, TurnType, Input),
+   update_cache(QueryResult, Input),
    security:unlock_queries(Input#input.player_id),
    generate_reply(QueryResult, TurnType, Input).
 

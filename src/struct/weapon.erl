@@ -23,7 +23,8 @@
 -export
 (
    [
-      get_id/1
+      get_id/1,
+      random_id/0
    ]
 ).
 
@@ -32,7 +33,8 @@
    [
       from_id/1,
       get_ranges/1,
-      get_damages/1
+      get_damages/1,
+      apply_to_attributes/2
    ]
 ).
 
@@ -285,3 +287,24 @@ from_id (24) ->
       damage_type = pierce,
       damage_mod = heavy
    }.
+
+random_id () ->
+   roll:between(0, 24).
+
+apply_to_attributes (Attributes, Weapon) ->
+   Dexterity = attributes:get_dexterity(Attributes),
+   Speed = attributes:get_dexterity(Attributes),
+   RangeModifier = Weapon#weapon.range_mod,
+   DamageModifier = Weapon#weapon.damage_mod,
+   WithRangeModifier =
+      case RangeModifier of
+         long ->
+            attributes:set_dexterity(max(0, (Dexterity - 20)), Attributes);
+         _ -> Attributes
+      end,
+   case DamageModifier of
+      heavy ->
+         attributes:set_speed(max(0, (Speed - 20)), WithRangeModifier);
+      _ -> WithRangeModifier
+   end.
+

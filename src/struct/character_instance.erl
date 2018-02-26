@@ -20,7 +20,8 @@
 -export
 (
    [
-      new/2
+      new/2,
+      random/4
    ]
 ).
 
@@ -43,6 +44,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
+   X = roll:between(0, (BattlemapWidth - 1)),
+   Y = roll:between(0, (BattlemapHeight - 1)),
+
+   IsForbidden = lists:member({X, Y}, ForbiddenLocations),
+
+   case IsForbidden of
+      true ->
+         find_random_location
+         (
+            BattlemapWidth,
+            BattlemapHeight,
+            ForbiddenLocations
+         );
+
+      _ -> {X, Y}
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,12 +101,19 @@ set_is_active (Active, CharInst) ->
    }.
 
 %%%% Utils
-new (Char, Location) ->
-   Stats = character:get_statistics(Char),
+new (Character, Location) ->
+   CharacterStatistics = character:get_statistics(Character),
    #character_instance
    {
-      character = Char,
+      character = Character,
       location = Location,
-      current_health = statistics:get_health(Stats),
+      current_health = statistics:get_health(CharacterStatistics),
       active = false
    }.
+
+random (Character, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
+   new
+   (
+      Character,
+      find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations)
+   ).

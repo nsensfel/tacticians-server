@@ -41,6 +41,13 @@
    ]
 ).
 
+-export
+(
+   [
+      random/2
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,4 +77,24 @@ set_statistics (Stats, Char) ->
    Char#character
    {
       statistics = Stats
+   }.
+
+random (ID, OwnerID) ->
+   WeaponIDs = {weapon:random_id(), weapon:random_id()},
+   Attributes = attributes:random(),
+   Statistics = statistics:new(Attributes, WeaponIDs),
+   IDAsListString = integer_to_list(ID),
+   IDAsBinaryString = list_to_binary(IDAsListString),
+
+   #character
+   {
+      id = ID,
+      owner_id = OwnerID,
+      name = list_to_binary("Char" ++ IDAsListString),
+      icon = IDAsBinaryString,
+      portrait = IDAsBinaryString,
+      attributes = Attributes,
+      weapon_ids = WeaponIDs,
+      glyphs = [],
+      statistics = Statistics
    }.

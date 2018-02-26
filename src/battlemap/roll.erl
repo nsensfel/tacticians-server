@@ -1,20 +1,8 @@
--module(battlemap_instance_shim).
+-module(roll).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--record
-(
-   battlemap_instance,
-   {
-      id,
-      chars,
-      curr_player,
-      players,
-      rem_chars,
-      last_turn
-   }
-).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,7 +10,8 @@
 -export
 (
    [
-      generate_random/2
+      percentage/0,
+      between/2
    ]
 ).
 
@@ -33,23 +22,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-generate_random (CharInsts, Players) ->
-   #battlemap_instance
-   {
-      id = <<"0">>,
-      chars = dict:from_list(CharInsts),
-      curr_player = 0,
-      players = array:from_list(Players),
-      rem_chars =
-         lists:filtermap
-         (
-            fun ({K, V}) ->
-               case character_instance:get_owner(V) of
-                  0 -> {true, K};
-                  _ -> false
-               end
-            end,
-            CharInsts
-         ),
-      last_turn = []
-   }.
+between (Min, Max) ->
+   Diff = (Max - Min),
+   (Min + (rand:uniform(Diff + 1) - 1)).
+
+percentage () ->
+   between(0, 100).

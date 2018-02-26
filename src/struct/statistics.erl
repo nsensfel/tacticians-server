@@ -110,7 +110,7 @@ new (BaseAttributes, WeaponIDs) ->
    {ActiveWeaponID, _} = WeaponIDs,
    ActiveWeapon = weapon:from_id(ActiveWeaponID),
    {MinDamage, MaxDamage} = weapon:get_damages(ActiveWeapon),
-   Attributes = weapon:apply_to_attributes(ActiveWeapon, BaseAttributes),
+   Attributes = weapon:apply_to_attributes(BaseAttributes, ActiveWeapon),
    Constitution = attributes:get_constitution(Attributes),
    Dexterity = attributes:get_dexterity(Attributes),
    Intelligence = attributes:get_intelligence(Attributes),

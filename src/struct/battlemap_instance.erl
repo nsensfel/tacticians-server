@@ -38,6 +38,13 @@
    ]
 ).
 
+-export
+(
+   [
+      random/4
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,4 +98,39 @@ set_last_turns_effects (Effects, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       last_turns_effects = Effects
+   }.
+
+random (ID, PlayersAsList, Battlemap, Characters) ->
+   BattlemapWidth = battlemap:get_width(Battlemap),
+   BattlemapHeight = battlemap:get_height(Battlemap),
+   CharacterInstancesAsList =
+      lists:mapfoldl
+      (
+         fun (Character, ForbiddenLocations) ->
+            NewCharacterInstance =
+               character_instance:random
+               (
+                  Character,
+                  BattlemapWidth,
+                  BattlemapHeight,
+                  ForbiddenLocations
+               ),
+            NewCharacterInstanceLocation =
+               character_instance:get_location(NewCharacterInstance),
+            {
+               NewCharacterInstance,
+               [NewCharacterInstanceLocation|ForbiddenLocations]
+            }
+         end,
+         Characters
+      ),
+
+   #battlemap_instance
+   {
+      id = ID,
+      battlemap = Battlemap,
+      character_instances = array:from_list(CharacterInstancesAsList),
+      players = array:from_list(PlayersAsList),
+      current_player_turn = player_turn:new(0, 0),
+      last_turns_effects = []
    }.

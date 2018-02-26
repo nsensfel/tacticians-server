@@ -39,6 +39,14 @@
    ]
 ).
 
+%%%% Accessors
+-export
+(
+   [
+      random/0
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -66,3 +74,14 @@ set_speed (Val, Att) ->
    Att#attributes{ speed = Val }.
 set_strength (Val, Att) ->
    Att#attributes{ strength = Val }.
+
+random () ->
+   #attributes
+   {
+      constitution = roll:percentage(),
+      dexterity = roll:percentage(),
+      intelligence = roll:percentage(),
+      mind = roll:percentage(),
+      speed = roll:percentage(),
+      strength = roll:percentage()
+   }.
