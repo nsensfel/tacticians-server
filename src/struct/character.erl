@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--opaque id() :: integer().
+-opaque id() :: non_neg_integer().
 
 -record
 (
@@ -16,7 +16,6 @@
       portrait :: binary(),
       attributes :: attributes:struct(),
       statistics :: statistics:struct(),
-      glyphs :: list(glyph:id()),
       weapon_ids :: {weapon:id(), weapon:id()}
    }
 ).
@@ -39,7 +38,6 @@
       get_attributes/1,
       get_statistics/1,
       get_weapon_ids/1,
-      get_glyphs/1,
 
       set_weapon_ids/2,
       set_statistics/2
@@ -81,9 +79,6 @@ get_attributes (Char) -> Char#character.attributes.
 
 -spec get_weapon_ids (struct()) -> {weapon:id(), weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
-
--spec get_glyphs (struct()) -> list(glyph:id()).
-get_glyphs (Char) -> Char#character.glyphs.
 
 -spec get_statistics (struct()) -> statistics:struct().
 get_statistics (Char) -> Char#character.statistics.
@@ -134,6 +129,5 @@ random (ID, OwnerID) ->
       portrait = IDAsBinaryString,
       attributes = Attributes,
       weapon_ids = WeaponIDs,
-      glyphs = [],
       statistics = Statistics
    }.

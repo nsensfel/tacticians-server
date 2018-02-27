@@ -22,9 +22,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec between (non_neg_integer(), non_neg_integer()) -> non_neg_integer().
 between (Min, Max) ->
    Diff = (Max - Min),
    (Min + (rand:uniform(Diff + 1) - 1)).
 
+-spec percentage () -> 0..100.
 percentage () ->
    between(0, 100).

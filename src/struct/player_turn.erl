@@ -7,10 +7,14 @@
 (
    player_turn,
    {
-      number,
-      player_ix
+      number :: non_neg_integer(),
+      player_ix :: non_neg_integer()
    }
 ).
+
+-opaque struct() :: #player_turn{}.
+
+-export_type([struct/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,6 +43,7 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
+-spec new (non_neg_integer(), non_neg_integer()) -> struct().
 new (Number, PlayerIX) ->
    #player_turn
    {
@@ -46,6 +51,8 @@ new (Number, PlayerIX) ->
       player_ix = PlayerIX
    }.
 
+-spec get_number (struct()) -> non_neg_integer().
 get_number (PlayerTurn) -> PlayerTurn#player_turn.number.
 
+-spec get_player_ix (struct()) -> non_neg_integer().
 get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.
