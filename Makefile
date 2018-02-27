@@ -35,7 +35,8 @@ all:
 debug: $(DIALYZER_PLT_FILE)
 	$(MAKE) build_debug
 	$(DIALYZER) --check_plt --plt $(DIALYZER_PLT_FILE)
-	$(DIALYZER) --get_warnings -r $(BIN_DIR) --plt $(DIALYZER_PLT_FILE)
+	$(DIALYZER) --get_warnings $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl \
+		--src --plt $(DIALYZER_PLT_FILE) -Wunderspecs
 
 build_debug:
 	$(MAKE) clean

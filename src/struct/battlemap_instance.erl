@@ -3,18 +3,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-opaque id() :: binary().
+
 -record
 (
    battlemap_instance,
    {
-      id,
-      battlemap,
-      character_instances,
-      player_ids,
-      current_player_turn,
-      last_turns_effects
+      id :: id(),
+      battlemap :: battlemap:struct(),
+      character_instances :: array:array(character_instance:struct()),
+      player_ids :: array:array(player:id()),
+      current_player_turn :: player_turn:struct(),
+      last_turns_effects :: list(any())
    }
 ).
+
+-opaque struct() :: #battlemap_instance{}.
+
+-export_type([struct/0, id/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,53 +59,93 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
+-spec get_id (struct()) -> id().
 get_id (BattlemapInstance) -> BattlemapInstance#battlemap_instance.id.
 
+-spec get_battlemap (struct()) -> battlemap:struct().
 get_battlemap (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.battlemap.
 
+-spec get_character_instances (struct()) ->
+   array:array(character_instance:struct()).
 get_character_instances (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.character_instances.
 
+-spec get_player_ids (struct()) -> array:array(player:id()).
 get_player_ids (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.player_ids.
 
+-spec get_current_player_turn (struct()) -> player_turn:struct().
 get_current_player_turn (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.current_player_turn.
 
+-spec get_last_turns_effects (struct()) -> list(any()).
 get_last_turns_effects (BattlemapInstance) ->
    BattlemapInstance#battlemap_instance.last_turns_effects.
 
+-spec set_battlemap (battlemap:struct(), struct()) -> struct().
 set_battlemap (Battlemap, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       battlemap = Battlemap
    }.
 
+-spec set_character_instances
+   (
+      array:array(character_instance:struct()),
+      struct()
+   )
+   -> struct().
 set_character_instances (CharacterInstances, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       character_instances = CharacterInstances
    }.
 
+-spec set_player_ids
+   (
+      array:array(player:id()),
+      struct()
+   )
+   -> struct().
 set_player_ids (Players, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       player_ids = Players
    }.
 
+-spec set_current_player_turn
+   (
+      player_turn:struct(),
+      struct()
+   )
+   -> struct().
 set_current_player_turn (PlayerTurn, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       current_player_turn = PlayerTurn
    }.
 
+-spec set_last_turns_effects
+   (
+      list(any()),
+      struct()
+   )
+   -> struct().
 set_last_turns_effects (Effects, BattlemapInstance) ->
    BattlemapInstance#battlemap_instance
    {
       last_turns_effects = Effects
    }.
 
+-spec random
+   (
+      id(),
+      list(player:id()),
+      battlemap:struct(),
+      list(character:struct())
+   )
+   -> struct().
 random (ID, PlayersAsList, Battlemap, Characters) ->
    BattlemapWidth = battlemap:get_width(Battlemap),
    BattlemapHeight = battlemap:get_height(Battlemap),

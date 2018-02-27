@@ -7,14 +7,18 @@
 (
    attributes,
    {
-      constitution,
-      dexterity,
-      intelligence,
-      mind,
-      speed,
-      strength
+      constitution :: integer(),
+      dexterity :: integer(),
+      intelligence :: integer(),
+      mind :: integer(),
+      speed :: integer(),
+      strength :: integer()
    }
 ).
+
+-opaque struct() :: #attributes{}.
+
+-export_type([struct/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,26 +59,43 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
+-spec get_constitution (struct()) -> integer().
 get_constitution (Att) -> Att#attributes.constitution.
+
+-spec get_dexterity (struct()) -> integer().
 get_dexterity (Att) -> Att#attributes.dexterity.
+
+-spec get_intelligence (struct()) -> integer().
 get_intelligence (Att) -> Att#attributes.intelligence.
+
+-spec get_mind (struct()) -> integer().
 get_mind (Att) -> Att#attributes.mind.
+
+-spec get_speed (struct()) -> integer().
 get_speed (Att) -> Att#attributes.speed.
+
+-spec get_strength (struct()) -> integer().
 get_strength (Att) -> Att#attributes.strength.
 
-set_constitution (Val, Att) ->
-   Att#attributes{ constitution = Val }.
-set_dexterity (Val, Att) ->
-   Att#attributes{ dexterity = Val }.
-set_intelligence (Val, Att) ->
-   Att#attributes{ intelligence = Val }.
-set_mind (Val, Att) ->
-   Att#attributes{ mind = Val }.
-set_speed (Val, Att) ->
-   Att#attributes{ speed = Val }.
-set_strength (Val, Att) ->
-   Att#attributes{ strength = Val }.
+-spec set_constitution (integer(), struct()) -> struct().
+set_constitution (Val, Att) -> Att#attributes{ constitution = Val }.
 
+-spec set_dexterity (integer(), struct()) -> struct().
+set_dexterity (Val, Att) -> Att#attributes{ dexterity = Val }.
+
+-spec set_intelligence (integer(), struct()) -> struct().
+set_intelligence (Val, Att) -> Att#attributes{ intelligence = Val }.
+
+-spec set_mind (integer(), struct()) -> struct().
+set_mind (Val, Att) -> Att#attributes{ mind = Val }.
+
+-spec set_speed (integer(), struct()) -> struct().
+set_speed (Val, Att) -> Att#attributes{ speed = Val }.
+
+-spec set_strength (integer(), struct()) -> struct().
+set_strength (Val, Att) -> Att#attributes{ strength = Val }.
+
+-spec random () -> struct().
 random () ->
    #attributes
    {
