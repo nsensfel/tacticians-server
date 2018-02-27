@@ -172,7 +172,7 @@ handle_character_instance_switching_weapons (QueryState, Input) ->
    ControlledCharacterAttributes =
       character:get_attributes(ControlledCharacter),
    {PrimaryWeapon, SecondaryWeapon} =
-      character:get_weapons(ControlledCharacter),
+      character:get_weapon_ids(ControlledCharacter),
    ControlledCharacterIX = Input#input.character_instance_ix,
 
    UpdatedWeapons = {SecondaryWeapon, PrimaryWeapon},
@@ -186,8 +186,9 @@ handle_character_instance_switching_weapons (QueryState, Input) ->
       character:set_statistics
       (
          UpdatedControlledCharacterStatistics,
-         character:set_weapons
+         character:set_weapon_ids
          (
+            UpdatedWeapons,
             ControlledCharacter
          )
       ),
