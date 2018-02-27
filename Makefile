@@ -8,9 +8,13 @@ UNUSED_WWW_DIR ?= www
 YAWS_CONF ?= $(CONF_DIR)/yaws.conf
 YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
 
+DIALYZER_PLT_FILE ?= tacticians-server.plt
+
 ## Binaries
 YAWS ?= yaws
 ERLC ?= erlc
+ERLC_OPTS ?=
+DIALYZER ?= dialyzer
 
 ################################################################################
 REQUIRED_HEADERS = $(INCLUDE_DIR)/yaws_api.hrl
@@ -28,6 +32,15 @@ all:
 		$(MAKE) build SRC_DIR=$$subdir || exit 1;\
 	done
 
+debug: $(DIALYZER_PLT_FILE)
+	$(MAKE) build_debug
+	$(DIALYZER) --check_plt --plt $(DIALYZER_PLT_FILE)
+	$(DIALYZER) --get_warnings -r $(BIN_DIR) --plt $(DIALYZER_PLT_FILE)
+
+build_debug:
+	$(MAKE) clean
+	$(MAKE) ERLC_OPTS=+debug_info
+
 build: $(BIN_DIR) $(REQUIRED_HEADERS) $(BIN_FILES)
 
 run: all $(UNUSED_WWW_DIR)
@@ -36,6 +49,10 @@ run: all $(UNUSED_WWW_DIR)
 clean:
 	rm -rf $(BIN_DIR)/*
 
+$(DIALYZER_PLT_FILE):
+	$(DIALYZER) --build_plt --apps erts kernel stdlib jiffy --output_plt $@
+	$(MAKE) build_debug
+	$(DIALYZER) --add_to_plt --plt $@ -r $(BIN_DIR)
 
 $(INCLUDE_DIR)/yaws_api.hrl: $(YAWS_API_HEADER) $(INCLUDE_DIR)
 	cp $< $@
@@ -51,4 +68,4 @@ $(INCLUDE_DIR):
 
 .SECONDEXPANSION:
 $(BIN_FILES): $(BIN_DIR)/%.beam : $(SRC_DIR)/%.erl $$(wildcard $$(SRC_DIR)/%/.)
-	$(ERLC) -o $(BIN_DIR) $<
+	$(ERLC) $(ERLC_OPTS) -o $(BIN_DIR) $<
