@@ -19,6 +19,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec create_db (pid()) -> 'ok'.
 create_db (_Heir) ->
    ets:new
    (
@@ -31,12 +32,24 @@ create_db (_Heir) ->
          {read_concurrency, true}
       ]
    ),
-   io:format("~ndb_shim ets created.~n").
+   io:format("~ndb_shim ets created.~n"),
+   ok.
 
+-spec add_to_db (any(), any()) -> 'ok'.
 add_to_db (ID, Val) ->
    io:format("~nadd to db_shim: ~p.~n", [{ID, Val}]),
-   ets:insert(db_shim, {ID, Val}).
+   ets:insert(db_shim, {ID, Val}),
+   ok.
 
+-spec generate_random_characters
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      non_neg_integer(),
+      non_neg_integer(),
+      list(character:struct())
+   )
+   -> list(character:struct()).
 generate_random_characters
 (
    0,
@@ -88,6 +101,7 @@ generate_random_characters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec generate_db (pid()) -> 'ok'.
 generate_db (Heir) ->
    Pid = self(),
    spawn(fun () -> create_db(Heir), Pid ! ok, receive ok -> ok end end),
@@ -110,6 +124,7 @@ generate_db (Heir) ->
 
    add_to_db({battlemap_instance_db, <<"0">>}, BattlemapInstance).
 
+-spec fetch (atom(), any()) -> ({'ok', any()} | 'nothing').
 fetch (DB, ObjectID) ->
    io:format("~ndb_shim lookup: ~p.~n", [{DB, ObjectID}]),
    case ets:lookup(db_shim, {DB, ObjectID}) of
@@ -117,5 +132,6 @@ fetch (DB, ObjectID) ->
       [] -> nothing
    end.
 
+-spec commit (atom(), any(), any(), any()) -> 'ok'.
 commit (DB, _Owner, ObjectID, Value) ->
    add_to_db({DB, ObjectID}, Value).

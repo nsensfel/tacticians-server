@@ -9,12 +9,12 @@
 (
    input,
    {
-      player_id,
-      session_token,
-      battlemap_instance_id,
-      character_instance_ix,
-      path,
-      target_ix
+      player_id :: player:id(),
+      session_token :: binary(),
+      battlemap_instance_id :: binary(),
+      character_instance_ix :: non_neg_integer(),
+      path :: list(binary()),
+      target_ix :: (-1 | non_neg_integer())
    }
 ).
 
@@ -22,8 +22,8 @@
 (
    query_state,
    {
-      battlemap_instance,
-      character_instance
+      battlemap_instance :: battlemap_instance:struct(),
+      character_instance :: character_instance:struct()
    }
 ).
 
@@ -31,12 +31,15 @@
 (
    query_result,
    {
-      is_new_turn,
-      updated_character_instance_ixs,
-      updated_battlemap_instance
+      is_new_turn :: boolean(),
+      updated_character_instance_ixs :: list(non_neg_integer()),
+      updated_battlemap_instance :: battlemap_instance:struct()
    }
 ).
 
+-type input() :: #input{}.
+-type query_state() :: #query_state{}.
+-type query_result() :: #query_result{}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,6 +48,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec parse_input (binary()) -> input().
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    CharacterInstanceIX = binary_to_integer(maps:get(<<"cix">>, JSONReqMap)),
@@ -59,6 +63,7 @@ parse_input (Req) ->
       target_ix = TargetIX
    }.
 
+-spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattlemapInstanceID = Input#input.battlemap_instance_id,
@@ -84,12 +89,17 @@ fetch_data (Input) ->
       character_instance = CharacterInstance
    }.
 
+-spec assert_character_instance_can_be_played
+   (
+      query_state(),
+      input()
+   )
+   -> 'ok'.
 assert_character_instance_can_be_played (QueryState, Input) ->
-   %%% Var
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    PlayerID = Input#input.player_id,
    ControlledCharacterInstance = QueryState#query_state.character_instance,
-   %%% Asserts
+
    PlayerID =
       array:get
       (
@@ -104,8 +114,16 @@ assert_character_instance_can_be_played (QueryState, Input) ->
       (
          character_instance:get_character(ControlledCharacterInstance)
       ),
-   true = character_instance:get_is_active(ControlledCharacterInstance).
+   true = character_instance:get_is_active(ControlledCharacterInstance),
 
+   ok.
+
+-spec handle_character_instance_moving
+   (
+      query_state(),
+      input()
+   )
+   -> {list(any()), query_state()}.
 handle_character_instance_moving (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    ControlledCharacterInstance = QueryState#query_state.character_instance,
@@ -165,6 +183,12 @@ handle_character_instance_moving (QueryState, Input) ->
       UpdatedQueryState
    }.
 
+-spec handle_character_instance_switching_weapons
+   (
+      query_state(),
+      input()
+   )
+   -> {list(any()), query_state()}.
 handle_character_instance_switching_weapons (QueryState, Input) ->
    ControlledCharacterInstance = QueryState#query_state.character_instance,
    ControlledCharacter =
@@ -211,6 +235,7 @@ handle_character_instance_switching_weapons (QueryState, Input) ->
 
 -include("character_turn/handle_character_instance_attacking_2.erl").
 
+-spec get_type_of_turn (input()) -> list(atom()).
 get_type_of_turn (Input) ->
    case {Input#input.path, Input#input.target_ix} of
       {[], -1} -> [nothing, nothing];
@@ -221,14 +246,22 @@ get_type_of_turn (Input) ->
       {_, _} -> [move, attack]
    end.
 
+-spec finalize_character_instance
+   (
+      query_state(),
+      input()
+   )
+   -> query_state().
 finalize_character_instance (QueryState, Input) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
+
    FinalizedCharacterInstance =
       character_instance:set_is_active
       (
          false,
          QueryState#query_state.character_instance
       ),
+
    QueryState#query_state
    {
       battlemap_instance =
@@ -245,6 +278,14 @@ finalize_character_instance (QueryState, Input) ->
       character_instance = FinalizedCharacterInstance
    }.
 
+-spec activate_relevant_character_instances
+   (
+      list(non_neg_integer()),
+      array:array(character_instance:struct()),
+      player:id(),
+      (-1 | non_neg_integer())
+   )
+   -> {list(non_neg_integer()), array:array(character_instance:struct())}.
 activate_relevant_character_instances (IXs, CharacterInstances, _Owner, -1) ->
    {IXs, CharacterInstances};
 activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
@@ -275,6 +316,11 @@ activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
          )
    end.
 
+-spec start_next_players_turn
+   (
+      query_state()
+   )
+   -> {list(non_neg_integer()), battlemap_instance:struct()}.
 start_next_players_turn (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    PlayerIDs = battlemap_instance:get_player_ids(BattlemapInstance),
@@ -315,6 +361,7 @@ start_next_players_turn (QueryState) ->
       ),
    {ActivatedCharacterInstanceIXs, UpdatedBattlemapInstance}.
 
+-spec finalize_character_turn (query_state()) -> query_result().
 finalize_character_turn (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    CharacterInstances =
@@ -351,6 +398,14 @@ finalize_character_turn (QueryState) ->
          }
    end.
 
+-spec play
+   (
+      list(any()),
+      query_state(),
+      list(atom()),
+      input()
+   )
+   -> {list(any()), query_state()}.
 play (DiffUpdate, QueryState, [], _Input) ->
    {DiffUpdate, QueryState};
 play (DiffUpdate, QueryState, [nothing|Next], Input) ->
@@ -375,7 +430,6 @@ play (DiffUpdate, QueryState, [switch|Next], Input) ->
       Next,
       Input
    );
-
 play (DiffUpdate, QueryState, [attack|Next], Input) ->
    {AddedDiffContent, NewQueryState} =
       handle_character_instance_attacking(QueryState, Input),
@@ -387,6 +441,7 @@ play (DiffUpdate, QueryState, [attack|Next], Input) ->
       Input
    ).
 
+-spec send_to_database (query_result(), any(), input()) -> 'ok'.
 send_to_database (QueryResult, _TurnType, Input) ->
    PlayerID = Input#input.player_id,
    BattlemapInstanceID = Input#input.battlemap_instance_id,
@@ -401,6 +456,7 @@ send_to_database (QueryResult, _TurnType, Input) ->
       BattlemapInstance
    ).
 
+-spec update_cache (query_result(), input()) -> 'ok'.
 update_cache (QueryResult, Input) ->
    PlayerID = Input#input.player_id,
    BattlemapInstanceID = Input#input.battlemap_instance_id,
@@ -414,6 +470,14 @@ update_cache (QueryResult, Input) ->
       BattlemapInstance
    ).
 
+-spec generate_reply
+   (
+      query_result(),
+      list(any()),
+      any(),
+      input()
+   )
+   -> binary().
 generate_reply (_QueryResult, DiffUpdate, _TurnType, _Input) ->
    %% TODO
    jiffy:encode
@@ -426,6 +490,7 @@ generate_reply (_QueryResult, DiffUpdate, _TurnType, _Input) ->
       ]
    ).
 
+-spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
    security:assert_identity(Input#input.player_id, Input#input.session_token),

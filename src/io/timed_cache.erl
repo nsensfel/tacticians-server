@@ -35,15 +35,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec add_to_cache (atom(), any(), any()) -> any().
 add_to_cache (DB, Owner, ObjectID) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
    {ok, Data} = database_shim:fetch(DB, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
 
+-spec add_update_to_cache (atom(), any(), any(), any()) -> 'ok'.
 add_update_to_cache (DB, Owner, ObjectID, Data) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
-   ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}).
+   ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
+   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -82,6 +85,7 @@ handle_info(_, {DB, ObjectID}) ->
    {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout()}.
 
 %%%% Interface Functions
+-spec fetch (atom(), any(), any()) -> any().
 fetch (DB, Owner, ObjectID) ->
    io:format("~nfetch from cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
    case ets:lookup(DB, {Owner, ObjectID}) of
@@ -92,6 +96,7 @@ fetch (DB, Owner, ObjectID) ->
          Data
    end.
 
+-spec update (atom(), any(), any(), any()) -> 'ok'.
 update (DB, Owner, ObjectID, Data) ->
    io:format("~nUpdating cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
    case ets:lookup(DB, {Owner, ObjectID}) of
@@ -102,7 +107,7 @@ update (DB, Owner, ObjectID, Data) ->
    end,
    add_update_to_cache(DB, Owner, ObjectID, Data).
 
-
+-spec invalidate (atom(), any(), any()) -> 'ok'.
 invalidate (DB, Owner, ObjectID) ->
    case ets:lookup(DB, {Owner, ObjectID}) of
       [] ->
@@ -119,9 +124,6 @@ invalidate (DB, Owner, ObjectID) ->
             "~nInvalidation request on stored entry: ~p.~n",
             [{DB, Owner, ObjectID}]
          ),
-         gen_server:stop(TimerPID)
+         gen_server:stop(TimerPID),
+         ok
    end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Notes %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

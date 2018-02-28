@@ -9,9 +9,9 @@
 (
    input,
    {
-      player_id,
-      session_token,
-      battlemap_instance_id
+      player_id :: player:id(),
+      session_token :: binary(),
+      battlemap_instance_id :: binary()
    }
 ).
 
@@ -19,9 +19,13 @@
 (
    query_state,
    {
-      battlemap_instance
+      battlemap_instance :: battlemap_instance:struct()
    }
 ).
+
+-type input() :: #input{}.
+-type query_state() :: #query_state{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,6 +34,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec parse_input (binary()) -> input().
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
@@ -43,6 +48,7 @@ parse_input (Req) ->
       battlemap_instance_id = BattlemapInstanceID
    }.
 
+-spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattlemapInstanceID = Input#input.battlemap_instance_id,
@@ -60,6 +66,7 @@ fetch_data (Input) ->
       battlemap_instance = BattlemapInstance
    }.
 
+-spec generate_reply(query_state()) -> binary().
 generate_reply (QueryState) ->
    BattlemapInstance = QueryState#query_state.battlemap_instance,
    jiffy:encode
@@ -78,6 +85,7 @@ generate_reply (QueryState) ->
       ]
    ).
 
+-spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
    security:assert_identity(Input#input.player_id, Input#input.session_token),

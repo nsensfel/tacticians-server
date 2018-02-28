@@ -81,14 +81,20 @@ get_height (Battlemap) -> Battlemap#battlemap.height.
 -spec get_tile_ids (struct()) -> array:array(tile:id()).
 get_tile_ids (Battlemap) -> Battlemap#battlemap.tile_ids.
 
--spec random (id(), non_neg_integer(), non_neg_integer()) -> struct().
+-spec random
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      non_neg_integer()
+   )
+   -> struct().
 random (ID, Width, Height) ->
    InitialTile = tile:random_id(),
    TileIDs = generate_random_tile_ids(InitialTile, [], Width, Height, Width),
 
    #battlemap
    {
-      id = ID,
+      id = list_to_binary(integer_to_list(ID)),
       width = Width,
       height = Height,
       tile_ids = array:from_list(TileIDs)

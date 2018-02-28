@@ -109,7 +109,7 @@ set_statistics (Stats, Char) ->
 
 -spec random
    (
-      id(),
+      non_neg_integer(),
       player:id()
    )
    -> struct().

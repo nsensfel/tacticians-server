@@ -23,7 +23,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec assert_identity (any(), any()) -> 'unimplemented'.
 assert_identity (_PlayerID, _SessionToken) -> unimplemented.
 
+-spec lock_queries (any()) -> 'unimplemented'.
 lock_queries (_PlayerID) -> unimplemented.
+
+-spec unlock_queries (any()) -> 'unimplemented'.
 unlock_queries (_PlayerID) -> unimplemented.

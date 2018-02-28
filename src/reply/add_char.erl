@@ -12,6 +12,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec attributes_as_json
+   (
+      attributes:struct()
+   ) ->
+   {list({binary(), non_neg_integer()})}.
 attributes_as_json (Attributes) ->
    {
       [
@@ -24,6 +29,7 @@ attributes_as_json (Attributes) ->
       ]
    }.
 
+-spec encode (non_neg_integer(), character_instance:struct()) -> binary().
 encode (IX, CharacterInstance) ->
    Character = character_instance:get_character(CharacterInstance),
    {X, Y} = character_instance:get_location(CharacterInstance),
@@ -56,5 +62,11 @@ encode (IX, CharacterInstance) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec generate
+   (
+      non_neg_integer(),
+      character_instance:struct()
+   )
+   -> list(binary()).
 generate (IX, CharacterInstance) ->
    [<<"add_char">>, encode(IX, CharacterInstance)].
