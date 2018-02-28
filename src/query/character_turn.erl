@@ -233,7 +233,151 @@ handle_character_instance_switching_weapons (QueryState, Input) ->
       UpdatedQueryState
    }.
 
--include("character_turn/handle_character_instance_attacking_2.erl").
+-spec set_new_healths_in_query_state
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      query_state(),
+      input()
+   )
+   -> query_state().
+set_new_healths_in_query_state
+(
+   RemainingAttackerHealth,
+   RemainingDefenderHealth,
+   QueryState,
+   Input
+) ->
+   BattlemapInstance = QueryState#query_state.battlemap_instance,
+   ControlledCharacterInstance = QueryState#query_state.character_instance,
+   CharacterInstances =
+      battlemap_instance:get_character_instances(BattlemapInstance),
+   TargettedCharacterInstanceIX = Input#input.target_ix,
+   TargettedCharacterInstance =
+      array:get
+      (
+         TargettedCharacterInstanceIX,
+         CharacterInstances
+      ),
+
+   QueryState#query_state
+   {
+      battlemap_instance =
+         battlemap_instance:set_character_instances
+         (
+            array:set
+            (
+               TargettedCharacterInstanceIX,
+               character_instance:set_current_health
+               (
+                  RemainingDefenderHealth,
+                  TargettedCharacterInstance
+               ),
+               CharacterInstances
+            ),
+            BattlemapInstance
+         ),
+      character_instance =
+         character_instance:set_current_health
+         (
+            RemainingAttackerHealth,
+            ControlledCharacterInstance
+         )
+   }.
+
+-spec handle_character_instance_attacking
+   (
+      query_state(),
+      input()
+   )
+   -> {list(attack:attack_desc()), query_state()}.
+handle_character_instance_attacking (QueryState, Input) ->
+   BattlemapInstance = QueryState#query_state.battlemap_instance,
+   ControlledCharacterInstance = QueryState#query_state.character_instance,
+   ControlledCharacter =
+      character_instance:get_character(ControlledCharacterInstance),
+   ControlledCharacterStatistics =
+      character:get_statistics(ControlledCharacter),
+   TargettedCharacterInstance =
+      array:get
+      (
+         Input#input.target_ix,
+         battlemap_instance:get_character_instances(BattlemapInstance)
+      ),
+   TargettedCharacter =
+      character_instance:get_character(TargettedCharacterInstance),
+   TargettedCharacterStatistics = character:get_statistics(TargettedCharacter),
+   RequiredRange =
+      movement:steps_between
+      (
+         character_instance:get_location(ControlledCharacterInstance),
+         character_instance:get_location(TargettedCharacterInstance)
+      ),
+   {AttackingWeaponID, _} = character:get_weapon_ids(ControlledCharacter),
+   AttackingWeapon = weapon:from_id(AttackingWeaponID),
+   {DefendingWeaponID, _} = character:get_weapon_ids(TargettedCharacter),
+   DefendingWeapon = weapon:from_id(DefendingWeaponID),
+   BaseAttackerHealth =
+      character_instance:get_current_health(ControlledCharacterInstance),
+   BaseDefenderHealth =
+      character_instance:get_current_health(TargettedCharacterInstance),
+
+   AttackSequence =
+      attack:get_sequence(RequiredRange, AttackingWeapon, DefendingWeapon),
+
+   AttackEffects =
+      lists:map
+      (
+         fun (AttackOrder) ->
+            attack:get_description_of
+            (
+               AttackOrder,
+               ControlledCharacterStatistics,
+               TargettedCharacterStatistics
+            )
+         end,
+         AttackSequence
+      ),
+
+   {AttackSummary, RemainingAttackerHealth, RemainingDefenderHealth} =
+      lists:foldl
+      (
+         fun
+         (
+            AttackEffect,
+            {
+               CurrentAttackEffects,
+               CurrentAttackerHealth,
+               CurrentDefenderHealth
+            }
+         ) ->
+            {AttackTrueEffect, NewAttackerHealth, NewDefenderHealth} =
+               attack:apply_to_healths
+               (
+                  AttackEffect,
+                  CurrentAttackerHealth,
+                  CurrentDefenderHealth
+               ),
+            {
+               [AttackTrueEffect|CurrentAttackEffects],
+               NewAttackerHealth,
+               NewDefenderHealth
+            }
+         end,
+         {[], BaseAttackerHealth, BaseDefenderHealth},
+         AttackEffects
+      ),
+
+   {
+      AttackSummary,
+      set_new_healths_in_query_state
+      (
+         RemainingAttackerHealth,
+         RemainingDefenderHealth,
+         QueryState,
+         Input
+      )
+   }.
 
 -spec get_type_of_turn (input()) -> list(atom()).
 get_type_of_turn (Input) ->

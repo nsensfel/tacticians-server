@@ -55,6 +55,7 @@
    [
       random_id/0,
       from_id/1,
+      can_parry/1,
       apply_to_attributes/2
    ]
 ).
@@ -101,6 +102,9 @@ get_ranges (Wp) ->
 -spec get_damages (struct()) -> {non_neg_integer(), non_neg_integer()}.
 get_damages (Wp) ->
    damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod).
+
+-spec can_parry (struct()) -> boolean().
+can_parry (Wp) -> (Wp#weapon.range_type == melee).
 
 -spec from_id (id()) -> struct().
 from_id (0) ->
