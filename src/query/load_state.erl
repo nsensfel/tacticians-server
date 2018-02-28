@@ -66,9 +66,11 @@ fetch_data (Input) ->
       battlemap_instance = BattlemapInstance
    }.
 
--spec generate_reply(query_state()) -> binary().
-generate_reply (QueryState) ->
+-spec generate_reply(query_state(), input()) -> binary().
+generate_reply (QueryState, Input) ->
+   PlayerID = Input#input.player_id,
    BattlemapInstance = QueryState#query_state.battlemap_instance,
+
    jiffy:encode
    (
       [
@@ -78,7 +80,9 @@ generate_reply (QueryState) ->
          (
             array:map
             (
-               fun add_char:generate/2,
+               fun (IX, CharacterInstance) ->
+                  add_char:generate(IX, CharacterInstance, PlayerID)
+               end,
                battlemap_instance:get_character_instances(BattlemapInstance)
             )
          )
@@ -92,7 +96,7 @@ handle (Req) ->
    security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
    security:unlock_queries(Input#input.player_id),
-   generate_reply(QueryState).
+   generate_reply(QueryState, Input).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

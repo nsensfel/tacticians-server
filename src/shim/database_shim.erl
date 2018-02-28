@@ -111,7 +111,7 @@ generate_db (Heir) ->
    BattlemapWidth = roll:between(16, 64),
    BattlemapHeight = roll:between(16, 64),
    Battlemap = battlemap:random(0, BattlemapWidth, BattlemapHeight),
-   Characters = generate_random_characters(1, 7, 8, 0, []),
+   Characters = generate_random_characters(1, 8, 8, 0, []),
    PlayersAsList = [<<"0">>, <<"1">>],
    BattlemapInstance =
       battlemap_instance:random

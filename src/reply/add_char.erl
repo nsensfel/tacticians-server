@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/2]).
+-export([generate/3]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,12 +29,19 @@ attributes_as_json (Attributes) ->
       ]
    }.
 
--spec encode (non_neg_integer(), character_instance:struct()) -> binary().
-encode (IX, CharacterInstance) ->
+-spec encode
+   (
+      non_neg_integer(),
+      character_instance:struct(),
+      player:id()
+   )
+   -> binary().
+encode (IX, CharacterInstance, PlayerID) ->
    Character = character_instance:get_character(CharacterInstance),
    {X, Y} = character_instance:get_location(CharacterInstance),
    Attributes = character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
+   OwnerID = character:get_owner_id(Character),
 
    jiffy:encode
    (
@@ -50,8 +57,15 @@ encode (IX, CharacterInstance) ->
             },
             {<<"lcx">>, X},
             {<<"lcy">>, Y},
-            {<<"pla">>, character:get_owner_id(Character)},
-            {<<"ena">>, character_instance:get_is_active(CharacterInstance)},
+            {<<"pla">>, OwnerID},
+            {
+               <<"ena">>,
+               (
+                  character_instance:get_is_active(CharacterInstance)
+                  and
+                  (OwnerID == PlayerID)
+               )
+            },
             {<<"att">>, attributes_as_json(Attributes)},
             {<<"awp">>, ActiveWeapon},
             {<<"swp">>, SecondaryWeapon}
@@ -65,8 +79,9 @@ encode (IX, CharacterInstance) ->
 -spec generate
    (
       non_neg_integer(),
-      character_instance:struct()
+      character_instance:struct(),
+      player:id()
    )
    -> list(binary()).
-generate (IX, CharacterInstance) ->
-   [<<"add_char">>, encode(IX, CharacterInstance)].
+generate (IX, CharacterInstance, PlayerID) ->
+   [<<"add_char">>, encode(IX, CharacterInstance, PlayerID)].
