@@ -1,4 +1,5 @@
 -module(character_turn).
+% FIXME: There's still too much of a mess in this module.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,16 +49,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+decode_action (EncodedAction) ->
+   JSONActionMap = jiffy:decode(EncodedAction, [return_maps]),
+
 -spec parse_input (binary()) -> input().
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    CharacterInstanceIX = binary_to_integer(maps:get(<<"cix">>, JSONReqMap)),
    TargetIX = binary_to_integer(maps:get(<<"tix">>, JSONReqMap)),
+   EncodedActions = maps:get(<<"act">>, JSONReqMap),
+   Actions = decode_action_sequence(EncodedActions),
    #input
    {
       player_id = maps:get(<<"pid">>, JSONReqMap),
       session_token = maps:get(<<"stk">>, JSONReqMap),
-      battlemap_instance_id = maps:get(<<"bmi">>, JSONReqMap),
+      battle_id = maps:get(<<"bid">>, JSONReqMap),
       character_instance_ix = CharacterInstanceIX,
       path = maps:get(<<"p">>, JSONReqMap),
       target_ix = TargetIX
@@ -138,6 +144,8 @@ handle_character_instance_moving (QueryState, Input) ->
    ControlledCharacterMovementPoints =
       statistics:get_movement_points(ControlledCharacterStatistics),
 
+   % FIXME: The controlled character's old location should not be considered to
+   % be a forbidden location.
    ForbiddenLocations =
       array:map
       (

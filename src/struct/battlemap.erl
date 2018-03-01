@@ -30,7 +30,8 @@
       get_id/1,
       get_width/1,
       get_height/1,
-      get_tile_ids/1
+      get_tile_ids/1,
+      get_tile_id/2
    ]
 ).
 
@@ -65,6 +66,20 @@ generate_random_tile_ids (PreviousTileID, Result, X, Y, Width) ->
       end,
    generate_random_tile_ids(NewTile, [NewTile|Result], (X - 1), Y, Width).
 
+-spec location_to_array_index
+   (
+      non_neg_integer(),
+      location:type()
+   )
+   -> ('error' | non_neg_integer()).
+location_to_array_index (ArrayWidth, {X, Y}) ->
+   if
+      (X < 0) -> error;
+      (Y < 0) -> error;
+      (X >= ArrayWidth) -> error;
+      true -> ((Y * ArrayWidth) + X)
+   end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,6 +95,11 @@ get_height (Battlemap) -> Battlemap#battlemap.height.
 
 -spec get_tile_ids (struct()) -> array:array(tile:id()).
 get_tile_ids (Battlemap) -> Battlemap#battlemap.tile_ids.
+
+-spec get_tile_id (location:type(), struct()) -> tile:id().
+get_tile_id (Location, Battlemap) ->
+   TileIX = location_to_array_index(Battlemap#battlemap.width, Location),
+   array:get(TileIX, Battlemap#battlemap.tile_ids).
 
 -spec random
    (
