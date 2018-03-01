@@ -176,3 +176,103 @@ when is_record(BattleAction, move) ->
       UpdatedCharacterInstance,
       Battle
    }.
+handle (Battle, CharacterInstance, CharacterInstanceIX, BattleAction)
+when is_record(BattleAction, attack) ->
+   Character = character_instance:get_character(CharacterInstance),
+   CharacterStatistics = character:get_statistics(Character),
+   Battlemap = battle:get_battlemap(Battle),
+   TargetIX = BattleAction#attack.target_ix,
+   TargetCharacterInstance = battle:get_character_instance(TargetIX, Battle),
+   TargetCharacter = character_instance:get_character(TargetCharacterInstance),
+   TargetCharacterStatistics = character:get_statistics(TargetCharacter),
+
+   Range =
+      location:dist
+      (
+         character_instance:get_location(CharacterInstance),
+         character_instance:get_location(TargetCharacterInstance)
+      ),
+
+   {AttackingWeaponID, _} = character:get_weapon_ids(Character),
+   {DefendingWeaponID, _} = character:get_weapon_ids(TargetCharacter),
+
+   AttackingWeapon = weapon:from_id(AttackingWeaponID),
+   DefendingWeapon = weapon:from_id(DefendingWeaponID),
+
+   AttackSequence =
+      attack:get_sequence(Range, AttackingWeapon, DefendingWeapon),
+
+   AttackPlannedEffects =
+      lists:map
+      (
+         fun (AttackStep) ->
+            attack:get_description_of
+            (
+               AttackStep,
+               CharacterStatistics,
+               TargetCharacterStatistics
+            )
+         end,
+         AttackSequence
+      ),
+
+   % FIXME: may warrant a separate function
+   {AttackEffects, RemainingAttakerHealth, RemainingDefenderHealth} =
+      lists:foldl
+      (
+         fun
+         (
+            AttackEffectCandidate,
+            {AttackValidEffects, AttackerHealth, DefenderHealth }
+         ) ->
+            {AttackResult, NewAttackerHealth, NewDefenderHealth} =
+               attack:apply_to_healths
+               (
+                  AttackPlannedEffect,
+                  AttackerHealth,
+                  DefenderHealth
+               ),
+            case AttackResult of
+               nothing -> {AttackValidEffects, AttackerHealth, DefenderHealth};
+               _ ->
+                  {
+                     [AttackResult|AttackValidEffects],
+                     NewAttackerHealth,
+                     NewDefenderHealth
+                  }
+            end,
+         end,
+         {
+            [],
+            character_instance:get_current_health(CharacterInstance),
+            character_instance:get_current_health(TargetCharacterInstance)
+         },
+         AttackPlannedEffects
+      ),
+
+   UpdatedCharacterInstance =
+      character_instance:set_current_health
+      (
+         RemainingAttackerHealth,
+         CharacterInstance
+      ),
+
+   UpdatedBattle =
+      battle:set_character_instance
+      (
+         TargetIX,
+         character_instance:set_current_health
+         (
+            RemainingDefenderHealth,
+            TargetCharacterInstance
+         ),
+         Battle
+      )
+   {
+      % TODO: hide that into database_diff structs.
+      [], % TODO
+      % TODO: hide that into turn_result structs.
+      AttackEffets,
+      UpdatedCharacterInstance,
+      UpdatedBattle
+   }.
