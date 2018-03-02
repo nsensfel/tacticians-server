@@ -22,7 +22,7 @@
 (
    attack,
    {
-      target :: non_neg_integer()
+      target_ix :: non_neg_integer()
    }
 ).
 
@@ -57,18 +57,76 @@ decode_mov_action (JSONMap) ->
 decode_atk_action (JSONMap) ->
    TargetIX = maps:get(<<"tix">>, JSONMap),
 
-   #attack { target = TargetIX }.
+   #attack { target_ix = TargetIX }.
 
 -spec decode_swp_action (map()) -> struct().
 decode_swp_action (_JSONMap) ->
    #switch_weapon{}.
+
+
+handle_attack_sequence
+(
+   CharacterInstance,
+   TargetCharacterInstance,
+   AttackSequence
+) ->
+   Character = character_instance:get_character(CharacterInstance),
+   TargetCharacter = character_instance:get_character(TargetCharacterInstance),
+   CharacterStatistics = character:get_statistics(Character),
+   TargetCharacterStatistics = character:get_statistics(TargetCharacter),
+
+   AttackPlannedEffects =
+      lists:map
+      (
+         fun (AttackStep) ->
+            attack:get_description_of
+            (
+               AttackStep,
+               CharacterStatistics,
+               TargetCharacterStatistics
+            )
+         end,
+         AttackSequence
+      ),
+
+   lists:foldl
+   (
+      fun
+      (
+         AttackEffectCandidate,
+         {AttackValidEffects, AttackerHealth, DefenderHealth}
+      ) ->
+         {AttackResult, NewAttackerHealth, NewDefenderHealth} =
+            attack:apply_to_healths
+            (
+               AttackEffectCandidate,
+               AttackerHealth,
+               DefenderHealth
+            ),
+         case AttackResult of
+            nothing -> {AttackValidEffects, AttackerHealth, DefenderHealth};
+            _ ->
+               {
+                  [AttackResult|AttackValidEffects],
+                  NewAttackerHealth,
+                  NewDefenderHealth
+               }
+         end
+      end,
+      {
+         [],
+         character_instance:get_current_health(CharacterInstance),
+         character_instance:get_current_health(TargetCharacterInstance)
+      },
+      AttackPlannedEffects
+   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec decode (binary()) -> struct().
 decode (EncodedAction) ->
-   JSONActionMap = jiffy:decode(EncodedAction, [return_maps]),
+   JSONActionMap = EncodedAction, %jiffy:decode(EncodedAction, [return_maps]),
    ActionType = maps:get(<<"t">>, JSONActionMap),
    case ActionType of
       <<"mov">> -> decode_mov_action(JSONActionMap);
@@ -175,16 +233,13 @@ when is_record(BattleAction, move) ->
       ],
       UpdatedCharacterInstance,
       Battle
-   }.
-handle (Battle, CharacterInstance, CharacterInstanceIX, BattleAction)
+   };
+handle (Battle, CharacterInstance, _CharacterInstanceIX, BattleAction)
 when is_record(BattleAction, attack) ->
    Character = character_instance:get_character(CharacterInstance),
-   CharacterStatistics = character:get_statistics(Character),
-   Battlemap = battle:get_battlemap(Battle),
    TargetIX = BattleAction#attack.target_ix,
    TargetCharacterInstance = battle:get_character_instance(TargetIX, Battle),
    TargetCharacter = character_instance:get_character(TargetCharacterInstance),
-   TargetCharacterStatistics = character:get_statistics(TargetCharacter),
 
    Range =
       location:dist
@@ -202,52 +257,12 @@ when is_record(BattleAction, attack) ->
    AttackSequence =
       attack:get_sequence(Range, AttackingWeapon, DefendingWeapon),
 
-   AttackPlannedEffects =
-      lists:map
+   {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =
+      handle_attack_sequence
       (
-         fun (AttackStep) ->
-            attack:get_description_of
-            (
-               AttackStep,
-               CharacterStatistics,
-               TargetCharacterStatistics
-            )
-         end,
+         CharacterInstance,
+         TargetCharacterInstance,
          AttackSequence
-      ),
-
-   % FIXME: may warrant a separate function
-   {AttackEffects, RemainingAttakerHealth, RemainingDefenderHealth} =
-      lists:foldl
-      (
-         fun
-         (
-            AttackEffectCandidate,
-            {AttackValidEffects, AttackerHealth, DefenderHealth }
-         ) ->
-            {AttackResult, NewAttackerHealth, NewDefenderHealth} =
-               attack:apply_to_healths
-               (
-                  AttackPlannedEffect,
-                  AttackerHealth,
-                  DefenderHealth
-               ),
-            case AttackResult of
-               nothing -> {AttackValidEffects, AttackerHealth, DefenderHealth};
-               _ ->
-                  {
-                     [AttackResult|AttackValidEffects],
-                     NewAttackerHealth,
-                     NewDefenderHealth
-                  }
-            end,
-         end,
-         {
-            [],
-            character_instance:get_current_health(CharacterInstance),
-            character_instance:get_current_health(TargetCharacterInstance)
-         },
-         AttackPlannedEffects
       ),
 
    UpdatedCharacterInstance =
@@ -267,12 +282,12 @@ when is_record(BattleAction, attack) ->
             TargetCharacterInstance
          ),
          Battle
-      )
+      ),
    {
       % TODO: hide that into database_diff structs.
       [], % TODO
       % TODO: hide that into turn_result structs.
-      AttackEffets,
+      AttackEffects,
       UpdatedCharacterInstance,
       UpdatedBattle
    }.

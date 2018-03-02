@@ -113,8 +113,8 @@ generate_db (Heir) ->
    Battlemap = battlemap:random(0, BattlemapWidth, BattlemapHeight),
    Characters = generate_random_characters(1, 8, 8, 0, []),
    PlayersAsList = [<<"0">>, <<"1">>],
-   BattlemapInstance =
-      battlemap_instance:random
+   Battle =
+      battle:random
       (
          <<"0">>,
          PlayersAsList,
@@ -122,7 +122,7 @@ generate_db (Heir) ->
          Characters
       ),
 
-   add_to_db({battlemap_instance_db, <<"0">>}, BattlemapInstance).
+   add_to_db({battle_db, <<"0">>}, Battle).
 
 -spec fetch (atom(), any()) -> ({'ok', any()} | 'nothing').
 fetch (DB, ObjectID) ->

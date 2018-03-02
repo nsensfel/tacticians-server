@@ -27,19 +27,7 @@
    }
 ).
 
--record
-(
-   query_result,
-   {
-      is_new_turn :: boolean(),
-      updated_character_instance_ixs :: list(non_neg_integer()),
-      updated_battle :: battle:struct()
-   }
-).
-
 -type input() :: #input{}.
--type query_result() :: #query_result{}.
-
 -type relevant_data() :: #relevant_data{}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,6 +105,8 @@ finalize_and_fuse_relevant_data (RData, Input) ->
    Battle = RData#relevant_data.battle,
    CharacterInstance = RData#relevant_data.played_character_instance,
 
+   io:format("~nNot a character instance? ~p~n", [CharacterInstance]),
+
    FinalizedCharacterInstance =
       character_instance:set_is_active(false, CharacterInstance),
 
@@ -126,125 +116,6 @@ finalize_and_fuse_relevant_data (RData, Input) ->
       FinalizedCharacterInstance,
       Battle
    ).
-
--spec activate_relevant_character_instances
-   (
-      list(non_neg_integer()),
-      array:array(character_instance:struct()),
-      player:id(),
-      (-1 | non_neg_integer())
-   )
-   -> {list(non_neg_integer()), array:array(character_instance:struct())}.
-activate_relevant_character_instances (IXs, CharacterInstances, _Owner, -1) ->
-   {IXs, CharacterInstances};
-activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
-   CharacterInstance = array:get(IX, CharacterInstances),
-   Character = character_instance:get_character(CharacterInstance),
-   case character:get_owner_id(Character) of
-      OwnerID when (OwnerID == Owner) ->
-         activate_relevant_character_instances
-         (
-            [IX|IXs],
-            array:set
-            (
-               IX,
-               character_instance:set_is_active(true, CharacterInstance),
-               CharacterInstances
-            ),
-            Owner,
-            (IX - 1)
-         );
-
-      _ ->
-         activate_relevant_character_instances
-         (
-            IXs,
-            CharacterInstances,
-            Owner,
-            (IX - 1)
-         )
-   end.
-
--spec start_next_players_turn
-   (
-      query_state()
-   )
-   -> {list(non_neg_integer()), battle:struct()}.
-start_next_players_turn (QueryState) ->
-   Battle = QueryState#query_state.battle,
-   PlayerIDs = battle:get_player_ids(Battle),
-   PlayerTurn = battle:get_current_player_turn(Battle),
-   CurrentPlayerIX = player_turn:get_player_ix(PlayerTurn),
-   CurrentTurnNumber = player_turn:get_number(PlayerTurn),
-   CharacterInstances = battle:get_character_instances(Battle),
-
-   NextPlayerIX = ((CurrentPlayerIX + 1) rem (array:size(PlayerIDs))),
-   NextPlayerTurn =
-      player_turn:new
-      (
-         case NextPlayerIX of
-            0 -> (CurrentTurnNumber + 1);
-            _ -> CurrentTurnNumber
-         end,
-         NextPlayerIX
-      ),
-
-   {ActivatedCharacterInstanceIXs, UpdatedCharacterInstances} =
-      activate_relevant_character_instances
-      (
-         [],
-         CharacterInstances,
-         array:get(NextPlayerIX, PlayerIDs),
-         (array:size(CharacterInstances) - 1)
-      ),
-   UpdatedBattle =
-      battle:set_character_instances
-      (
-         UpdatedCharacterInstances,
-         battle:set_current_player_turn
-         (
-            NextPlayerTurn,
-            Battle
-         )
-      ),
-   {ActivatedCharacterInstanceIXs, UpdatedBattle}.
-
--spec finalize_character_turn (query_state()) -> query_result().
-finalize_character_turn (QueryState) ->
-   Battle = QueryState#query_state.battle,
-   CharacterInstances =
-      battle:get_character_instances(Battle),
-
-   AnActiveCharacterInstanceRemains =
-      array:foldl
-      (
-         fun (_IX, CharacterInstance, Prev) ->
-            (Prev or character_instance:get_is_active(CharacterInstance))
-         end,
-         false,
-         CharacterInstances
-      ),
-
-   case AnActiveCharacterInstanceRemains of
-      true ->
-         io:format("~nThere are still active characters.~n"),
-         #query_result
-         {
-            is_new_turn = false,
-            updated_character_instance_ixs = [],
-            updated_battle = Battle
-         };
-      false ->
-         io:format("~nThere are no more active characters.~n"),
-         {UpdatedCharacterInstanceIXs, UpdatedBattle} =
-            start_next_players_turn(QueryState),
-         #query_result
-         {
-            is_new_turn = true,
-            updated_character_instance_ixs = UpdatedCharacterInstanceIXs,
-            updated_battle = UpdatedBattle
-         }
-   end.
 
 %-spec send_to_database (list(database_diff:struct()), input()) -> 'ok'.
 -spec send_to_database (battle:struct(), input()) -> 'ok'.
@@ -261,11 +132,10 @@ send_to_database (FinalizedBattle, Input) ->
       FinalizedBattle
    ).
 
--spec update_cache (query_result(), input()) -> 'ok'.
-update_cache (QueryResult, Input) ->
+-spec update_cache (battle:struct(), input()) -> 'ok'.
+update_cache (Battle, Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
-   Battle = QueryResult#query_result.updated_battle,
 
    timed_cache:update
    (
@@ -292,12 +162,68 @@ generate_reply (ClientUpdate) ->
       ]
    ).
 
+handle_actions (RData, Input) ->
+   Battle = RData#relevant_data.battle,
+   CharacterInstance= RData#relevant_data.played_character_instance,
+   CharacterInstanceIX = Input#input.character_instance_ix,
+   Actions = Input#input.actions,
+
+   {
+      ActionsDiffUpdates,
+      ClientUpdates,
+      PostActionCharacterInstance,
+      PostActionBattle
+   } =
+      lists:foldl
+      (
+         fun
+         (
+            Action,
+            {
+               CurrActionsDiffUpdates,
+               CurrClientUpdates,
+               CurrCharacterInstance,
+               CurrBattle
+            }
+         ) ->
+            {
+               NewActionsDiffUpdates,
+               NewClientUpdates,
+               NewCharacterInstance,
+               NewBattle
+            } =
+               battle_action:handle
+               (
+                  CurrBattle,
+                  CurrCharacterInstance,
+                  CharacterInstanceIX,
+                  Action
+               ),
+            {
+               (CurrActionsDiffUpdates ++ NewActionsDiffUpdates),
+               (CurrClientUpdates ++ NewClientUpdates),
+               NewCharacterInstance,
+               NewBattle
+            }
+         end,
+         {[], [], CharacterInstance, Battle},
+         Actions
+      ),
+   {
+      ActionsDiffUpdates,
+      ClientUpdates,
+      RData#relevant_data
+      {
+         battle = PostActionBattle,
+         played_character_instance = PostActionCharacterInstance
+      }
+   }.
+
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
    PlayerID = Input#input.player_id,
    PlayerSessionToken = Input#input.session_token,
-   Actions = Input#input.actions,
 
    security:assert_identity(PlayerID, PlayerSessionToken),
    security:lock_queries(PlayerID),
@@ -307,18 +233,12 @@ handle (Req) ->
    assert_character_instance_can_be_played(RData, Input),
 
    {ActionsDiffUpdate, ClientUpdate, UpdatedRData} =
-      lists:foldl
-      (
-         fun (Action, Prev) ->
-            battle_action:handle(Action, Prev)
-         end,
-         {[], [], RData},
-         Actions
-      ),
+      handle_actions(RData, Input),
 
    UpdatedBattle = finalize_and_fuse_relevant_data(UpdatedRData, Input),
 
-   {TurnDiffUpdate, FinalizedBattle} = end_of_turn:apply_to(UpdatedBattle),
+   {TurnDiffUpdate, FinalizedBattle} =
+      battle_turn:handle_post_play(UpdatedBattle),
 
    DiffUpdate = (TurnDiffUpdate ++ ActionsDiffUpdate),
 

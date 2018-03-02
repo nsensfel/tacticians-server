@@ -20,7 +20,7 @@
 -spec cross
    (
       battlemap:struct(),
-      array:array(location:type()),
+      list(location:type()),
       list(direction:enum()),
       non_neg_integer(),
       location:type()
@@ -29,13 +29,13 @@
 cross (_Battlemap, _ForbiddenLocations, [], Cost, Location) ->
    {Location, Cost};
 cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
-   NextLocation = direction:apply_to(Step, Location),
-   NextTile = battlemap:get_tile_id(Battlemap, NextLocation),
+   NextLocation = location:apply_direction(Step, Location),
+   NextTile = battlemap:get_tile_id(NextLocation, Battlemap),
    NextCost = (Cost + tile:get_cost(NextTile)),
    IsForbidden =
-      array:foldl
+      lists:foldl
       (
-         fun (_IX, ForbiddenLocation, Prev) ->
+         fun (ForbiddenLocation, Prev) ->
             (Prev or (NextLocation == ForbiddenLocation))
          end,
          false,

@@ -1,4 +1,4 @@
--module(battlemap_instance).
+-module(battle).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,7 @@
 
 -record
 (
-   battlemap_instance,
+   battle,
    {
       id :: id(),
       battlemap :: battlemap:struct(),
@@ -18,7 +18,7 @@
    }
 ).
 
--opaque struct() :: #battlemap_instance{}.
+-opaque struct() :: #battle{}.
 
 -export_type([struct/0, id/0]).
 
@@ -32,12 +32,15 @@
       get_id/1,
       get_battlemap/1,
       get_character_instances/1,
+      get_character_instance/2,
       get_player_ids/1,
+      get_player_id/2,
       get_current_player_turn/1,
       get_last_turns_effects/1,
 
       set_battlemap/2,
       set_character_instances/2,
+      set_character_instance/3,
       set_player_ids/2,
       set_current_player_turn/2,
       set_last_turns_effects/2
@@ -60,32 +63,41 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_id (struct()) -> id().
-get_id (BattlemapInstance) -> BattlemapInstance#battlemap_instance.id.
+get_id (Battle) -> Battle#battle.id.
 
 -spec get_battlemap (struct()) -> battlemap:struct().
-get_battlemap (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.battlemap.
+get_battlemap (Battle) ->
+   Battle#battle.battlemap.
 
 -spec get_character_instances (struct()) ->
    array:array(character_instance:struct()).
-get_character_instances (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.character_instances.
+get_character_instances (Battle) ->
+   Battle#battle.character_instances.
+
+-spec get_character_instance (non_neg_integer(), struct()) ->
+   character_instance:struct().
+get_character_instance (IX, Battle) ->
+   array:get(IX, Battle#battle.character_instances).
 
 -spec get_player_ids (struct()) -> array:array(player:id()).
-get_player_ids (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.player_ids.
+get_player_ids (Battle) ->
+   Battle#battle.player_ids.
+
+-spec get_player_id (non_neg_integer(), struct()) -> player:id().
+get_player_id (IX, Battle) ->
+   array:get(IX, Battle#battle.player_ids).
 
 -spec get_current_player_turn (struct()) -> player_turn:struct().
-get_current_player_turn (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.current_player_turn.
+get_current_player_turn (Battle) ->
+   Battle#battle.current_player_turn.
 
 -spec get_last_turns_effects (struct()) -> list(any()).
-get_last_turns_effects (BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance.last_turns_effects.
+get_last_turns_effects (Battle) ->
+   Battle#battle.last_turns_effects.
 
 -spec set_battlemap (battlemap:struct(), struct()) -> struct().
-set_battlemap (Battlemap, BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance
+set_battlemap (Battlemap, Battle) ->
+   Battle#battle
    {
       battlemap = Battlemap
    }.
@@ -96,10 +108,29 @@ set_battlemap (Battlemap, BattlemapInstance) ->
       struct()
    )
    -> struct().
-set_character_instances (CharacterInstances, BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance
+set_character_instances (CharacterInstances, Battle) ->
+   Battle#battle
    {
       character_instances = CharacterInstances
+   }.
+
+-spec set_character_instance
+   (
+      non_neg_integer(),
+      character_instance:struct(),
+      struct()
+   )
+   -> struct().
+set_character_instance (IX, CharacterInstance, Battle) ->
+   Battle#battle
+   {
+      character_instances =
+         array:set
+         (
+            IX,
+            CharacterInstance,
+            Battle#battle.character_instances
+         )
    }.
 
 -spec set_player_ids
@@ -108,8 +139,8 @@ set_character_instances (CharacterInstances, BattlemapInstance) ->
       struct()
    )
    -> struct().
-set_player_ids (Players, BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance
+set_player_ids (Players, Battle) ->
+   Battle#battle
    {
       player_ids = Players
    }.
@@ -120,8 +151,8 @@ set_player_ids (Players, BattlemapInstance) ->
       struct()
    )
    -> struct().
-set_current_player_turn (PlayerTurn, BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance
+set_current_player_turn (PlayerTurn, Battle) ->
+   Battle#battle
    {
       current_player_turn = PlayerTurn
    }.
@@ -132,8 +163,8 @@ set_current_player_turn (PlayerTurn, BattlemapInstance) ->
       struct()
    )
    -> struct().
-set_last_turns_effects (Effects, BattlemapInstance) ->
-   BattlemapInstance#battlemap_instance
+set_last_turns_effects (Effects, Battle) ->
+   Battle#battle
    {
       last_turns_effects = Effects
    }.
@@ -185,7 +216,7 @@ random (ID, PlayersAsList, Battlemap, Characters) ->
          Characters
       ),
 
-   #battlemap_instance
+   #battle
    {
       id = ID,
       battlemap = Battlemap,

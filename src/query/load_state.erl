@@ -11,7 +11,7 @@
    {
       player_id :: player:id(),
       session_token :: binary(),
-      battlemap_instance_id :: binary()
+      battle_id :: binary()
    }
 ).
 
@@ -19,7 +19,7 @@
 (
    query_state,
    {
-      battlemap_instance :: battlemap_instance:struct()
+      battle :: battle:struct()
    }
 ).
 
@@ -39,42 +39,42 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
-   BattlemapInstanceID = maps:get(<<"bmi">>, JSONReqMap),
+   BattleID = maps:get(<<"bmi">>, JSONReqMap),
 
    #input
    {
       player_id = PlayerID,
       session_token = SessionToken,
-      battlemap_instance_id = BattlemapInstanceID
+      battle_id = BattleID
    }.
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
    PlayerID = Input#input.player_id,
-   BattlemapInstanceID = Input#input.battlemap_instance_id,
+   BattleID = Input#input.battle_id,
 
-   BattlemapInstance =
+   Battle =
       timed_cache:fetch
       (
-         battlemap_instance_db,
+         battle_db,
          PlayerID,
-         BattlemapInstanceID
+         BattleID
       ),
 
    #query_state
    {
-      battlemap_instance = BattlemapInstance
+      battle = Battle
    }.
 
 -spec generate_reply(query_state(), input()) -> binary().
 generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
-   BattlemapInstance = QueryState#query_state.battlemap_instance,
+   Battle = QueryState#query_state.battle,
 
    jiffy:encode
    (
       [
-         set_map:generate(battlemap_instance:get_battlemap(BattlemapInstance))
+         set_map:generate(battle:get_battlemap(Battle))
          |
          array:sparse_to_list
          (
@@ -83,7 +83,7 @@ generate_reply (QueryState, Input) ->
                fun (IX, CharacterInstance) ->
                   add_char:generate(IX, CharacterInstance, PlayerID)
                end,
-               battlemap_instance:get_character_instances(BattlemapInstance)
+               battle:get_character_instances(Battle)
             )
          )
       ]
