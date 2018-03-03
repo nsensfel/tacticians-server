@@ -28,7 +28,8 @@
       critical/0,
       attack_category/0,
       attack_effect/0,
-      attack_desc/0
+      attack_desc/0,
+      attack_order_with_parry/0
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

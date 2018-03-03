@@ -69,7 +69,7 @@ float_to_int (F) -> ceil(F).
 min_max (Min, Max, V) -> min(Max, max(Min, V)).
 
 -spec average (list(number())) -> number().
-average ([]) -> 0;
+%average ([]) -> 0;
 average (L) -> lists:sum(L) / length(L).
 
 % V | 010 | 030 | 050 | 070 | 100 |

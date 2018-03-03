@@ -55,7 +55,7 @@ parse_input (Req) ->
       actions = Actions
    }.
 
--spec fetch_relevant_data (input()) -> battle:struct().
+-spec fetch_relevant_data (input()) -> relevant_data().
 fetch_relevant_data (Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
@@ -171,8 +171,8 @@ handle_actions (RData, Input) ->
    {
       ActionsDiffUpdates,
       ClientUpdates,
-      PostActionCharacterInstance,
-      PostActionBattle
+      PostActionBattle,
+      PostActionCharacterInstance
    } =
       lists:foldl
       (
@@ -182,15 +182,15 @@ handle_actions (RData, Input) ->
             {
                CurrActionsDiffUpdates,
                CurrClientUpdates,
-               CurrCharacterInstance,
-               CurrBattle
+               CurrBattle,
+               CurrCharacterInstance
             }
          ) ->
             {
                NewActionsDiffUpdates,
                NewClientUpdates,
-               NewCharacterInstance,
-               NewBattle
+               NewBattle,
+               NewCharacterInstance
             } =
                battle_action:handle
                (
@@ -202,11 +202,11 @@ handle_actions (RData, Input) ->
             {
                (CurrActionsDiffUpdates ++ NewActionsDiffUpdates),
                (CurrClientUpdates ++ NewClientUpdates),
-               NewCharacterInstance,
-               NewBattle
+               NewBattle,
+               NewCharacterInstance
             }
          end,
-         {[], [], CharacterInstance, Battle},
+         {[], [], Battle, CharacterInstance},
          Actions
       ),
    {

@@ -63,7 +63,13 @@ decode_atk_action (JSONMap) ->
 decode_swp_action (_JSONMap) ->
    #switch_weapon{}.
 
-
+-spec handle_attack_sequence
+   (
+      character_instance:struct(),
+      character_instance:struct(),
+      list(attack:attack_order_with_pary())
+   )
+   -> {list(attack:attack_desc()), non_neg_integer(), non_neg_integer()}.
 handle_attack_sequence
 (
    CharacterInstance,
@@ -124,7 +130,7 @@ handle_attack_sequence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode (binary()) -> struct().
+-spec decode (map()) -> struct().
 decode (EncodedAction) ->
    JSONActionMap = EncodedAction, %jiffy:decode(EncodedAction, [return_maps]),
    ActionType = maps:get(<<"t">>, JSONActionMap),
@@ -185,8 +191,8 @@ when is_record(BattleAction, switch_weapon) ->
       [
          {switched_weapons, CharacterInstanceIX}
       ],
-      UpdatedCharacterInstance,
-      Battle
+      Battle,
+      UpdatedCharacterInstance
    };
 handle (Battle, CharacterInstance, CharacterInstanceIX, BattleAction)
 when is_record(BattleAction, move) ->
@@ -231,8 +237,8 @@ when is_record(BattleAction, move) ->
       [
          {moved, Path, NewLocation}
       ],
-      UpdatedCharacterInstance,
-      Battle
+      Battle,
+      UpdatedCharacterInstance
    };
 handle (Battle, CharacterInstance, _CharacterInstanceIX, BattleAction)
 when is_record(BattleAction, attack) ->
@@ -288,6 +294,6 @@ when is_record(BattleAction, attack) ->
       [], % TODO
       % TODO: hide that into turn_result structs.
       AttackEffects,
-      UpdatedCharacterInstance,
-      UpdatedBattle
+      UpdatedBattle,
+      UpdatedCharacterInstance
    }.

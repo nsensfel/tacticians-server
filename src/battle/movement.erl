@@ -49,7 +49,7 @@ cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
 -spec cross
    (
       battlemap:struct(),
-      array:array(location:type()),
+      list(location:type()),
       list(direction:enum()),
       location:type()
    )
