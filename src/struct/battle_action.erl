@@ -55,7 +55,7 @@ decode_mov_action (JSONMap) ->
 
 -spec decode_atk_action (map()) -> struct().
 decode_atk_action (JSONMap) ->
-   TargetIX = maps:get(<<"tix">>, JSONMap),
+   TargetIX = binary_to_integer(maps:get(<<"tix">>, JSONMap)),
 
    #attack { target_ix = TargetIX }.
 

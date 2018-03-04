@@ -53,7 +53,8 @@ add_update_to_cache (DB, Owner, ObjectID, Data) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% 'gen_server' functions
 init ({DB, ObjectID}) ->
-   {ok, {DB, ObjectID}}.
+   io:format("~nCache entry added: ~p.~n", [{DB, ObjectID}]),
+   {ok, {DB, ObjectID}, timed_caches_manager:get_timeout()}.
 
 handle_call (invalidate, _, State) ->
    {stop, normal, State};
