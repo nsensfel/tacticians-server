@@ -3,38 +3,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-type order() :: ('first' | 'second' | 'counter').
+-type precision() :: ('misses' | 'grazes' | 'hits').
 
-% TODO: find better names for those types.
--type hits() :: ('misses' | 'grazes' | 'hits').
--type critical() :: ('critical' | 'basic').
--type attack_order() :: 'first' | 'second' | 'counter'.
--type attack_order_with_parry() :: {attack_order(), boolean()}.
--type attack_category() ::
-   (
-      attack_order()
-      | {attack_order(), 'parry'}
-   ).
--type attack_effect() :: {hits(), critical(), non_neg_integer()}.
--type attack_desc() ::
-   (
-      {attack_category(), attack_effect()}
-      | 'nothing'
-   ).
+-record
+(
+   attack,
+   {
+      order :: order(),
+      precision :: precision(),
+      is_critical :: boolean(),
+      is_parry :: boolean(),
+      damage :: non_neg_integer()
+   }
+).
 
+-opaque struct() :: #attack{}.
+-type maybe_struct() :: ('nothing' | struct()).
+-opaque step() :: {order(), boolean()}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type
-(
-   [
-      hits/0,
-      critical/0,
-      attack_category/0,
-      attack_effect/0,
-      attack_desc/0,
-      attack_order_with_parry/0
-   ]
-).
+-export_type([struct/0, maybe_struct/0, step/0]).
 
 -export
 (
@@ -55,13 +45,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec roll_hits
+-spec roll_precision
    (
       statistics:struct(),
       statistics:struct()
    )
-   -> hits().
-roll_hits (AttackerStatistics, DefenderStatistics) ->
+   -> precision().
+roll_precision (AttackerStatistics, DefenderStatistics) ->
    DefenderDodges = statistics:get_dodges(DefenderStatistics),
    AttackerAccuracy = statistics:get_accuracy(AttackerStatistics),
    MissChance = max(0, (DefenderDodges - AttackerAccuracy)),
@@ -76,121 +66,120 @@ roll_hits (AttackerStatistics, DefenderStatistics) ->
       statistics:struct(),
       statistics:struct()
    )
-   -> {critical(), non_neg_integer()}.
+   -> {non_neg_integer(), boolean()}.
 roll_damage (AttackerStatistics, _DefenderStatistics) ->
    {MinimumDamage, MaximumDamage} = statistics:get_damages(AttackerStatistics),
    MaximumRoll = max(1, MaximumDamage - MinimumDamage),
    BaseDamage = MinimumDamage + (rand:uniform(MaximumRoll) - 1),
    CriticalHitChance = statistics:get_critical_hits(AttackerStatistics),
    case roll:percentage() of
-      X when (X =< CriticalHitChance) -> {critical, (BaseDamage * 2)};
-      _ -> {basic, BaseDamage}
+      X when (X =< CriticalHitChance) -> {(BaseDamage * 2), true};
+      _ -> {BaseDamage, false}
    end.
+
+-spec roll_parry (statistics:struct()) -> boolean().
+roll_parry (DefenderStatistics) ->
+   DefenderParryChance = statistics:get_parries(DefenderStatistics),
+   (roll:percentage() =< DefenderParryChance).
 
 -spec effect_of_attack
    (
+      order(),
       statistics:struct(),
-      statistics:struct()
+      statistics:struct(),
+      boolean()
    )
-   -> attack_effect().
-effect_of_attack (AttackerStatistics, DefenderStatistics) ->
-   Hits = roll_hits(AttackerStatistics, DefenderStatistics),
-   {Critical, Damage} = roll_damage(AttackerStatistics, DefenderStatistics),
-   case Hits of
-      misses -> {Hits, Critical, 0};
-      grazes -> {Hits, Critical, trunc(Damage / 2)};
-      hits -> {Hits, Critical, Damage}
-   end.
+   -> struct().
+effect_of_attack (Order, AttackerStatistics, DefenderStatistics, CanParry) ->
+   ParryIsSuccessful = (CanParry and roll_parry(DefenderStatistics)),
+   {ActualAtkStatistics, ActualDefStatistics} =
+      case ParryIsSuccessful of
+         true -> {DefenderStatistics, AttackerStatistics};
+         false -> {AttackerStatistics, DefenderStatistics}
+      end,
+
+   Precision = roll_precision(ActualAtkStatistics, ActualDefStatistics),
+   {Damage, IsCritical} = roll_damage(ActualAtkStatistics, ActualDefStatistics),
+   ActualDamage =
+      case Precision of
+         misses -> 0;
+         grazes -> trunc(Damage / 2);
+         hits -> Damage
+      end,
+
+   #attack
+   {
+      order = Order,
+      precision = Precision,
+      is_critical = IsCritical,
+      is_parry = ParryIsSuccessful,
+      damage = ActualDamage
+   }.
+
+-spec encode_order (order()) -> binary().
+encode_order (first) -> <<"f">>;
+encode_order (counter) -> <<"c">>;
+encode_order (second) -> <<"s">>.
+
+-spec encode_precision (precision()) -> binary().
+encode_precision (hits) -> <<"h">>;
+encode_precision (grazes) -> <<"g">>;
+encode_precision (misses) -> <<"m">>.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec get_description_of
    (
-      attack_order_with_parry(),
+      step(),
       statistics:struct(),
       statistics:struct()
    )
-   -> attack_desc().
+   -> maybe_struct().
 get_description_of
 (
-   {first, DefenderCanParry},
+   {first, CanParry},
    AttackerStatistics,
    DefenderStatistics
 ) ->
-   DefenderParryChance = statistics:get_parries(DefenderStatistics),
-   ParryRoll =
-      case DefenderCanParry of
-         true -> roll:percentage();
-         _ -> 101
-      end,
-   if
-      (ParryRoll =< DefenderParryChance) ->
-            {
-               {first, parry},
-               effect_of_attack(DefenderStatistics, AttackerStatistics)
-            };
-
-      true ->
-         {first, effect_of_attack(AttackerStatistics, DefenderStatistics)}
-   end;
+   effect_of_attack(first, AttackerStatistics, DefenderStatistics, CanParry);
 get_description_of
 (
-   {second, DefenderCanParry},
+   {second, CanParry},
    AttackerStatistics,
    DefenderStatistics
 ) ->
-   DefenderParryChance = statistics:get_parries(DefenderStatistics),
-   ParryRoll =
-      case DefenderCanParry of
-         true -> roll:percentage();
-         _ -> 101
-      end,
    AttackerDoubleAttackChange = statistics:get_double_hits(AttackerStatistics),
-   DoubleAttackRoll = roll:percentage(),
-   if
-      (DoubleAttackRoll > AttackerDoubleAttackChange) ->
-         nothing;
 
-      (ParryRoll =< DefenderParryChance) ->
-            {
-               {second, parry},
-               effect_of_attack(DefenderStatistics, AttackerStatistics)
-            };
+   case roll:percentage() of
+      X when (X =< AttackerDoubleAttackChange) ->
+         effect_of_attack
+         (
+            second,
+            AttackerStatistics,
+            DefenderStatistics,
+            CanParry
+         );
 
-      true ->
-         {second, effect_of_attack(AttackerStatistics, DefenderStatistics)}
+      _ ->
+         nothing
    end;
 get_description_of
 (
-   {counter, AttackerCanParry},
+   {counter, CanParry},
    AttackerStatistics,
    DefenderStatistics
 ) ->
-   AttackerParryChance = statistics:get_parries(AttackerStatistics),
-   ParryRoll =
-      case AttackerCanParry of
-         true -> roll:percentage();
-         _ -> 101
-      end,
-   if
-      (ParryRoll =< AttackerParryChance) ->
-            {
-               {counter, parry},
-               effect_of_attack(AttackerStatistics, DefenderStatistics)
-            };
-
-      true ->
-         {counter, effect_of_attack(DefenderStatistics, AttackerStatistics)}
-   end.
+   effect_of_attack(counter, DefenderStatistics, AttackerStatistics, CanParry).
 
 -spec apply_to_healths
    (
-      attack_desc(),
+      maybe_struct(),
       non_neg_integer(),
       non_neg_integer()
    )
-   -> {attack_desc(), non_neg_integer(), non_neg_integer()}.
+   -> {maybe_struct(), non_neg_integer(), non_neg_integer()}.
 apply_to_healths
 (
    nothing,
@@ -200,24 +189,25 @@ apply_to_healths
    {nothing, AttackerHealth, DefenderHealth};
 apply_to_healths
 (
-   {Attack, Effect},
+   Attack,
    AttackerHealth,
    DefenderHealth
 )
 when
 (
-   (Attack == first)
-   or (Attack == second)
-   or (Attack == {counter, parry})
+   (Attack#attack.order == first)
+   or (Attack#attack.order == second)
+   or ((Attack#attack.order == counter) and Attack#attack.is_parry)
 ) ->
-   {_Hits, _Critical, Damage} = Effect,
+   Damage = Attack#attack.damage,
+
    case AttackerHealth of
       0 ->
          {nothing, AttackerHealth, DefenderHealth};
 
       _ ->
          {
-            {Attack, Effect},
+            Attack,
             AttackerHealth,
             max(0, (DefenderHealth - Damage))
          }
@@ -230,9 +220,12 @@ apply_to_healths
 )
 when
 (
-   (Attack == {first, parry})
-   or (Attack == {second, parry})
-   or (Attack == counter)
+   (Attack#attack.order == counter)
+   or
+   (
+      (Attack#attack.is_parry)
+      and ((Attack#attack.order == first) or (Attack#attack.order == second))
+   )
 ) ->
    {_Hits, _Critical, Damage} = Effect,
    case DefenderHealth of
@@ -253,7 +246,7 @@ when
       weapon:struct(),
       weapon:struct()
    )
-   -> list(attack_order_with_parry()).
+   -> list(step()).
 get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
    {AttackerDefenseRange, AttackerAttackRange} =
       weapon:get_ranges(AttackerWeapon),
@@ -287,22 +280,24 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
          [First, Counter, Second]
    end.
 
--spec encode (attack_desc()) -> binary().
+-spec encode (struct()) -> binary().
 % This shouldn't be a possibility. Types in this module are a mess...
-encode ({AttackCategory, AttackEffect}) ->
+encode (Attack) ->
+   Order = Attack#attack.order,
+   Precision = Attack#attack.precision,
+   IsCritical = Attack#attack.is_critical,
+   IsParry = Attack#attack.is_parry,
+   Damage = Attack#attack.damage,
+
    jiffy:encode
    (
       {
          [
-            <<"attack">>,
-            list_to_binary
-            (
-               io_lib:format
-               (
-                  "~p",
-                  [{AttackCategory, AttackEffect}]
-               )
-            )
+            {<<"ord">>, encode_order(Order)},
+            {<<"pre">>, encode_precision(Precision)},
+            {<<"cri">>, IsCritical},
+            {<<"par">>, IsParry},
+            {<<"dmg">>, Damage}
          ]
       }
    ).
