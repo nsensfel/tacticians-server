@@ -55,5 +55,5 @@ dist ({OX, OY}, {DX, DY}) ->
 -spec encode (type()) -> list(non_neg_integer()).
 encode ({X, Y}) -> [X, Y].
 
--spec decode (list(non_neg_integer)) -> type().
+-spec decode (list(non_neg_integer())) -> type().
 decode ([X, Y]) when (is_integer(X) and is_integer(Y)) -> validate({X, Y}).

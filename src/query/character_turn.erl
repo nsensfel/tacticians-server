@@ -157,7 +157,7 @@ generate_reply (ClientUpdate) ->
       [
          [
             <<"raw">>,
-            list_to_binary(io_lib:format("~p", [ClientUpdate]))
+            lists:map(fun turn_result:encode/1, ClientUpdate)
          ]
       ]
    ).

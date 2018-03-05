@@ -17,7 +17,7 @@
    moved,
    {
       character_instance_ix :: character_instance:id(),
-      path :: [direction:enum()],
+      path :: list(direction:enum()),
       new_location :: location:type()
    }
 ).
@@ -28,7 +28,7 @@
    {
       attacker_ix :: character_instance:id(),
       defender_ix :: character_instance:id(),
-      sequence :: list(attack:attack_desc())
+      sequence :: list(attack:struct())
    }
 ).
 
@@ -85,7 +85,7 @@ new_character_moved (CharacterInstanceIX, Path, NewLocation) ->
    (
       character_instance:id(),
       character_instance:id(),
-      list(attack:attack_desc())
+      list(attack:struct())
    )
    -> struct().
 new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
@@ -145,4 +145,7 @@ encode (TurnResult) when is_record(TurnResult, attacked) ->
             {<<"seq">>, EncodedSequence}
          ]
       }
-   ).
+   );
+encode (Other) ->
+   io:format("~n invalid encode param\"~p\"~n", [Other]),
+   true = Other.

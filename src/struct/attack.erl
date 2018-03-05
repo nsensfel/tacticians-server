@@ -214,7 +214,7 @@ when
    end;
 apply_to_healths
 (
-   {Attack, Effect},
+   Attack,
    AttackerHealth,
    DefenderHealth
 )
@@ -227,14 +227,15 @@ when
       and ((Attack#attack.order == first) or (Attack#attack.order == second))
    )
 ) ->
-   {_Hits, _Critical, Damage} = Effect,
+   Damage = Attack#attack.damage,
+
    case DefenderHealth of
       0 ->
          {nothing, AttackerHealth, DefenderHealth};
 
       _ ->
          {
-            {Attack, Effect},
+            Attack,
             max(0, (AttackerHealth - Damage)),
             DefenderHealth
          }

@@ -67,9 +67,9 @@ decode_swp_action (_JSONMap) ->
    (
       character_instance:struct(),
       character_instance:struct(),
-      list(attack:attack_order_with_pary())
+      list(attack:step())
    )
-   -> {list(attack:attack_desc()), non_neg_integer(), non_neg_integer()}.
+   -> {list(attack:struct()), non_neg_integer(), non_neg_integer()}.
 handle_attack_sequence
 (
    CharacterInstance,
@@ -187,10 +187,7 @@ when is_record(BattleAction, switch_weapon) ->
          {character_instance, CharacterInstanceIX, wp1, PrimaryWeaponID}
          % ... statistics as well.
       ],
-      % TODO: hide that into turn_result structs.
-      [
-         {switched_weapons, CharacterInstanceIX}
-      ],
+      [turn_result:new_character_switched_weapons(CharacterInstanceIX)],
       Battle,
       UpdatedCharacterInstance
    };
@@ -234,13 +231,11 @@ when is_record(BattleAction, move) ->
       % TODO: hide that into database_diff structs.
       [{character_instance, CharacterInstanceIX, loc, NewLocation}],
       % TODO: hide that into turn_result structs.
-      [
-         {moved, Path, NewLocation}
-      ],
+      [turn_result:new_character_moved(CharacterInstanceIX, Path, NewLocation)],
       Battle,
       UpdatedCharacterInstance
    };
-handle (Battle, CharacterInstance, _CharacterInstanceIX, BattleAction)
+handle (Battle, CharacterInstance, CharacterInstanceIX, BattleAction)
 when is_record(BattleAction, attack) ->
    Character = character_instance:get_character(CharacterInstance),
    TargetIX = BattleAction#attack.target_ix,
@@ -292,8 +287,14 @@ when is_record(BattleAction, attack) ->
    {
       % TODO: hide that into database_diff structs.
       [], % TODO
-      % TODO: hide that into turn_result structs.
-      AttackEffects,
+      [
+         turn_result:new_character_attacked
+         (
+            CharacterInstanceIX,
+            TargetIX,
+            AttackEffects
+         )
+      ],
       UpdatedBattle,
       UpdatedCharacterInstance
    }.
