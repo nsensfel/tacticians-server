@@ -49,7 +49,7 @@
 -spec decode_mov_action (map()) -> struct().
 decode_mov_action (JSONMap) ->
    PathInBinary = maps:get(<<"p">>, JSONMap),
-   Path = lists:map(fun direction:from_binary/1, PathInBinary),
+   Path = lists:map(fun direction:decode/1, PathInBinary),
 
    #move { path = Path }.
 

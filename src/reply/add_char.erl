@@ -38,7 +38,7 @@ attributes_as_json (Attributes) ->
    -> binary().
 encode (IX, CharacterInstance, PlayerID) ->
    Character = character_instance:get_character(CharacterInstance),
-   {X, Y} = character_instance:get_location(CharacterInstance),
+   Location = character_instance:get_location(CharacterInstance),
    Attributes = character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
    OwnerID = character:get_owner_id(Character),
@@ -55,8 +55,7 @@ encode (IX, CharacterInstance, PlayerID) ->
                <<"hea">>,
                character_instance:get_current_health(CharacterInstance)
             },
-            {<<"lcx">>, X},
-            {<<"lcy">>, Y},
+            {<<"lc">>, location:encode(Location)},
             {<<"pla">>, OwnerID},
             {
                <<"ena">>,

@@ -13,6 +13,14 @@
 -export
 (
    [
+      decode/1,
+      encode/1
+   ]
+).
+
+-export
+(
+   [
       apply_direction/2,
       dist/2
    ]
@@ -43,3 +51,9 @@ apply_direction (down, {X, Y}) ->
 -spec dist(type(), type()) -> non_neg_integer().
 dist ({OX, OY}, {DX, DY}) ->
    (abs(DY - OY) + abs(DX - OX)).
+
+-spec encode (type()) -> list(non_neg_integer()).
+encode ({X, Y}) -> [X, Y].
+
+-spec decode (list(non_neg_integer)) -> type().
+decode ([X, Y]) when (is_integer(X) and is_integer(Y)) -> validate({X, Y}).

@@ -12,8 +12,8 @@
 -export
 (
    [
-      from_binary/1,
-      to_binary/1
+      decode/1,
+      encode/1
    ]
 ).
 
@@ -24,13 +24,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec from_binary (binary()) -> enum().
-from_binary (<<"U">>) -> up;
-from_binary (<<"D">>) -> down;
-from_binary (<<"L">>) -> left;
-from_binary (<<"R">>) -> right.
+-spec decode (binary()) -> enum().
+decode (<<"U">>) -> up;
+decode (<<"D">>) -> down;
+decode (<<"L">>) -> left;
+decode (<<"R">>) -> right.
 
-to_binary (up) -> <<"U">>;
-to_binary (down) -> <<"D">>;
-to_binary (left) -> <<"L">>;
-to_binary (right) -> <<"R">>.
+-spec encode (enum()) -> binary().
+encode (up) -> <<"U">>;
+encode (down) -> <<"D">>;
+encode (left) -> <<"L">>;
+encode (right) -> <<"R">>.

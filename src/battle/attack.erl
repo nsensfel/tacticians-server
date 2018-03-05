@@ -21,6 +21,9 @@
       | 'nothing'
    ).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -export_type
 (
    [
@@ -32,15 +35,20 @@
       attack_order_with_parry/0
    ]
 ).
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -export
 (
    [
       get_sequence/3,
       get_description_of/3,
       apply_to_healths/3
+   ]
+).
+
+-export
+(
+   [
+      encode/1
    ]
 ).
 
@@ -278,3 +286,23 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
       true ->
          [First, Counter, Second]
    end.
+
+-spec encode (attack_desc()) -> binary().
+% This shouldn't be a possibility. Types in this module are a mess...
+encode ({AttackCategory, AttackEffect}) ->
+   jiffy:encode
+   (
+      {
+         [
+            <<"attack">>,
+            list_to_binary
+            (
+               io_lib:format
+               (
+                  "~p",
+                  [{AttackCategory, AttackEffect}]
+               )
+            )
+         ]
+      }
+   ).
