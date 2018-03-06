@@ -29,49 +29,6 @@ attributes_as_json (Attributes) ->
       ]
    }.
 
--spec encode
-   (
-      non_neg_integer(),
-      character_instance:struct(),
-      player:id()
-   )
-   -> binary().
-encode (IX, CharacterInstance, PlayerID) ->
-   Character = character_instance:get_character(CharacterInstance),
-   Location = character_instance:get_location(CharacterInstance),
-   Attributes = character:get_attributes(Character),
-   {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
-   OwnerID = character:get_owner_id(Character),
-
-   jiffy:encode
-   (
-      {
-         [
-            {<<"ix">>, IX},
-            {<<"nam">>, character:get_name(Character)},
-            {<<"ico">>, character:get_icon(Character)},
-            {<<"prt">>, character:get_portrait(Character)},
-            {
-               <<"hea">>,
-               character_instance:get_current_health(CharacterInstance)
-            },
-            {<<"lc">>, location:encode(Location)},
-            {<<"pla">>, OwnerID},
-            {
-               <<"ena">>,
-               (
-                  character_instance:get_is_active(CharacterInstance)
-                  and
-                  (OwnerID == PlayerID)
-               )
-            },
-            {<<"att">>, attributes_as_json(Attributes)},
-            {<<"awp">>, ActiveWeapon},
-            {<<"swp">>, SecondaryWeapon}
-         ]
-      }
-   ).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,6 +38,37 @@ encode (IX, CharacterInstance, PlayerID) ->
       character_instance:struct(),
       player:id()
    )
-   -> list(binary()).
+   -> {list(any())}.
 generate (IX, CharacterInstance, PlayerID) ->
-   [<<"add_char">>, encode(IX, CharacterInstance, PlayerID)].
+   Character = character_instance:get_character(CharacterInstance),
+   Location = character_instance:get_location(CharacterInstance),
+   Attributes = character:get_attributes(Character),
+   {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
+   OwnerID = character:get_owner_id(Character),
+
+   {
+      [
+         {<<"msg">>, <<"add_char">>},
+         {<<"ix">>, IX},
+         {<<"nam">>, character:get_name(Character)},
+         {<<"ico">>, character:get_icon(Character)},
+         {<<"prt">>, character:get_portrait(Character)},
+         {
+            <<"hea">>,
+            character_instance:get_current_health(CharacterInstance)
+         },
+         {<<"lc">>, location:encode(Location)},
+         {<<"pla">>, OwnerID},
+         {
+            <<"ena">>,
+            (
+               character_instance:get_is_active(CharacterInstance)
+               and
+               (OwnerID == PlayerID)
+            )
+         },
+         {<<"att">>, attributes_as_json(Attributes)},
+         {<<"awp">>, ActiveWeapon},
+         {<<"swp">>, SecondaryWeapon}
+      ]
+   }.

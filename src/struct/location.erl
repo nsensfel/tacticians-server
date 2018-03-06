@@ -52,8 +52,20 @@ apply_direction (down, {X, Y}) ->
 dist ({OX, OY}, {DX, DY}) ->
    (abs(DY - OY) + abs(DX - OX)).
 
--spec encode (type()) -> list(non_neg_integer()).
-encode ({X, Y}) -> [X, Y].
+-spec encode (type()) -> {list(any())}.
+encode ({X, Y}) ->
+   {
+      [
+         {<<"x">>, X},
+         {<<"y">>, Y}
+      ]
+   }.
 
--spec decode (list(non_neg_integer())) -> type().
-decode ([X, Y]) when (is_integer(X) and is_integer(Y)) -> validate({X, Y}).
+-spec decode (map()) -> type().
+decode (Map) ->
+   X = maps:get(<<"x">>, Map),
+   Y = maps:get(<<"y">>, Map),
+
+   true = (is_integer(X) and is_integer(Y)),
+
+   validate({X, Y}).

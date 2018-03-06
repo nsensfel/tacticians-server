@@ -12,22 +12,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec encode (battlemap:struct()) -> binary().
-encode (Battlemap) ->
-   jiffy:encode
-   (
-      {
-         [
-            {<<"w">>, battlemap:get_width(Battlemap)},
-            {<<"h">>, battlemap:get_height(Battlemap)},
-            {<<"t">>, array:sparse_to_list(battlemap:get_tile_ids(Battlemap))}
-         ]
-      }
-   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (battlemap:struct()) -> list(binary()).
+-spec generate (battlemap:struct()) -> {list(any())}.
 generate (Battlemap) ->
-   [<<"set_map">>, encode(Battlemap)].
+   {
+      [
+         {<<"msg">>, <<"set_map">>},
+         {<<"w">>, battlemap:get_width(Battlemap)},
+         {<<"h">>, battlemap:get_height(Battlemap)},
+         {<<"t">>, array:sparse_to_list(battlemap:get_tile_ids(Battlemap))}
+      ]
+   }.

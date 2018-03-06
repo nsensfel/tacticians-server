@@ -96,19 +96,16 @@ new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
       sequence = AttackSequence
    }.
 
--spec encode (struct()) -> binary().
+-spec encode (struct()) -> {list(any())}.
 encode (TurnResult) when is_record(TurnResult, switched_weapon) ->
    CharacterInstanceIX = TurnResult#switched_weapon.character_instance_ix,
 
-   jiffy:encode
-   (
-      {
-         [
-            {<<"t">>, <<"swp">>},
-            {<<"ix">>, CharacterInstanceIX}
-         ]
-      }
-   );
+   {
+      [
+         {<<"t">>, <<"swp">>},
+         {<<"ix">>, CharacterInstanceIX}
+      ]
+   };
 encode (TurnResult) when is_record(TurnResult, moved) ->
    CharacterInstanceIX = TurnResult#moved.character_instance_ix,
    Path = TurnResult#moved.path,
@@ -117,17 +114,14 @@ encode (TurnResult) when is_record(TurnResult, moved) ->
    EncodedPath = lists:map(fun direction:encode/1, Path),
    EncodedNewLocation = location:encode(NewLocation),
 
-   jiffy:encode
-   (
-      {
-         [
-            {<<"t">>, <<"mv">>},
-            {<<"ix">>, CharacterInstanceIX},
-            {<<"p">>, EncodedPath},
-            {<<"nlc">>, EncodedNewLocation}
-         ]
-      }
-   );
+   {
+      [
+         {<<"t">>, <<"mv">>},
+         {<<"ix">>, CharacterInstanceIX},
+         {<<"p">>, EncodedPath},
+         {<<"nlc">>, EncodedNewLocation}
+      ]
+   };
 encode (TurnResult) when is_record(TurnResult, attacked) ->
    AttackerIX = TurnResult#attacked.attacker_ix,
    DefenderIX = TurnResult#attacked.defender_ix,
@@ -135,17 +129,14 @@ encode (TurnResult) when is_record(TurnResult, attacked) ->
 
    EncodedSequence = lists:map(fun attack:encode/1, Sequence),
 
-   jiffy:encode
-   (
-      {
-         [
-            {<<"t">>, <<"atk">>},
-            {<<"aix">>, AttackerIX},
-            {<<"dix">>, DefenderIX},
-            {<<"seq">>, EncodedSequence}
-         ]
-      }
-   );
+   {
+      [
+         {<<"t">>, <<"atk">>},
+         {<<"aix">>, AttackerIX},
+         {<<"dix">>, DefenderIX},
+         {<<"seq">>, EncodedSequence}
+      ]
+   };
 encode (Other) ->
    io:format("~n invalid encode param\"~p\"~n", [Other]),
    true = Other.

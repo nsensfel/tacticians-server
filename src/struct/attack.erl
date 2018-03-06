@@ -281,7 +281,7 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
          [First, Counter, Second]
    end.
 
--spec encode (struct()) -> binary().
+-spec encode (struct()) -> {list(any())}.
 % This shouldn't be a possibility. Types in this module are a mess...
 encode (Attack) ->
    Order = Attack#attack.order,
@@ -290,15 +290,12 @@ encode (Attack) ->
    IsParry = Attack#attack.is_parry,
    Damage = Attack#attack.damage,
 
-   jiffy:encode
-   (
-      {
-         [
-            {<<"ord">>, encode_order(Order)},
-            {<<"pre">>, encode_precision(Precision)},
-            {<<"cri">>, IsCritical},
-            {<<"par">>, IsParry},
-            {<<"dmg">>, Damage}
-         ]
-      }
-   ).
+   {
+      [
+         {<<"ord">>, encode_order(Order)},
+         {<<"pre">>, encode_precision(Precision)},
+         {<<"cri">>, IsCritical},
+         {<<"par">>, IsParry},
+         {<<"dmg">>, Damage}
+      ]
+   }.

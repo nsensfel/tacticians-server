@@ -151,14 +151,15 @@ update_cache (Battle, Input) ->
    )
    -> binary().
 generate_reply (ClientUpdate) ->
-   %% TODO
    jiffy:encode
    (
       [
-         [
-            <<"raw">>,
-            lists:map(fun turn_result:encode/1, ClientUpdate)
-         ]
+         {
+            [
+               {<<"msg">>, <<"turn_results">>},
+               {<<"cnt">>, lists:map(fun turn_result:encode/1, ClientUpdate)}
+            ]
+         }
       ]
    ).
 
