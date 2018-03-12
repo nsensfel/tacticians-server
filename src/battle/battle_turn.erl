@@ -57,13 +57,13 @@ activate_relevant_character_instances (IXs, CharacterInstances, Owner, IX) ->
 -spec start_next_players_turn (battle:struct()) ->
    {list(non_neg_integer()), battle:struct()}.
 start_next_players_turn (Battle) ->
-   PlayerIDs = battle:get_player_ids(Battle),
+   Players = battle:get_players(Battle),
    PlayerTurn = battle:get_current_player_turn(Battle),
    CurrentPlayerIX = player_turn:get_player_ix(PlayerTurn),
    CurrentTurnNumber = player_turn:get_number(PlayerTurn),
    CharacterInstances = battle:get_character_instances(Battle),
 
-   NextPlayerIX = ((CurrentPlayerIX + 1) rem (array:size(PlayerIDs))),
+   NextPlayerIX = ((CurrentPlayerIX + 1) rem (array:size(Players))),
    NextPlayerTurn =
       player_turn:new
       (
@@ -74,24 +74,33 @@ start_next_players_turn (Battle) ->
          NextPlayerIX
       ),
 
+   NextPlayer = array:get(NextPlayerIX, Players),
+   UpdatedNextPlayer = player:reset_timeline(),
+
    {ActivatedCharacterInstanceIXs, UpdatedCharacterInstances} =
       activate_relevant_character_instances
       (
          [],
          CharacterInstances,
-         array:get(NextPlayerIX, PlayerIDs),
+         player:get_id(NextPlayer),
          (array:size(CharacterInstances) - 1)
       ),
    UpdatedBattle =
-      battle:set_character_instances
+      battle:set_player
       (
-         UpdatedCharacterInstances,
-         battle:set_current_player_turn
+         NextPlayerIX,
+         UpdatedNextPlayer,
+         battle:set_character_instances
          (
-            NextPlayerTurn,
-            Battle
+            UpdatedCharacterInstances,
+            battle:set_current_player_turn
+            (
+               NextPlayerTurn,
+               Battle
+            )
          )
       ),
+   % TODO: have a diff operation for the player's timeline being reset. 
    {ActivatedCharacterInstanceIXs, UpdatedBattle}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

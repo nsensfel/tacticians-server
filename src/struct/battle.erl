@@ -12,9 +12,8 @@
       id :: id(),
       battlemap :: battlemap:struct(),
       character_instances :: array:array(character_instance:struct()),
-      player_ids :: array:array(player:id()),
-      current_player_turn :: player_turn:struct(),
-      last_turns_effects :: list(any())
+      players :: array:array(player:struct()),
+      current_player_turn :: player_turn:struct()
    }
 ).
 
@@ -33,17 +32,17 @@
       get_battlemap/1,
       get_character_instances/1,
       get_character_instance/2,
-      get_player_ids/1,
-      get_player_id/2,
+      get_players/1,
+      get_player/2,
       get_current_player_turn/1,
-      get_last_turns_effects/1,
+      get_encoded_last_turns_effects/1,
 
       set_battlemap/2,
       set_character_instances/2,
       set_character_instance/3,
-      set_player_ids/2,
-      set_current_player_turn/2,
-      set_last_turns_effects/2
+      set_players/2,
+      set_player/3,
+      set_current_player_turn/2
    ]
 ).
 
@@ -79,21 +78,22 @@ get_character_instances (Battle) ->
 get_character_instance (IX, Battle) ->
    array:get(IX, Battle#battle.character_instances).
 
--spec get_player_ids (struct()) -> array:array(player:id()).
-get_player_ids (Battle) ->
-   Battle#battle.player_ids.
+-spec get_players (struct()) -> array:array(player:struct()).
+get_players (Battle) ->
+   Battle#battle.players.
 
--spec get_player_id (non_neg_integer(), struct()) -> player:id().
-get_player_id (IX, Battle) ->
-   array:get(IX, Battle#battle.player_ids).
+-spec get_player (non_neg_integer(), struct()) -> player:struct().
+get_player (IX, Battle) ->
+   array:get(IX, Battle#battle.players).
 
 -spec get_current_player_turn (struct()) -> player_turn:struct().
 get_current_player_turn (Battle) ->
    Battle#battle.current_player_turn.
 
--spec get_last_turns_effects (struct()) -> list(any()).
-get_last_turns_effects (Battle) ->
-   Battle#battle.last_turns_effects.
+-spec get_encoded_last_turns_effects (struct()) -> list(any()).
+get_encoded_last_turns_effects (_Battle) ->
+   % TODO
+   [].
 
 -spec set_battlemap (battlemap:struct(), struct()) -> struct().
 set_battlemap (Battlemap, Battle) ->
@@ -133,16 +133,35 @@ set_character_instance (IX, CharacterInstance, Battle) ->
          )
    }.
 
--spec set_player_ids
+-spec set_players
    (
-      array:array(player:id()),
+      array:array(player:struct()),
       struct()
    )
    -> struct().
-set_player_ids (Players, Battle) ->
+set_players (Players, Battle) ->
    Battle#battle
    {
-      player_ids = Players
+      players = Players
+   }.
+
+-spec set_player
+   (
+      non_neg_integer(),
+      player:struct(),
+      struct()
+   )
+   -> struct().
+set_player (IX, Player, Battle) ->
+   Battle#battle
+   {
+      players =
+         array:set
+         (
+            IX,
+            Player,
+            Battle#battle.players
+         )
    }.
 
 -spec set_current_player_turn
@@ -157,22 +176,10 @@ set_current_player_turn (PlayerTurn, Battle) ->
       current_player_turn = PlayerTurn
    }.
 
--spec set_last_turns_effects
-   (
-      list(any()),
-      struct()
-   )
-   -> struct().
-set_last_turns_effects (Effects, Battle) ->
-   Battle#battle
-   {
-      last_turns_effects = Effects
-   }.
-
 -spec random
    (
       id(),
-      list(player:id()),
+      list(player:struct()),
       battlemap:struct(),
       list(character:struct())
    )
@@ -221,7 +228,6 @@ random (ID, PlayersAsList, Battlemap, Characters) ->
       id = ID,
       battlemap = Battlemap,
       character_instances = array:from_list(CharacterInstancesAsList),
-      player_ids = array:from_list(PlayersAsList),
-      current_player_turn = player_turn:new(0, 0),
-      last_turns_effects = []
+      players = array:from_list(PlayersAsList),
+      current_player_turn = player_turn:new(0, 0)
    }.

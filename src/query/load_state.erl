@@ -87,6 +87,8 @@ generate_reply (QueryState, Input) ->
             )
          )
       ]
+      ++
+      battle:get_encoded_last_turns_effects(Battle)
    ).
 
 -spec handle (binary()) -> binary().

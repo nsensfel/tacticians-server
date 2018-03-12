@@ -87,11 +87,11 @@ assert_character_instance_can_be_played (RData, Input) ->
       (
          battle:get_current_player_turn(Battle)
       ),
-   CurrentPlayer = battle:get_player_id(CurrentPlayerIX, Battle),
-   CharacterOwner = character:get_owner_id(Character),
+   CurrentPlayer = battle:get_player(CurrentPlayerIX, Battle),
+   CharacterOwnerID = character:get_owner_id(Character),
 
-   PlayerID = CurrentPlayer,
-   PlayerID = CharacterOwner,
+   PlayerID = player:get_id(CurrentPlayer),
+   PlayerID = CharacterOwnerID,
 
    true = character_instance:get_is_active(CharacterInstance).
 
