@@ -145,27 +145,18 @@ update_cache (Battle, Input) ->
       Battle
    ).
 
--spec generate_reply
-   (
-      list(turn_result:struct())
-   )
-   -> binary().
-generate_reply (ClientUpdate) ->
+-spec generate_reply ( list(any())) -> binary().
+generate_reply (EncodedClientUpdate) ->
    jiffy:encode
    (
       [
-         {
-            [
-               {<<"msg">>, <<"turn_results">>},
-               {<<"cnt">>, lists:map(fun turn_result:encode/1, ClientUpdate)}
-            ]
-         }
+         turn_results:generate(EncodedClientUpdate)
       ]
    ).
 
 handle_actions (RData, Input) ->
    Battle = RData#relevant_data.battle,
-   CharacterInstance= RData#relevant_data.played_character_instance,
+   CharacterInstance = RData#relevant_data.played_character_instance,
    CharacterInstanceIX = Input#input.character_instance_ix,
    Actions = Input#input.actions,
 
@@ -236,10 +227,15 @@ handle (Req) ->
    {ActionsDiffUpdate, ClientUpdate, UpdatedRData} =
       handle_actions(RData, Input),
 
+   EncodedClientUpdate = lists:map(fun turn_result:encode/1, ClientUpdate),
+
    UpdatedBattle = finalize_and_fuse_relevant_data(UpdatedRData, Input),
 
+   UpdatedBattle2 =
+      battle_turn:store_timeline(EncodedClientUpdate, UpdatedBattle),
+
    {TurnDiffUpdate, FinalizedBattle} =
-      battle_turn:handle_post_play(UpdatedBattle),
+      battle_turn:handle_post_play(UpdatedBattle2),
 
    DiffUpdate = (TurnDiffUpdate ++ ActionsDiffUpdate),
 
@@ -251,7 +247,7 @@ handle (Req) ->
 
    security:unlock_queries(PlayerID),
 
-   generate_reply(ClientUpdate).
+   generate_reply(EncodedClientUpdate).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

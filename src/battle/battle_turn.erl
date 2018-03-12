@@ -10,7 +10,8 @@
 -export
 (
    [
-      handle_post_play/1
+      handle_post_play/1,
+      store_timeline/2
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +76,7 @@ start_next_players_turn (Battle) ->
       ),
 
    NextPlayer = array:get(NextPlayerIX, Players),
-   UpdatedNextPlayer = player:reset_timeline(),
+   UpdatedNextPlayer = player:reset_timeline(NextPlayer),
 
    {ActivatedCharacterInstanceIXs, UpdatedCharacterInstances} =
       activate_relevant_character_instances
@@ -107,8 +108,24 @@ start_next_players_turn (Battle) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec handle_post_play (battle:struct()) ->
-   {database_diff:struct(), battle:struct()}.
+-spec store_timeline
+   (
+      list(any()),
+      battle:struct()
+   )
+   -> battle:struct().
+store_timeline (TurnEffects, Battle) ->
+   PlayerTurn = battle:get_current_player_turn(Battle),
+   PlayerIX = player_turn:get_player_ix(PlayerTurn),
+   Player = battle:get_player(PlayerIX, Battle),
+
+   UpdatedPlayer = player:add_to_timeline(TurnEffects, Player),
+
+   battle:set_player(PlayerIX, UpdatedPlayer, Battle).
+
+
+-spec handle_post_play (battle:struct())
+   -> {database_diff:struct(), battle:struct()}.
 handle_post_play (Battle) ->
    CharacterInstances = battle:get_character_instances(Battle),
 

@@ -56,6 +56,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
+   Player = array:get(CurrentIndex, Players),
+   Timeline = player:get_timeline(Player),
+   NextIndex = ((CurrentIndex + 1) rem ArraySize),
+   NextResult = (Result ++ Timeline),
+   case CurrentIndex of
+      EndPoint ->
+         NextResult;
+
+      _ ->
+         get_all_timelines(NextResult, NextIndex, EndPoint, ArraySize, Players)
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,9 +103,14 @@ get_current_player_turn (Battle) ->
    Battle#battle.current_player_turn.
 
 -spec get_encoded_last_turns_effects (struct()) -> list(any()).
-get_encoded_last_turns_effects (_Battle) ->
-   % TODO
-   [].
+get_encoded_last_turns_effects (Battle) ->
+   CurrentPlayerTurn = Battle#battle.current_player_turn,
+   Players = Battle#battle.players,
+   CurrentPlayerIX = player_turn:get_player_ix(CurrentPlayerTurn),
+
+   PlayersCount = array:size(Players),
+   StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
+   get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
 
 -spec set_battlemap (battlemap:struct(), struct()) -> struct().
 set_battlemap (Battlemap, Battle) ->
