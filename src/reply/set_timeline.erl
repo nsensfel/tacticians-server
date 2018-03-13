@@ -1,4 +1,4 @@
--module(turn_results).
+-module(set_timeline).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,10 +18,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate (list(any())) -> {list(any())}.
 generate (EncodedClientUpdate) ->
-   io:format("~nSending turn results:~n~p~n", [EncodedClientUpdate]),
+   io:format("~nSending timeline:~n~p~n", [EncodedClientUpdate]),
    {
       [
-         {<<"msg">>, <<"turn_results">>},
+         {<<"msg">>, <<"set_timeline">>},
          {<<"cnt">>, EncodedClientUpdate}
       ]
    }.

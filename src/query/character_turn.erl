@@ -147,12 +147,7 @@ update_cache (Battle, Input) ->
 
 -spec generate_reply ( list(any())) -> binary().
 generate_reply (EncodedClientUpdate) ->
-   jiffy:encode
-   (
-      [
-         turn_results:generate(EncodedClientUpdate)
-      ]
-   ).
+   jiffy:encode([turn_results:generate(EncodedClientUpdate)]).
 
 handle_actions (RData, Input) ->
    Battle = RData#relevant_data.battle,

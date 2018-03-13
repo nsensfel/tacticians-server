@@ -74,7 +74,7 @@ generate_reply (QueryState, Input) ->
    jiffy:encode
    (
       [
-         turn_results:generate(battle:get_encoded_last_turns_effects(Battle)),
+         set_timeline:generate(battle:get_encoded_last_turns_effects(Battle)),
          set_map:generate(battle:get_battlemap(Battle))
          |
          array:sparse_to_list
