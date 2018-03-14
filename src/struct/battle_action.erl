@@ -113,7 +113,7 @@ handle_attack_sequence
             nothing -> {AttackValidEffects, AttackerHealth, DefenderHealth};
             _ ->
                {
-                  [AttackResult|AttackValidEffects],
+                  (AttackValidEffects ++ [AttackResult]),
                   NewAttackerHealth,
                   NewDefenderHealth
                }

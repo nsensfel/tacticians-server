@@ -187,8 +187,8 @@ handle_actions (RData, Input) ->
                   Action
                ),
             {
-               (CurrActionsDiffUpdates ++ NewActionsDiffUpdates),
-               (CurrClientUpdates ++ NewClientUpdates),
+               (NewActionsDiffUpdates ++ CurrActionsDiffUpdates),
+               (NewClientUpdates ++ CurrClientUpdates),
                NewBattle,
                NewCharacterInstance
             }

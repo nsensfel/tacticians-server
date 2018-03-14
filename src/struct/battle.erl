@@ -60,7 +60,7 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
    Player = array:get(CurrentIndex, Players),
    Timeline = player:get_timeline(Player),
    NextIndex = ((CurrentIndex + 1) rem ArraySize),
-   NextResult = (Result ++ Timeline),
+   NextResult = (Timeline ++ Result),
    case CurrentIndex of
       EndPoint ->
          NextResult;

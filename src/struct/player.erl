@@ -56,7 +56,7 @@ add_to_timeline (NewEvents, Player) ->
 
    Player#player
    {
-      timeline = (OldTimeline ++ NewEvents)
+      timeline = (NewEvents ++ OldTimeline)
    }.
 
 -spec reset_timeline (struct()) -> struct().
