@@ -255,6 +255,7 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
       weapon:get_ranges(DefenderWeapon),
 
    AttackerCanAttack = (AttackRange =< AttackerAttackRange),
+   AttackerCanAttack = true,
    AttackerCanDefend =
       (AttackerCanAttack and (AttackRange > AttackerDefenseRange)),
    AttackerCanParry =
@@ -271,9 +272,6 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
    Counter = {counter, AttackerCanParry},
 
    if
-      (not AttackerCanAttack) ->
-         [];
-
       (not DefenderCanDefend) ->
          [First, Second];
 
