@@ -44,6 +44,7 @@ include ${CURDIR}/mk/debug.mk
 include ${CURDIR}/mk/erlang.mk
 include ${CURDIR}/mk/preprocessor.mk
 include ${CURDIR}/mk/yaws.mk
+
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
@@ -56,7 +57,7 @@ build: $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 run: yaws_run
 
 clean:
-	rm -rf $(BIN_DIR)/*
+	rm -rf $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 
 ################################################################################
 ## INTERNAL RULES ##############################################################

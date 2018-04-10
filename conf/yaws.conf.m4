@@ -4,17 +4,17 @@
 
 # This is the directory where all logfiles for
 # all virtual servers will be written.
-logdir = /my/src/yaws/_inst/var/log/yaws
+logdir = __MODULE_LOG_DIR
 
 # These are the paths to directories where additional
 # beam code can be placed. The daemon will add these
 # directories to its search path.
-ebin_dir = /my/src/tacticians-server/ebin
+ebin_dir = __MODULE_BIN_DIR
 
 # This is a directory where application specific .hrl
 # files can be placed. Application-specific .yaws code can
 # then include these .hrl files.
-include_dir = /my/src/yaws/_inst/lib/yaws/examples/include
+include_dir = __MODULE_INCLUDE_DIR
 
 # Set this to an integer value to control
 # max number of connections from clients into the server.
@@ -106,10 +106,10 @@ keepalive_timeout = 30000
 # in this case, but an explicit IP can be given as well.
 
 <server *>
-        port = 8000
-        listen = 0.0.0.0
-         docroot = /my/src/tacticians-server/www/
-        auth_log = true
-        appmods = character_turn load_state
-        start_mod = handler
+  port = 8000
+  listen = 0.0.0.0
+  docroot = __MODULE_WWW_DIR
+  auth_log = true
+  appmods = __MODULE_APP_MODS
+  start_mod = handler
 </server>
