@@ -1,88 +1,53 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-SRC_DIR ?= src
-BIN_DIR ?= ebin
-CONF_DIR ?= conf
-INCLUDE_DIR ?= include
-UNUSED_WWW_DIR ?= www
+MODULES ?= battlemap
 
-YAWS_CONF ?= $(CONF_DIR)/yaws.conf
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
-
-DIALYZER_PLT_FILE ?= tacticians-server.plt
-
-## Binaries
-YAWS ?= yaws
-ERLC ?= erlc
-ERLC_OPTS ?=
-DIALYZER ?= dialyzer
-
-REQUIRED_HEADERS = $(INCLUDE_DIR)/yaws_api.hrl
+SRC_DIR ?= ${CURDIR}/src
 
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
+MODULES_SRC = $(addprefix $(SRC_DIR)/,$(MODULES))
 
-SRC_FILES = $(wildcard $(SRC_DIR)/*.erl)
-MODULES = $(patsubst %.erl,%,$(SRC_FILES))
-SUB_DIRS = $(filter-out $(MODULES),$(sort $(dir $(wildcard $(SRC_DIR)/*/))))
-BIN_FILES = $(patsubst $(SRC_DIR)/%.erl,$(BIN_DIR)/%.beam,$(SRC_FILES))
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
+MISSING_MODULES_DIR = \
+	$(filter-out $(wildcard $(MODULES_SRC)),$(MODULES_SRC))
 
+ifneq ($(MISSING_MODULES_DIR),)
+$(error "The following modules are missing: $(MISSING_MODULES_DIR)")
+endif
 
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-export
-
 all:
-	for subdir in $(SUB_DIRS) ; do \
-		echo "Building dir $$subdir" ; \
-		$(MAKE) build SRC_DIR=$$subdir || exit 1;\
+	for module in $(MODULES_SRC) ; do \
+		$(MAKE) -C $$module all; \
 	done
 
-debug: $(DIALYZER_PLT_FILE)
-	$(MAKE) build_debug
-	$(DIALYZER) --check_plt --plt $(DIALYZER_PLT_FILE)
-	$(DIALYZER) --get_warnings $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl \
-		--src --plt $(DIALYZER_PLT_FILE)
+debug:
+	for module in $(MODULES_SRC) ; do \
+		$(MAKE) -C $$module debug ; \
+	done
 
-build_debug:
-	$(MAKE) clean
-	$(MAKE) ERLC_OPTS=+debug_info
+build:
+	for module in $(MODULES_SRC) ; do \
+		$(MAKE) -C $$module build ; \
+	done
 
-build: $(BIN_DIR) $(REQUIRED_HEADERS) $(BIN_FILES)
-
-run: all $(UNUSED_WWW_DIR)
-	$(YAWS) --conf $(YAWS_CONF)
+run:
+	for module in $(MODULES_SRC) ; do \
+		$(MAKE) -C $$module run; \
+	done
 
 clean:
-	rm -rf $(BIN_DIR)/*
+	for module in $(MODULES_SRC) ; do \
+		$(MAKE) -C $$module clean; \
+	done
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
-
-$(DIALYZER_PLT_FILE):
-	$(DIALYZER) --build_plt --apps erts kernel stdlib jiffy --output_plt $@
-	$(MAKE) build_debug
-	$(DIALYZER) --add_to_plt --plt $@ -r $(BIN_DIR)
-
-$(INCLUDE_DIR)/yaws_api.hrl: $(YAWS_API_HEADER) $(INCLUDE_DIR)
-	cp $< $@
-
-$(BIN_DIR):
-	mkdir -p $@
-
-$(UNUSED_WWW_DIR):
-	mkdir -p $@
-
-$(INCLUDE_DIR):
-	mkdir -p $@
-
-.SECONDEXPANSION:
-$(BIN_FILES): $(BIN_DIR)/%.beam : $(SRC_DIR)/%.erl $$(wildcard $$(SRC_DIR)/%/.)
-	$(ERLC) $(ERLC_OPTS) -o $(BIN_DIR) $<
