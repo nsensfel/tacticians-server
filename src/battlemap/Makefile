@@ -1,17 +1,23 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-YAWS_CONF ?= $(CONF_DIR)/yaws.conf
+YAWS_CONF ?= ${CURDIR}/yaws.conf
 YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
+
+MODULE_NAME ?= $ $(shell basename ${CURDIR})
+MODULE_PORT ?= 8001
 
 DIALYZER_PLT_FILE ?= tacticians-server.plt
 
 ## Main Directories
-SRC_DIR ?= src
-CONF_DIR ?= conf
+SRC_DIR ?= ${CURDIR}/src
+CONF_DIR ?= ${CURDIR}/conf
+
 #### Optional Dirs
-BIN_DIR ?= ebin
-INCLUDE_DIR ?= include
+BIN_DIR ?= ${CURDIR}/ebin
+INCLUDE_DIR ?= ${CURDIR}/include
+WWW_DIR ?= ${CURDIR}/www
+LOG_DIR ?= ${CURDIR}/log
 
 ## Binaries
 YAWS ?= yaws
@@ -22,7 +28,7 @@ DIALYZER ?= dialyzer
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR)
+OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR) $(WWW_DIR) $(LOG_DIR)
 REQUIRED_HEADERS = $(INCLUDE_DIR)/yaws_api.hrl
 
 ################################################################################
