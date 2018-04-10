@@ -1,65 +1,28 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-YAWS_CONF ?= $(CONF_DIR)/yaws.conf
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
-
-DIALYZER_PLT_FILE ?= tacticians-server.plt
-
-## Main Directories
-SRC_DIR ?= src
-CONF_DIR ?= conf
-#### Optional Dirs
-BIN_DIR ?= ebin
-INCLUDE_DIR ?= include
-
-## Binaries
-YAWS ?= yaws
 ERLC ?= erlc
 ERLC_OPTS ?=
-DIALYZER ?= dialyzer
 
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR)
-REQUIRED_HEADERS = $(INCLUDE_DIR)/yaws_api.hrl
+SRC_FILES ?= $(wildcard $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl)
+BIN_FILES = \
+	$(patsubst %.erl,$(BIN_DIR)/%.beam,$(notdir $(SRC_FILES)))
 
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
-DIALYZER_PLT_FILE ?= tacticians-server.plt
 
-## Main Directories
-SRC_DIR ?= src
-CONF_DIR ?= conf
-
-################################################################################
-## INCLUDES ####################################################################
-################################################################################
-main_target: all
-
-include ${CURDIR}/mk/debug.mk
-include ${CURDIR}/mk/erlang.mk
-include ${CURDIR}/mk/preprocessor.mk
-include ${CURDIR}/mk/yaws.mk
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-all: build
-
-debug: debug_run
-
-build: $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
-
-run: yaws_run
-
-clean:
-	rm -rf $(BIN_DIR)/*
+ERLANG_RESULT = $(BIN_DIR) $(BIN_FILES)
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
-$(OPTIONAL_DIRS): %:
-	mkdir -p $@
+.SECONDEXPANSION:
+$(BIN_FILES): $(BIN_DIR)/%.beam : $$(wildcard $(SRC_DIR)/*/%.erl $(SRC_DIR)/%.erl)
+	$(ERLC) $(ERLC_OPTS) -o $(BIN_DIR) $<

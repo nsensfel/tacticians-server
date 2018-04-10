@@ -1,65 +1,39 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-YAWS_CONF ?= $(CONF_DIR)/yaws.conf
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
-
 DIALYZER_PLT_FILE ?= tacticians-server.plt
-
-## Main Directories
-SRC_DIR ?= src
-CONF_DIR ?= conf
-#### Optional Dirs
-BIN_DIR ?= ebin
-INCLUDE_DIR ?= include
-
-## Binaries
-YAWS ?= yaws
-ERLC ?= erlc
-ERLC_OPTS ?=
 DIALYZER ?= dialyzer
 
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR)
-REQUIRED_HEADERS = $(INCLUDE_DIR)/yaws_api.hrl
+SRC_FILES ?= $(wildcard $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl)
 
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
-DIALYZER_PLT_FILE ?= tacticians-server.plt
 
-## Main Directories
-SRC_DIR ?= src
-CONF_DIR ?= conf
-
-################################################################################
-## INCLUDES ####################################################################
-################################################################################
-main_target: all
-
-include ${CURDIR}/mk/debug.mk
-include ${CURDIR}/mk/erlang.mk
-include ${CURDIR}/mk/preprocessor.mk
-include ${CURDIR}/mk/yaws.mk
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-all: build
+DEBUG_RESULT = $(DIALYZER_PLT_FILE)
 
-debug: debug_run
-
-build: $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
-
-run: yaws_run
-
-clean:
-	rm -rf $(BIN_DIR)/*
+debug_rebuild:
+	$(MAKE) clean
+	$(MAKE) ERLC_OPTS=+debug_info
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
-$(OPTIONAL_DIRS): %:
-	mkdir -p $@
+ifeq ($(wildcard $(DIALYZER_PLT_FILE)),)
+debug_run:
+	$(DIALYZER) --build_plt --apps erts kernel stdlib jiffy --output_plt $@
+	$(MAKE) debug_rebuild
+	$(DIALYZER) --add_to_plt --plt $@ -r $(BIN_DIR)
+else
+debug_run:
+	$(MAKE) debug_rebuild
+	$(DIALYZER) --check_plt --plt $(DIALYZER_PLT_FILE)
+	$(DIALYZER) --get_warnings $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl \
+		--src --plt $(DIALYZER_PLT_FILE)
+endif
