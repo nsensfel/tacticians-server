@@ -41,10 +41,15 @@ attributes_as_json (Attributes) ->
    -> {list(any())}.
 generate (IX, CharacterInstance, PlayerID) ->
    Character = character_instance:get_character(CharacterInstance),
-   Location = character_instance:get_location(CharacterInstance),
+   IsAlive = character_instance:get_is_alive(CharacterInstance),
    Attributes = character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
    OwnerID = character:get_owner_id(Character),
+   Location =
+      case IsAlive of
+         true -> character_instance:get_location(CharacterInstance);
+         _ -> location:get_nowhere()
+      end,
 
    {
       [

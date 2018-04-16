@@ -36,6 +36,7 @@
       get_character/1,
       get_location/1,
       get_current_health/1,
+      get_is_alive/1,
       get_is_active/1,
 
       set_character/2,
@@ -81,17 +82,23 @@ find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
 get_character (CharInst) -> CharInst#character_instance.character.
 
 -spec get_location (struct()) -> {non_neg_integer(), non_neg_integer()}.
-get_location (CharInst) -> CharInst#character_instance.location.
+get_location (CharInst) ->
+   true = get_is_alive(CharInst),
+   CharInst#character_instance.location.
 
 -spec get_current_health (struct()) -> non_neg_integer().
 get_current_health (CharInst) -> CharInst#character_instance.current_health.
+
+-spec get_is_alive (struct()) -> boolean().
+get_is_alive (CharInst) ->
+   (CharInst#character_instance.current_health > 0).
 
 -spec get_is_active (struct()) -> boolean().
 get_is_active (CharInst) ->
    (
       CharInst#character_instance.active
       and
-      (CharInst#character_instance.current_health > 0)
+      get_is_alive(CharInst)
    ).
 
 -spec set_character (character:struct(), struct()) -> struct().
@@ -117,7 +124,7 @@ set_location (Location, CharInst) ->
 set_current_health (Health, CharInst) ->
    CharInst#character_instance
    {
-      current_health = Health
+      current_health = max(0, Health)
    }.
 
 -spec set_is_active (boolean(), struct()) -> struct().

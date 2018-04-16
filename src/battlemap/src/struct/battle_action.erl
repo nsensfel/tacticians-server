@@ -204,9 +204,11 @@ when is_record(BattleAction, move) ->
       array:foldl
       (
          fun (IX, CharInst, Prev) ->
-            case IX of
-               CharacterInstanceIX -> Prev;
-               _ -> [character_instance:get_location(CharInst)|Prev]
+            IsAlive = character_instance:get_is_alive(CharInst),
+            if
+               (IX == CharacterInstanceIX) -> Prev;
+               (not IsAlive) -> Prev;
+               true -> [character_instance:get_location(CharInst)|Prev]
             end
          end,
          [],
