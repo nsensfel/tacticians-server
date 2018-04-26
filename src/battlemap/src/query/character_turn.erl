@@ -6,104 +6,47 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("../../include/yaws_api.hrl").
 
--record
-(
-   input,
-   {
-      player_id :: player:id(),
-      session_token :: binary(),
-      battle_id :: binary(),
-      character_instance_ix :: non_neg_integer(),
-      actions :: list(battle_action:struct())
-   }
-).
 
 -record
 (
-   relevant_data,
+   data,
    {
       battle :: battle:struct(),
       played_character_instance :: character_instance:struct()
    }
 ).
 
--type input() :: #input{}.
--type relevant_data() :: #relevant_data{}.
+-record
+(
+   update,
+   {
+      updated_data :: data(),
+      timeline_update :: list(any()),
+      db_update :: list(any())
+   }
+).
+
+-type data() :: #data{}.
+-type update() :: #update{}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -export([out/1]).
 
--export_type([relevant_data/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec parse_input (binary()) -> input().
-parse_input (Req) ->
-   JSONReqMap = jiffy:decode(Req, [return_maps]),
-   CharacterInstanceIX = binary_to_integer(maps:get(<<"cix">>, JSONReqMap)),
-   EncodedActions = maps:get(<<"act">>, JSONReqMap),
-   Actions = lists:map(fun battle_action:decode/1, EncodedActions),
-
-   #input
-   {
-      player_id = maps:get(<<"pid">>, JSONReqMap),
-      session_token = maps:get(<<"stk">>, JSONReqMap),
-      battle_id = maps:get(<<"bid">>, JSONReqMap),
-      character_instance_ix = CharacterInstanceIX,
-      actions = Actions
-   }.
-
--spec fetch_relevant_data (input()) -> relevant_data().
-fetch_relevant_data (Input) ->
-   PlayerID = Input#input.player_id,
-   BattleID = Input#input.battle_id,
-   CharacterInstanceIX = Input#input.character_instance_ix,
-
-   Battle = timed_cache:fetch(battle_db, PlayerID, BattleID),
-   CharacterInstance =
-      battle:get_character_instance(CharacterInstanceIX, Battle),
-
-   #relevant_data
-   {
-      battle = Battle,
-      played_character_instance = CharacterInstance
-   }.
-
--spec assert_character_instance_can_be_played
+-spec finalize_and_fuse_data
    (
-      relevant_data(),
-      input()
-   )
-   -> true.
-assert_character_instance_can_be_played (RData, Input) ->
-   PlayerID = Input#input.player_id,
-   CharacterInstance = RData#relevant_data.played_character_instance,
-   Battle = RData#relevant_data.battle,
-   Character = character_instance:get_character(CharacterInstance),
-   CurrentPlayerIX =
-      player_turn:get_player_ix
-      (
-         battle:get_current_player_turn(Battle)
-      ),
-   CurrentPlayer = battle:get_player(CurrentPlayerIX, Battle),
-   CharacterOwnerID = character:get_owner_id(Character),
-
-   PlayerID = player:get_id(CurrentPlayer),
-   PlayerID = CharacterOwnerID,
-
-   true = character_instance:get_is_active(CharacterInstance).
-
--spec finalize_and_fuse_relevant_data
-   (
-      relevant_data(),
-      input()
+      data(),
+      character_turn_request:type()
    )
    -> battle:struct().
-finalize_and_fuse_relevant_data (RData, Input) ->
-   Battle = RData#relevant_data.battle,
-   CharacterInstance = RData#relevant_data.played_character_instance,
+finalize_and_fuse_data (Data, Request) ->
+   Battle = Data#data.battle,
+   CharacterInstance = Data#data.played_character_instance,
 
    io:format("~nNot a character instance? ~p~n", [CharacterInstance]),
 
@@ -112,16 +55,16 @@ finalize_and_fuse_relevant_data (RData, Input) ->
 
    battle:set_character_instance
    (
-      Input#input.character_instance_ix,
+      Request#request.character_instance_ix,
       FinalizedCharacterInstance,
       Battle
    ).
 
-%-spec send_to_database (list(database_diff:struct()), input()) -> 'ok'.
--spec send_to_database (battle:struct(), input()) -> 'ok'.
-send_to_database (FinalizedBattle, Input) ->
-   PlayerID = Input#input.player_id,
-   BattleID = Input#input.battle_id,
+%-spec send_to_database (list(database_diff:struct()), character_turn_request:type()) -> 'ok'.
+-spec send_to_database (battle:struct(), character_turn_request:type()) -> 'ok'.
+send_to_database (FinalizedBattle, Request) ->
+   PlayerID = Request#request.player_id,
+   BattleID = Request#request.battle_id,
 
    %% TODO: differential commit
    database_shim:commit
@@ -132,10 +75,10 @@ send_to_database (FinalizedBattle, Input) ->
       FinalizedBattle
    ).
 
--spec update_cache (battle:struct(), input()) -> 'ok'.
-update_cache (Battle, Input) ->
-   PlayerID = Input#input.player_id,
-   BattleID = Input#input.battle_id,
+-spec update_cache (battle:struct(), character_turn_request:type()) -> 'ok'.
+update_cache (Battle, Request) ->
+   PlayerID = Request#request.player_id,
+   BattleID = Request#request.battle_id,
 
    timed_cache:update
    (
@@ -149,11 +92,11 @@ update_cache (Battle, Input) ->
 generate_reply (EncodedClientUpdate) ->
    jiffy:encode([turn_results:generate(EncodedClientUpdate)]).
 
-handle_actions (RData, Input) ->
-   Battle = RData#relevant_data.battle,
-   CharacterInstance = RData#relevant_data.played_character_instance,
-   CharacterInstanceIX = Input#input.character_instance_ix,
-   Actions = Input#input.actions,
+handle_actions (Data, Request) ->
+   Battle = Data#data.battle,
+   CharacterInstance = Data#data.played_character_instance,
+   CharacterInstanceIX = Request#request.character_instance_ix,
+   Actions = Request#request.actions,
 
    {
       ActionsDiffUpdates,
@@ -199,32 +142,77 @@ handle_actions (RData, Input) ->
    {
       ActionsDiffUpdates,
       ClientUpdates,
-      RData#relevant_data
+      Data#data
       {
          battle = PostActionBattle,
          played_character_instance = PostActionCharacterInstance
       }
    }.
 
--spec handle (binary()) -> binary().
-handle (Req) ->
-   Input = parse_input(Req),
-   PlayerID = Input#input.player_id,
-   PlayerSessionToken = Input#input.session_token,
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-   security:assert_identity(PlayerID, PlayerSessionToken),
-   security:lock_queries(PlayerID),
+-spec decode_request (binary()) -> character_turn_request:type().
+decode_request (BinaryRequest) ->
+   JSONMap = jiffy:decode(BinaryRequest, [return_maps]),
+   character_turn_request:decode(JSONMap).
 
-   RData = fetch_relevant_data(Input),
+-spec authenticate_user (character_turn_request:type()) -> 'ok'.
+authenticate_user (Request) ->
+   PlayerID = character_turn_request:get_player_id(Request),
+   SessionToken = character_turn_request:get_session_token(Request),
 
-   assert_character_instance_can_be_played(RData, Input),
+   security:assert_identity(PlayerID, SessionToken),
+   security:lock_queries(PlayerID).
 
-   {ActionsDiffUpdate, ClientUpdate, UpdatedRData} =
-      handle_actions(RData, Input),
+-spec fetch_data (character_turn_request:type()) -> data().
+fetch_data (Request) ->
+   PlayerID = character_turn_request:get_player_id(Request),
+   BattleID = character_turn_request:get_battle_id(Request),
+   CharacterInstanceIX =
+      character_turn_request:get_character_instance_ix(Request),
+
+   Battle = timed_cache:fetch(battle_db, PlayerID, BattleID),
+   CharacterInstance =
+      battle:get_character_instance(CharacterInstanceIX, Battle),
+
+   #data
+   {
+      battle = Battle,
+      played_character_instance = CharacterInstance
+   }.
+
+-spec assert_user_permissions (data(), character_turn_request:type()) -> true.
+assert_user_permissions (Data, Request) ->
+   PlayerID = character_turn_request:get_player_id(Request),
+   CharacterInstance = Data#data.played_character_instance,
+   Battle = Data#data.battle,
+   Character = character_instance:get_character(CharacterInstance),
+   CurrentPlayerIX =
+      player_turn:get_player_ix
+      (
+         battle:get_current_player_turn(Battle)
+      ),
+   CurrentPlayer = battle:get_player(CurrentPlayerIX, Battle),
+   CharacterOwnerID = character:get_owner_id(Character),
+
+   PlayerID = player:get_id(CurrentPlayer),
+   PlayerID = CharacterOwnerID,
+
+   true = character_instance:get_is_active(CharacterInstance).
+
+-spec update_data (data(), character_turn_request:type()) -> update().
+update_data (Data, Request) ->
+   {ActionsDiffUpdate, ClientUpdate, UpdatedData} =
+      handle_actions(Data, Request),
 
    EncodedClientUpdate = lists:map(fun turn_result:encode/1, ClientUpdate),
 
-   UpdatedBattle = finalize_and_fuse_relevant_data(UpdatedRData, Input),
+   UpdatedBattle = finalize_and_fuse_data(UpdatedData, Request),
 
    UpdatedBattle2 =
       battle_turn:store_timeline(EncodedClientUpdate, UpdatedBattle),
@@ -232,17 +220,32 @@ handle (Req) ->
    {TurnDiffUpdate, FinalizedBattle} =
       battle_turn:handle_post_play(UpdatedBattle2),
 
-   DiffUpdate = (TurnDiffUpdate ++ ActionsDiffUpdate),
+   DiffUpdate = (TurnDiffUpdate ++ ActionsDiffUpdate).
 
-   %send_to_database(DiffUpdate, Input),
-   send_to_database(FinalizedBattle, Input),
-   update_cache(FinalizedBattle, Input),
+-spec commit_update (update(), character_turn_request:type()) -> any().
+commit_update (Update, Request) ->
+   UpdatedData = Update#update.updated_data,
 
-   io:format("~nCharacter turn result:~n~p~n", [DiffUpdate]),
+   % TODO: the database should get a diff update instead.
+   send_to_database(UpdatedData, Request),
+   update_cache(UpdatedData, Request).
 
-   security:unlock_queries(PlayerID),
+-spec disconnect_user (character_turn_request:type()) -> 'ok'.
+disconnect_user (Request) ->
+   PlayerID = character_turn_request:get_player_id(Request),
 
-   generate_reply(EncodedClientUpdate).
+   security:unlock_queries(PlayerID).
+
+-spec handle (binary()) -> binary().
+handle (EncodedRequest) ->
+   Request = decode_request(EncodedRequest),
+   authenticate_user(Request),
+   Data = fetch_data(Request),
+   assert_user_permissions(Data, Request),
+   Update = update_data(Data, Request),
+   commit_update(Update, Request),
+   disconnect_user(Request),
+   generate_reply(Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
