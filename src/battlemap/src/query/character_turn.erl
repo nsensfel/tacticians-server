@@ -6,29 +6,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("../../include/yaws_api.hrl").
 
-
--record
-(
-   data,
-   {
-      battle :: battle:struct(),
-      played_character_instance :: character_instance:struct()
-   }
-).
-
--record
-(
-   update,
-   {
-      updated_data :: data(),
-      timeline_update :: list(any()),
-      db_update :: list(any())
-   }
-).
-
--type data() :: #data{}.
--type update() :: #update{}.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,33 +15,11 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec finalize_and_fuse_data
-   (
-      data(),
-      character_turn_request:type()
-   )
-   -> battle:struct().
-finalize_and_fuse_data (Data, Request) ->
-   Battle = Data#data.battle,
-   CharacterInstance = Data#data.played_character_instance,
-
-   io:format("~nNot a character instance? ~p~n", [CharacterInstance]),
-
-   FinalizedCharacterInstance =
-      character_instance:set_is_active(false, CharacterInstance),
-
-   battle:set_character_instance
-   (
-      Request#request.character_instance_ix,
-      FinalizedCharacterInstance,
-      Battle
-   ).
-
 %-spec send_to_database (list(database_diff:struct()), character_turn_request:type()) -> 'ok'.
 -spec send_to_database (battle:struct(), character_turn_request:type()) -> 'ok'.
 send_to_database (FinalizedBattle, Request) ->
-   PlayerID = Request#request.player_id,
-   BattleID = Request#request.battle_id,
+   PlayerID = character_turn_request:get_player_id(Request),
+   BattleID = character_turn_request:get_battle_id(Request),
 
    %% TODO: differential commit
    database_shim:commit
@@ -77,8 +32,8 @@ send_to_database (FinalizedBattle, Request) ->
 
 -spec update_cache (battle:struct(), character_turn_request:type()) -> 'ok'.
 update_cache (Battle, Request) ->
-   PlayerID = Request#request.player_id,
-   BattleID = Request#request.battle_id,
+   PlayerID = character_turn_request:get_player_id(Request),
+   BattleID = character_turn_request:get_battle_id(Request),
 
    timed_cache:update
    (
@@ -88,7 +43,7 @@ update_cache (Battle, Request) ->
       Battle
    ).
 
--spec generate_reply ( list(any())) -> binary().
+-spec generate_reply (list(any())) -> binary().
 generate_reply (EncodedClientUpdate) ->
    jiffy:encode([turn_results:generate(EncodedClientUpdate)]).
 
@@ -144,11 +99,15 @@ handle_actions (Data, Request) ->
       ClientUpdates,
       Data#data
       {
+         dirty = true,
          battle = PostActionBattle,
          played_character_instance = PostActionCharacterInstance
       }
    }.
 
+
+FinalizedCharacterInstance =
+   character_instance:set_is_active(false, CharacterInstance),
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -169,7 +128,7 @@ authenticate_user (Request) ->
    security:assert_identity(PlayerID, SessionToken),
    security:lock_queries(PlayerID).
 
--spec fetch_data (character_turn_request:type()) -> data().
+-spec fetch_data (character_turn_request:type()) -> character_turn_data:type().
 fetch_data (Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
    BattleID = character_turn_request:get_battle_id(Request),
@@ -177,42 +136,68 @@ fetch_data (Request) ->
       character_turn_request:get_character_instance_ix(Request),
 
    Battle = timed_cache:fetch(battle_db, PlayerID, BattleID),
-   CharacterInstance =
-      battle:get_character_instance(CharacterInstanceIX, Battle),
 
-   #data
-   {
-      battle = Battle,
-      played_character_instance = CharacterInstance
-   }.
+   character_turn_data:new(Battle, CharacterInstanceIX).
 
--spec assert_user_permissions (data(), character_turn_request:type()) -> true.
-assert_user_permissions (Data, Request) ->
+-spec assert_user_is_current_player
+   (
+      character_turn_data:type(),
+      character_turn_request:type()
+   ) -> 'ok'.
+assert_user_is_current_player (Data, Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
-   CharacterInstance = Data#data.played_character_instance,
-   Battle = Data#data.battle,
-   Character = character_instance:get_character(CharacterInstance),
-   CurrentPlayerIX =
-      player_turn:get_player_ix
-      (
-         battle:get_current_player_turn(Battle)
-      ),
+   Battle = character_turn_data:get_battle(Data),
+   CurrentPlayerTurn = battle:get_current_player_turn(Battle),
+   CurrentPlayerIX = player_turn:get_player_ix(CurrentPlayerTurn),
    CurrentPlayer = battle:get_player(CurrentPlayerIX, Battle),
+
+   true = (PlayerID == player:get_id(CurrentPlayer)),
+
+   ok.
+
+-spec assert_user_owns_played_character
+   (
+      character_turn_data:type(),
+      character_turn_request:type()
+   ) -> 'ok'.
+assert_user_owns_played_character (Data, Request) ->
+   PlayerID = character_turn_request:get_player_id(Request),
+   CharacterInstance = character_turn_data:get_player_instance(Data),
+   Character = character_instance:get_character(CharacterInstance),
    CharacterOwnerID = character:get_owner_id(Character),
 
-   PlayerID = player:get_id(CurrentPlayer),
-   PlayerID = CharacterOwnerID,
+   true = (PlayerID == CharacterOwnerID),
 
-   true = character_instance:get_is_active(CharacterInstance).
+   ok.
 
--spec update_data (data(), character_turn_request:type()) -> update().
+-spec assert_character_can_be_played (character_turn_data:type()) -> 'ok'.
+assert_character_can_be_played (Data) ->
+   CharacterInstance = character_turn_data:get_player_instance(Data),
+
+   true = character_instance:get_is_active(CharacterInstance),
+
+   ok.
+
+-spec assert_user_permissions (character_turn_data:type(), character_turn_request:type()) -> 'ok'.
+assert_user_permissions (Data, Request) ->
+   assert_user_is_current_player(Data, Request),
+   assert_user_owns_played_character(Data, Request),
+   assert_character_can_be_played(Data),
+
+   ok.
+
+-spec update_data
+   (
+      character_turn_data:type(),
+      character_turn_request:type()
+   )
+   -> character_turn_update:type().
 update_data (Data, Request) ->
-   {ActionsDiffUpdate, ClientUpdate, UpdatedData} =
-      handle_actions(Data, Request),
+   EmptyUpdate = character_turn_update:new(Data),
+   PostActionsUpdate = handle_actions(EmptyUpdate, Request),
+   NewTurnUpdate = prepare_new_turn(PostActionsUpdate),
 
    EncodedClientUpdate = lists:map(fun turn_result:encode/1, ClientUpdate),
-
-   UpdatedBattle = finalize_and_fuse_data(UpdatedData, Request),
 
    UpdatedBattle2 =
       battle_turn:store_timeline(EncodedClientUpdate, UpdatedBattle),
@@ -222,19 +207,28 @@ update_data (Data, Request) ->
 
    DiffUpdate = (TurnDiffUpdate ++ ActionsDiffUpdate).
 
--spec commit_update (update(), character_turn_request:type()) -> any().
+-spec commit_update
+   (
+      character_turn_update:type(),
+      character_turn_request:type()
+   )
+   -> 'ok'.
 commit_update (Update, Request) ->
-   UpdatedData = Update#update.updated_data,
+   UpdatedData = character_turn_update:get_data(Update),
 
    % TODO: the database should get a diff update instead.
    send_to_database(UpdatedData, Request),
-   update_cache(UpdatedData, Request).
+   update_cache(UpdatedData, Request),
+
+   ok.
 
 -spec disconnect_user (character_turn_request:type()) -> 'ok'.
 disconnect_user (Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
 
-   security:unlock_queries(PlayerID).
+   security:unlock_queries(PlayerID),
+
+   ok.
 
 -spec handle (binary()) -> binary().
 handle (EncodedRequest) ->
