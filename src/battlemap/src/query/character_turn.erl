@@ -105,21 +105,21 @@ assert_user_permissions (Data, Request) ->
    )
    -> character_turn_update:type().
 finalize_character_instance (Update) ->
-   Data = character_instance_update:get_data(Update),
-   CharacterInstance = character_instance_data:get_character_instance(Data),
+   Data = character_turn_update:get_data(Update),
+   CharacterInstance = character_turn_data:get_character_instance(Data),
 
    DisabledCharacterInstance =
       character_instance:set_is_active(false, CharacterInstance),
 
    UpdatedData =
-      character_instance_data:set_character_instance
+      character_turn_data:set_character_instance
       (
          DisabledCharacterInstance,
          Data
       ),
-   FinalizedData = character_instance_data:cleanup(UpdatedData),
+   FinalizedData = character_turn_data:cleanup(UpdatedData),
 
-   character_instance_update:set_data(FinalizedData, Update).
+   character_turn_update:set_data(FinalizedData, Update).
 
 -spec handle_actions
    (
