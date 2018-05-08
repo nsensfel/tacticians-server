@@ -27,9 +27,10 @@ debug_rebuild:
 ################################################################################
 ifeq ($(wildcard $(DIALYZER_PLT_FILE)),)
 debug_run:
-	$(DIALYZER) --build_plt --apps erts kernel stdlib jiffy --output_plt $(DIALYZER_PLT_FILE)
+	$(DIALYZER) --build_plt --apps erts kernel stdlib jiffy --output_plt \
+		$(DIALYZER_PLT_FILE)
 	$(MAKE) debug_rebuild
-	$(DIALYZER) --add_to_plt --plt $@ -r $(BIN_DIR)
+	$(DIALYZER) --add_to_plt --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)
 else
 debug_run:
 	$(MAKE) debug_rebuild

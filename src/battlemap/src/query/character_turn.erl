@@ -32,7 +32,9 @@ authenticate_user (Request) ->
    SessionToken = character_turn_request:get_session_token(Request),
 
    security:assert_identity(PlayerID, SessionToken),
-   security:lock_queries(PlayerID).
+   security:lock_queries(PlayerID),
+
+   ok.
 
 %%%% MAIN LOGIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec fetch_data (character_turn_request:type()) -> character_turn_data:type().
@@ -70,7 +72,7 @@ assert_user_is_current_player (Data, Request) ->
    ) -> 'ok'.
 assert_user_owns_played_character (Data, Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
-   CharacterInstance = character_turn_data:get_player_instance(Data),
+   CharacterInstance = character_turn_data:get_character_instance(Data),
    Character = character_instance:get_character(CharacterInstance),
    CharacterOwnerID = character:get_owner_id(Character),
 
@@ -80,7 +82,7 @@ assert_user_owns_played_character (Data, Request) ->
 
 -spec assert_character_can_be_played (character_turn_data:type()) -> 'ok'.
 assert_character_can_be_played (Data) ->
-   CharacterInstance = character_turn_data:get_player_instance(Data),
+   CharacterInstance = character_turn_data:get_character_instance(Data),
 
    true = character_instance:get_is_active(CharacterInstance),
 
@@ -132,7 +134,7 @@ handle_actions (Data, Request) ->
 
    EmptyUpdate = character_turn_update:new(Data),
    PostActionsUpdate =
-      lists:foldl(fun battle_turn_actions:handle/2, EmptyUpdate, Actions),
+      lists:foldl(fun turn_actions:handle/2, EmptyUpdate, Actions),
 
    finalize_character_instance(PostActionsUpdate).
 
