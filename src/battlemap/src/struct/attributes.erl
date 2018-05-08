@@ -16,7 +16,7 @@
    }
 ).
 
--opaque struct() :: #attributes{}.
+-opaque type() :: #attributes{}.
 
 -export_type([struct/0]).
 
@@ -59,43 +59,43 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_constitution (struct()) -> integer().
+-spec get_constitution (type()) -> integer().
 get_constitution (Att) -> Att#attributes.constitution.
 
--spec get_dexterity (struct()) -> integer().
+-spec get_dexterity (type()) -> integer().
 get_dexterity (Att) -> Att#attributes.dexterity.
 
--spec get_intelligence (struct()) -> integer().
+-spec get_intelligence (type()) -> integer().
 get_intelligence (Att) -> Att#attributes.intelligence.
 
--spec get_mind (struct()) -> integer().
+-spec get_mind (type()) -> integer().
 get_mind (Att) -> Att#attributes.mind.
 
--spec get_speed (struct()) -> integer().
+-spec get_speed (type()) -> integer().
 get_speed (Att) -> Att#attributes.speed.
 
--spec get_strength (struct()) -> integer().
+-spec get_strength (type()) -> integer().
 get_strength (Att) -> Att#attributes.strength.
 
--spec set_constitution (integer(), struct()) -> struct().
+-spec set_constitution (integer(), type()) -> type().
 set_constitution (Val, Att) -> Att#attributes{ constitution = Val }.
 
--spec set_dexterity (integer(), struct()) -> struct().
+-spec set_dexterity (integer(), type()) -> type().
 set_dexterity (Val, Att) -> Att#attributes{ dexterity = Val }.
 
--spec set_intelligence (integer(), struct()) -> struct().
+-spec set_intelligence (integer(), type()) -> type().
 set_intelligence (Val, Att) -> Att#attributes{ intelligence = Val }.
 
--spec set_mind (integer(), struct()) -> struct().
+-spec set_mind (integer(), type()) -> type().
 set_mind (Val, Att) -> Att#attributes{ mind = Val }.
 
--spec set_speed (integer(), struct()) -> struct().
+-spec set_speed (integer(), type()) -> type().
 set_speed (Val, Att) -> Att#attributes{ speed = Val }.
 
--spec set_strength (integer(), struct()) -> struct().
+-spec set_strength (integer(), type()) -> type().
 set_strength (Val, Att) -> Att#attributes{ strength = Val }.
 
--spec random () -> struct().
+-spec random () -> type().
 random () ->
    #attributes
    {

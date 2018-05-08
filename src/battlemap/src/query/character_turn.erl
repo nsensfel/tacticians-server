@@ -15,7 +15,7 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%-spec send_to_database (list(database_diff:struct()), character_turn_request:type()) -> 'ok'.
+%-spec send_to_database (list(database_diff:type()), character_turn_request:type()) -> 'ok'.
 
 
 %%%% REQUEST DECODING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

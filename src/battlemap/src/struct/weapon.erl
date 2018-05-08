@@ -23,7 +23,7 @@
    }
 ).
 
--opaque struct() :: #weapon{}.
+-opaque type() :: #weapon{}.
 
 -export_type([struct/0, id/0]).
 -export_type
@@ -89,24 +89,24 @@ damages_of_type (melee, light) -> {15, 30}.
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (struct()) -> id().
+-spec get_id (type()) -> id().
 get_id (Wp) -> Wp#weapon.id.
 
--spec get_range_type (struct()) -> range_type().
+-spec get_range_type (type()) -> range_type().
 get_range_type (Wp) -> Wp#weapon.range_type.
 
--spec get_ranges (struct()) -> {non_neg_integer(), non_neg_integer()}.
+-spec get_ranges (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_ranges (Wp) ->
    ranges_of_type(Wp#weapon.range_type, Wp#weapon.range_mod).
 
--spec get_damages (struct()) -> {non_neg_integer(), non_neg_integer()}.
+-spec get_damages (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_damages (Wp) ->
    damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod).
 
--spec can_parry (struct()) -> boolean().
+-spec can_parry (type()) -> boolean().
 can_parry (Wp) -> (Wp#weapon.range_type == melee).
 
--spec from_id (id()) -> struct().
+-spec from_id (id()) -> type().
 from_id (0) ->
    #weapon{
       id = 0,
@@ -338,10 +338,10 @@ random_id () -> roll:between(0, 24).
 
 -spec apply_to_attributes
    (
-      attributes:struct(),
-      weapon:struct()
+      attributes:type(),
+      weapon:type()
    )
-   -> attributes:struct().
+   -> attributes:type().
 apply_to_attributes (Attributes, Weapon) ->
    Dexterity = attributes:get_dexterity(Attributes),
    Speed = attributes:get_speed(Attributes),

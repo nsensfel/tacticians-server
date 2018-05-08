@@ -28,11 +28,11 @@
    {
       attacker_ix :: character_instance:id(),
       defender_ix :: character_instance:id(),
-      sequence :: list(attack:struct())
+      sequence :: list(attack:type())
    }
 ).
 
--opaque struct() :: (#switched_weapon{} | #moved{} | #attacked{}).
+-opaque type() :: (#switched_weapon{} | #moved{} | #attacked{}).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +62,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new_character_switched_weapons (character_instance:id()) -> struct().
+-spec new_character_switched_weapons (character_instance:id()) -> type().
 new_character_switched_weapons (CharacterInstanceIX) ->
    #switched_weapon { character_instance_ix = CharacterInstanceIX }.
 
@@ -72,7 +72,7 @@ new_character_switched_weapons (CharacterInstanceIX) ->
       list(direction:enum()),
       location:type()
    )
-   -> struct().
+   -> type().
 new_character_moved (CharacterInstanceIX, Path, NewLocation) ->
    #moved
    {
@@ -85,9 +85,9 @@ new_character_moved (CharacterInstanceIX, Path, NewLocation) ->
    (
       character_instance:id(),
       character_instance:id(),
-      list(attack:struct())
+      list(attack:type())
    )
-   -> struct().
+   -> type().
 new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
    #attacked
    {
@@ -96,7 +96,7 @@ new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
       sequence = AttackSequence
    }.
 
--spec encode (struct()) -> {list(any())}.
+-spec encode (type()) -> {list(any())}.
 encode (TurnResult) when is_record(TurnResult, switched_weapon) ->
    CharacterInstanceIX = TurnResult#switched_weapon.character_instance_ix,
 

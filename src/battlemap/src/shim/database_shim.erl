@@ -47,9 +47,9 @@ add_to_db (ID, Val) ->
       non_neg_integer(),
       non_neg_integer(),
       non_neg_integer(),
-      list(character:struct())
+      list(character:type())
    )
-   -> list(character:struct()).
+   -> list(character:type()).
 generate_random_characters
 (
    0,

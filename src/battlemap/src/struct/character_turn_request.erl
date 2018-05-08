@@ -17,7 +17,7 @@
       session_token :: binary(),
       battle_id :: binary(),
       character_instance_ix :: non_neg_integer(),
-      actions :: list(battle_action:struct())
+      actions :: list(battle_action:type())
    }
 ).
 
@@ -80,5 +80,5 @@ get_battle_id (Request) -> Request#type.battle_id.
 -spec get_character_instance_ix (type()) -> non_neg_integer().
 get_character_instance_ix (Request) -> Request#type.character_instance_ix.
 
--spec get_actions (type()) -> list(battle_action:struct()).
+-spec get_actions (type()) -> list(battle_action:type()).
 get_actions (Request) -> Request#type.actions.

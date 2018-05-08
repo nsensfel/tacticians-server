@@ -19,7 +19,7 @@
    }
 ).
 
--opaque struct() :: #statistics{}.
+-opaque type() :: #statistics{}.
 
 -export_type([struct/0]).
 
@@ -110,34 +110,34 @@ apply_damage_base_modifier (Modifier, BaseValue) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_movement_points (struct()) -> non_neg_integer().
+-spec get_movement_points (type()) -> non_neg_integer().
 get_movement_points (Stats) -> Stats#statistics.movement_points.
 
--spec get_health (struct()) -> non_neg_integer().
+-spec get_health (type()) -> non_neg_integer().
 get_health (Stats) -> Stats#statistics.health.
 
--spec get_dodges (struct()) -> non_neg_integer().
+-spec get_dodges (type()) -> non_neg_integer().
 get_dodges (Stats) -> Stats#statistics.dodges.
 
--spec get_parries (struct()) -> non_neg_integer().
+-spec get_parries (type()) -> non_neg_integer().
 get_parries (Stats) -> Stats#statistics.parries.
 
--spec get_damage_min (struct()) -> non_neg_integer().
+-spec get_damage_min (type()) -> non_neg_integer().
 get_damage_min (Stats) -> Stats#statistics.damage_min.
 
--spec get_damage_max (struct()) -> non_neg_integer().
+-spec get_damage_max (type()) -> non_neg_integer().
 get_damage_max (Stats) -> Stats#statistics.damage_max.
 
--spec get_accuracy (struct()) -> non_neg_integer().
+-spec get_accuracy (type()) -> non_neg_integer().
 get_accuracy (Stats) -> Stats#statistics.accuracy.
 
--spec get_double_hits (struct()) -> non_neg_integer().
+-spec get_double_hits (type()) -> non_neg_integer().
 get_double_hits (Stats) -> Stats#statistics.double_hits.
 
--spec get_critical_hits (struct()) -> non_neg_integer().
+-spec get_critical_hits (type()) -> non_neg_integer().
 get_critical_hits (Stats) -> Stats#statistics.critical_hits.
 
--spec get_damages (struct()) -> {non_neg_integer(), non_neg_integer()}.
+-spec get_damages (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_damages (Stats) ->
    {
       Stats#statistics.damage_min,
@@ -146,10 +146,10 @@ get_damages (Stats) ->
 
 -spec new
    (
-      attributes:struct(),
+      attributes:type(),
       {weapon:id(), weapon:id()}
    )
-   -> struct().
+   -> type().
 new (BaseAttributes, WeaponIDs) ->
    {ActiveWeaponID, _} = WeaponIDs,
    ActiveWeapon = weapon:from_id(ActiveWeaponID),

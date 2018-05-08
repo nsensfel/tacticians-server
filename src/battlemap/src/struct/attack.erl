@@ -18,8 +18,8 @@
    }
 ).
 
--opaque struct() :: #attack{}.
--type maybe_struct() :: ('nothing' | struct()).
+-opaque type() :: #attack{}.
+-type maybe_type() :: ('nothing' | type()).
 -opaque step() :: {order(), boolean()}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,8 +47,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec roll_precision
    (
-      statistics:struct(),
-      statistics:struct()
+      statistics:type(),
+      statistics:type()
    )
    -> precision().
 roll_precision (AttackerStatistics, DefenderStatistics) ->
@@ -63,8 +63,8 @@ roll_precision (AttackerStatistics, DefenderStatistics) ->
 
 -spec roll_damage
    (
-      statistics:struct(),
-      statistics:struct()
+      statistics:type(),
+      statistics:type()
    )
    -> {non_neg_integer(), boolean()}.
 roll_damage (AttackerStatistics, _DefenderStatistics) ->
@@ -77,7 +77,7 @@ roll_damage (AttackerStatistics, _DefenderStatistics) ->
       _ -> {BaseDamage, false}
    end.
 
--spec roll_parry (statistics:struct()) -> boolean().
+-spec roll_parry (statistics:type()) -> boolean().
 roll_parry (DefenderStatistics) ->
    DefenderParryChance = statistics:get_parries(DefenderStatistics),
    (roll:percentage() =< DefenderParryChance).
@@ -85,11 +85,11 @@ roll_parry (DefenderStatistics) ->
 -spec effect_of_attack
    (
       order(),
-      statistics:struct(),
-      statistics:struct(),
+      statistics:type(),
+      statistics:type(),
       boolean()
    )
-   -> struct().
+   -> type().
 effect_of_attack (Order, AttackerStatistics, DefenderStatistics, CanParry) ->
    ParryIsSuccessful = (CanParry and roll_parry(DefenderStatistics)),
    {ActualAtkStatistics, ActualDefStatistics} =
@@ -133,10 +133,10 @@ encode_precision (misses) -> <<"m">>.
 -spec get_description_of
    (
       step(),
-      statistics:struct(),
-      statistics:struct()
+      statistics:type(),
+      statistics:type()
    )
-   -> maybe_struct().
+   -> maybe_type().
 get_description_of
 (
    {first, CanParry},
@@ -175,11 +175,11 @@ get_description_of
 
 -spec apply_to_healths
    (
-      maybe_struct(),
+      maybe_type(),
       non_neg_integer(),
       non_neg_integer()
    )
-   -> {maybe_struct(), non_neg_integer(), non_neg_integer()}.
+   -> {maybe_type(), non_neg_integer(), non_neg_integer()}.
 apply_to_healths
 (
    nothing,
@@ -244,8 +244,8 @@ when
 -spec get_sequence
    (
       non_neg_integer(),
-      weapon:struct(),
-      weapon:struct()
+      weapon:type(),
+      weapon:type()
    )
    -> list(step()).
 get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
@@ -279,7 +279,7 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
          [First, Counter, Second]
    end.
 
--spec encode (struct()) -> {list(any())}.
+-spec encode (type()) -> {list(any())}.
 % This shouldn't be a possibility. Types in this module are a mess...
 encode (Attack) ->
    Order = Attack#attack.order,

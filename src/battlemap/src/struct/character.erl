@@ -14,13 +14,13 @@
       name :: binary(),
       icon :: binary(),
       portrait :: binary(),
-      attributes :: attributes:struct(),
-      statistics :: statistics:struct(),
+      attributes :: attributes:type(),
+      statistics :: statistics:type(),
       weapon_ids :: {weapon:id(), weapon:id()}
    }
 ).
 
--opaque struct() :: #character{}.
+-opaque type() :: #character{}.
 
 -export_type([struct/0, id/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,36 +59,36 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (struct()) -> id().
+-spec get_id (type()) -> id().
 get_id (Char) -> Char#character.id.
 
--spec get_owner_id (struct()) -> player:id().
+-spec get_owner_id (type()) -> player:id().
 get_owner_id (Char) -> Char#character.owner_id.
 
--spec get_name (struct()) -> binary().
+-spec get_name (type()) -> binary().
 get_name (Char) -> Char#character.name.
 
--spec get_icon (struct()) -> binary().
+-spec get_icon (type()) -> binary().
 get_icon (Char) -> Char#character.icon.
 
--spec get_portrait (struct()) -> binary().
+-spec get_portrait (type()) -> binary().
 get_portrait (Char) -> Char#character.portrait.
 
--spec get_attributes (struct()) -> attributes:struct().
+-spec get_attributes (type()) -> attributes:type().
 get_attributes (Char) -> Char#character.attributes.
 
--spec get_weapon_ids (struct()) -> {weapon:id(), weapon:id()}.
+-spec get_weapon_ids (type()) -> {weapon:id(), weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
 
--spec get_statistics (struct()) -> statistics:struct().
+-spec get_statistics (type()) -> statistics:type().
 get_statistics (Char) -> Char#character.statistics.
 
 -spec set_weapon_ids
    (
       {weapon:id(), weapon:id()},
-      struct()
+      type()
    )
-   -> struct().
+   -> type().
 set_weapon_ids (WeaponIDs, Char) ->
    Char#character
    {
@@ -97,10 +97,10 @@ set_weapon_ids (WeaponIDs, Char) ->
 
 -spec set_statistics
    (
-      statistics:struct(),
-      struct()
+      statistics:type(),
+      type()
    )
-   -> struct().
+   -> type().
 set_statistics (Stats, Char) ->
    Char#character
    {
@@ -112,7 +112,7 @@ set_statistics (Stats, Char) ->
       non_neg_integer(),
       player:id()
    )
-   -> struct().
+   -> type().
 random (ID, OwnerID) ->
    WeaponIDs = {weapon:random_id(), weapon:random_id()},
    Attributes = attributes:random(),

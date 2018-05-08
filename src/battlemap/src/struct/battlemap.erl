@@ -16,7 +16,7 @@
    }
 ).
 
--opaque struct() :: #battlemap{}.
+-opaque type() :: #battlemap{}.
 
 -export_type([struct/0, id/0]).
 
@@ -84,19 +84,19 @@ location_to_array_index (ArrayWidth, {X, Y}) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (struct()) -> id().
+-spec get_id (type()) -> id().
 get_id (Battlemap) -> Battlemap#battlemap.id.
 
--spec get_width (struct()) -> integer().
+-spec get_width (type()) -> integer().
 get_width (Battlemap) -> Battlemap#battlemap.width.
 
--spec get_height (struct()) -> integer().
+-spec get_height (type()) -> integer().
 get_height (Battlemap) -> Battlemap#battlemap.height.
 
--spec get_tile_ids (struct()) -> array:array(tile:id()).
+-spec get_tile_ids (type()) -> array:array(tile:id()).
 get_tile_ids (Battlemap) -> Battlemap#battlemap.tile_ids.
 
--spec get_tile_id (location:type(), struct()) -> tile:id().
+-spec get_tile_id (location:type(), type()) -> tile:id().
 get_tile_id (Location, Battlemap) ->
    TileIX = location_to_array_index(Battlemap#battlemap.width, Location),
    array:get(TileIX, Battlemap#battlemap.tile_ids).
@@ -107,7 +107,7 @@ get_tile_id (Location, Battlemap) ->
       non_neg_integer(),
       non_neg_integer()
    )
-   -> struct().
+   -> type().
 random (ID, Width, Height) ->
    InitialTile = tile:random_id(),
    TileIDs = generate_random_tile_ids(InitialTile, [], Width, Height, Width),

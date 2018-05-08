@@ -8,8 +8,8 @@
    type,
    {
       dirty :: boolean(),
-      battle :: battle:struct(),
-      character_instance :: character_instance:struct(),
+      battle :: battle:type(),
+      character_instance :: character_instance:type(),
       character_instance_ix :: non_neg_integer()
    }
 ).
@@ -29,6 +29,7 @@
       get_battle_is_dirty/1,
       get_battle/1,
       get_character_instance/1,
+      get_character_instance_ix/1,
 
       set_battle/2,
       set_character_instance/2
@@ -70,6 +71,9 @@ get_battle (Data) -> Data#type.battle.
 
 -spec get_character_instance (type()) -> character_instance:type().
 get_character_instance (Data) -> Data#type.character_instance.
+
+-spec get_character_instance_ix (type()) -> non_neg_integer().
+get_character_instance_ix (Data) -> Data#type.character_instance_ix.
 
 -spec set_battle (battle:type(), type()) -> type().
 set_battle (Battle, Data) ->

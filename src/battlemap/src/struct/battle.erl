@@ -10,14 +10,14 @@
    battle,
    {
       id :: id(),
-      battlemap :: battlemap:struct(),
-      character_instances :: array:array(character_instance:struct()),
-      players :: array:array(player:struct()),
-      current_player_turn :: player_turn:struct()
+      battlemap :: battlemap:type(),
+      character_instances :: array:array(character_instance:type()),
+      players :: array:array(player:type()),
+      current_player_turn :: player_turn:type()
    }
 ).
 
--opaque struct() :: #battle{}.
+-opaque type() :: #battle{}.
 
 -export_type([struct/0, id/0]).
 
@@ -73,36 +73,36 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (struct()) -> id().
+-spec get_id (type()) -> id().
 get_id (Battle) -> Battle#battle.id.
 
--spec get_battlemap (struct()) -> battlemap:struct().
+-spec get_battlemap (type()) -> battlemap:type().
 get_battlemap (Battle) ->
    Battle#battle.battlemap.
 
--spec get_character_instances (struct()) ->
-   array:array(character_instance:struct()).
+-spec get_character_instances (type()) ->
+   array:array(character_instance:type()).
 get_character_instances (Battle) ->
    Battle#battle.character_instances.
 
--spec get_character_instance (non_neg_integer(), struct()) ->
-   character_instance:struct().
+-spec get_character_instance (non_neg_integer(), type()) ->
+   character_instance:type().
 get_character_instance (IX, Battle) ->
    array:get(IX, Battle#battle.character_instances).
 
--spec get_players (struct()) -> array:array(player:struct()).
+-spec get_players (type()) -> array:array(player:type()).
 get_players (Battle) ->
    Battle#battle.players.
 
--spec get_player (non_neg_integer(), struct()) -> player:struct().
+-spec get_player (non_neg_integer(), type()) -> player:type().
 get_player (IX, Battle) ->
    array:get(IX, Battle#battle.players).
 
--spec get_current_player_turn (struct()) -> player_turn:struct().
+-spec get_current_player_turn (type()) -> player_turn:type().
 get_current_player_turn (Battle) ->
    Battle#battle.current_player_turn.
 
--spec get_encoded_last_turns_effects (struct()) -> list(any()).
+-spec get_encoded_last_turns_effects (type()) -> list(any()).
 get_encoded_last_turns_effects (Battle) ->
    CurrentPlayerTurn = Battle#battle.current_player_turn,
    Players = Battle#battle.players,
@@ -112,7 +112,7 @@ get_encoded_last_turns_effects (Battle) ->
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
 
--spec set_battlemap (battlemap:struct(), struct()) -> struct().
+-spec set_battlemap (battlemap:type(), type()) -> type().
 set_battlemap (Battlemap, Battle) ->
    Battle#battle
    {
@@ -121,10 +121,10 @@ set_battlemap (Battlemap, Battle) ->
 
 -spec set_character_instances
    (
-      array:array(character_instance:struct()),
-      struct()
+      array:array(character_instance:type()),
+      type()
    )
-   -> struct().
+   -> type().
 set_character_instances (CharacterInstances, Battle) ->
    Battle#battle
    {
@@ -134,10 +134,10 @@ set_character_instances (CharacterInstances, Battle) ->
 -spec set_character_instance
    (
       non_neg_integer(),
-      character_instance:struct(),
-      struct()
+      character_instance:type(),
+      type()
    )
-   -> struct().
+   -> type().
 set_character_instance (IX, CharacterInstance, Battle) ->
    Battle#battle
    {
@@ -152,10 +152,10 @@ set_character_instance (IX, CharacterInstance, Battle) ->
 
 -spec set_players
    (
-      array:array(player:struct()),
-      struct()
+      array:array(player:type()),
+      type()
    )
-   -> struct().
+   -> type().
 set_players (Players, Battle) ->
    Battle#battle
    {
@@ -165,10 +165,10 @@ set_players (Players, Battle) ->
 -spec set_player
    (
       non_neg_integer(),
-      player:struct(),
-      struct()
+      player:type(),
+      type()
    )
-   -> struct().
+   -> type().
 set_player (IX, Player, Battle) ->
    Battle#battle
    {
@@ -183,10 +183,10 @@ set_player (IX, Player, Battle) ->
 
 -spec set_current_player_turn
    (
-      player_turn:struct(),
-      struct()
+      player_turn:type(),
+      type()
    )
-   -> struct().
+   -> type().
 set_current_player_turn (PlayerTurn, Battle) ->
    Battle#battle
    {
@@ -196,11 +196,11 @@ set_current_player_turn (PlayerTurn, Battle) ->
 -spec random
    (
       id(),
-      list(player:struct()),
-      battlemap:struct(),
-      list(character:struct())
+      list(player:type()),
+      battlemap:type(),
+      list(character:type())
    )
-   -> struct().
+   -> type().
 random (ID, PlayersAsList, Battlemap, Characters) ->
    BattlemapWidth = battlemap:get_width(Battlemap),
    BattlemapHeight = battlemap:get_height(Battlemap),

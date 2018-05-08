@@ -14,7 +14,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec attributes_as_json
    (
-      attributes:struct()
+      attributes:type()
    ) ->
    {list({binary(), non_neg_integer()})}.
 attributes_as_json (Attributes) ->
@@ -35,7 +35,7 @@ attributes_as_json (Attributes) ->
 -spec generate
    (
       non_neg_integer(),
-      character_instance:struct(),
+      character_instance:type(),
       player:id()
    )
    -> {list(any())}.

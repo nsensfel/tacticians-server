@@ -19,7 +19,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec cross
    (
-      battlemap:struct(),
+      battlemap:type(),
       list(location:type()),
       list(direction:enum()),
       non_neg_integer(),
@@ -48,7 +48,7 @@ cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
 
 -spec cross
    (
-      battlemap:struct(),
+      battlemap:type(),
       list(location:type()),
       list(direction:enum()),
       location:type()

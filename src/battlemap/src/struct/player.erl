@@ -14,7 +14,7 @@
    }
 ).
 
--opaque struct() :: #player{}.
+-opaque type() :: #player{}.
 
 -export_type([struct/0, id/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,13 +44,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_id (struct()) -> id().
+-spec get_id (type()) -> id().
 get_id (Player) -> Player#player.id.
 
--spec get_timeline (struct()) -> list(any()).
+-spec get_timeline (type()) -> list(any()).
 get_timeline (Player) -> Player#player.timeline.
 
--spec add_to_timeline (list(any()), struct()) -> struct().
+-spec add_to_timeline (list(any()), type()) -> type().
 add_to_timeline (NewEvents, Player) ->
    OldTimeline = Player#player.timeline,
 
@@ -59,10 +59,10 @@ add_to_timeline (NewEvents, Player) ->
       timeline = (NewEvents ++ OldTimeline)
    }.
 
--spec reset_timeline (struct()) -> struct().
+-spec reset_timeline (type()) -> type().
 reset_timeline (Player) -> Player#player{ timeline = [] }.
 
--spec new (id()) -> struct().
+-spec new (id()) -> type().
 new (ID) ->
    #player
    {

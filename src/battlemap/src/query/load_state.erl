@@ -19,7 +19,7 @@
 (
    query_state,
    {
-      battle :: battle:struct()
+      battle :: battle:type()
    }
 ).
 

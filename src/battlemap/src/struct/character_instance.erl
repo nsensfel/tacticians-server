@@ -7,14 +7,14 @@
 (
    character_instance,
    {
-      character :: character:struct(),
+      character :: character:type(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: non_neg_integer(),
       active :: boolean()
    }
 ).
 
--opaque struct() :: #character_instance{}.
+-opaque type() :: #character_instance{}.
 
 -export_type([struct/0]).
 
@@ -78,22 +78,22 @@ find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_character (struct()) -> character:struct().
+-spec get_character (type()) -> character:type().
 get_character (CharInst) -> CharInst#character_instance.character.
 
--spec get_location (struct()) -> {non_neg_integer(), non_neg_integer()}.
+-spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_location (CharInst) ->
    true = get_is_alive(CharInst),
    CharInst#character_instance.location.
 
--spec get_current_health (struct()) -> non_neg_integer().
+-spec get_current_health (type()) -> non_neg_integer().
 get_current_health (CharInst) -> CharInst#character_instance.current_health.
 
--spec get_is_alive (struct()) -> boolean().
+-spec get_is_alive (type()) -> boolean().
 get_is_alive (CharInst) ->
    (CharInst#character_instance.current_health > 0).
 
--spec get_is_active (struct()) -> boolean().
+-spec get_is_active (type()) -> boolean().
 get_is_active (CharInst) ->
    (
       CharInst#character_instance.active
@@ -101,7 +101,7 @@ get_is_active (CharInst) ->
       get_is_alive(CharInst)
    ).
 
--spec set_character (character:struct(), struct()) -> struct().
+-spec set_character (character:type(), type()) -> type().
 set_character (Char, CharInst) ->
    CharInst#character_instance
    {
@@ -111,23 +111,23 @@ set_character (Char, CharInst) ->
 -spec set_location
    (
       {non_neg_integer(), non_neg_integer()},
-      struct()
+      type()
    )
-   -> struct().
+   -> type().
 set_location (Location, CharInst) ->
    CharInst#character_instance
    {
       location = Location
    }.
 
--spec set_current_health (non_neg_integer(), struct()) -> struct().
+-spec set_current_health (non_neg_integer(), type()) -> type().
 set_current_health (Health, CharInst) ->
    CharInst#character_instance
    {
       current_health = max(0, Health)
    }.
 
--spec set_is_active (boolean(), struct()) -> struct().
+-spec set_is_active (boolean(), type()) -> type().
 set_is_active (Active, CharInst) ->
    CharInst#character_instance
    {
@@ -137,10 +137,10 @@ set_is_active (Active, CharInst) ->
 %%%% Utils
 -spec new
    (
-      character:struct(),
+      character:type(),
       {non_neg_integer(), non_neg_integer()}
    )
-   -> struct().
+   -> type().
 new (Character, Location) ->
    CharacterStatistics = character:get_statistics(Character),
    #character_instance
@@ -153,12 +153,12 @@ new (Character, Location) ->
 
 -spec random
    (
-      character:struct(),
+      character:type(),
       non_neg_integer(),
       non_neg_integer(),
       list({non_neg_integer(), non_neg_integer()})
    )
-   -> struct().
+   -> type().
 random (Character, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    new
    (
