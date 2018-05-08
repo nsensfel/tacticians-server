@@ -17,13 +17,6 @@
 
 %-spec send_to_database (list(database_diff:struct()), character_turn_request:type()) -> 'ok'.
 
--spec generate_reply (character_turn_update:data()) -> binary().
-generate_reply (Update) ->
-   NewTimelineItems = character_turn_update:get_timeline(Update),
-
-   TurnResultReply = turn_results:generate(NewTimelineItems),
-
-   jiffy:encode([TurnResultReply]).
 
 %%%% REQUEST DECODING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec decode_request (binary()) -> character_turn_request:type().
@@ -162,14 +155,49 @@ update_timeline (Update) ->
 
    character_turn_update:set_data(UpdatedData, Update).
 
+-spec set_player_turn_to_next (battle:type()) -> battle:type().
+set_player_turn_to_next (Battle) ->
+   Players = battle:get_players(Battle),
+   CurrentPlayerTurn = battle:get_current_player_turn(Battle),
+
+   NextPlayerTurn = player_turn:next(array:size(Players), CurrentPlayerTurn),
+
+   battle:set_current_player_turn(NextPlayerTurn, Battle).
+
+-spec reset_next_player_timeline (battle:type()) -> battle:type().
+reset_next_player_timeline (Battle) ->
+   NextPlayerTurn = battle:get_current_player_turn(Battle),
+   NextPlayerIX = player_turn:get_player_ix(NextPlayerTurn),
+   NextPlayer = battle:get_player(NextPlayerIX, Battle),
+
+   UpdatedNextPlayer = player:reset_timeline(NextPlayer),
+   UpdatedBattle = battle:set_player(NextPlayerIX, UpdatedNextPlayer, Battle),
+
+   {UpdatedBattle, UpdatedNextPlayer}.
+
+-spec activate_next_players_characters (battle:type(), player:type()) ->
+activate_next_players_characters (Battle, NextPlayer) ->
+   NextPlayerID = player:get_id(NextPlayer),
+   CharacterInstances = battle:get_character_instances(Battle),
+   % TODO
+   ok.
+
 -spec start_next_player_turn
    (
       character_turn_update:type()
    )
    -> character_turn_update:type().
 start_next_player_turn (Update) ->
-   % TODO
-   Update.
+   Data = character_turn_update:get_data(Update),
+   Battle = character_turn_data:get_battle(Data),
+
+   S0Battle = set_player_turn_to_next(Battle),
+   {S1Battle, NextPlayer} = reset_next_player_timeline(S0Battle),
+   S2Battle = activate_next_players_characters(S1Battle, NextPlayer),
+
+   UpdatedData = character_turn_data:set_battle(S2Battle, Data),
+
+   character_turn_update:set_data(UpdatedData, Update).
 
 -spec check_and_update_for_new_turn
    (
@@ -264,6 +292,15 @@ disconnect_user (Request) ->
    security:unlock_queries(PlayerID),
 
    ok.
+
+%%%% REPLY GENERATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec generate_reply (character_turn_update:data()) -> binary().
+generate_reply (Update) ->
+   NewTimelineItems = character_turn_update:get_timeline(Update),
+
+   TurnResultReply = turn_results:generate(NewTimelineItems),
+
+   jiffy:encode([TurnResultReply]).
 
 %%%% MAIN LOGIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle (binary()) -> binary().

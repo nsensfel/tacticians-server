@@ -12,9 +12,9 @@
    }
 ).
 
--opaque struct() :: #player_turn{}.
+-opaque type() :: #player_turn{}.
 
--export_type([struct/0]).
+-export_type([type/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,7 +22,8 @@
 -export
 (
    [
-      new/2
+      new/2,
+      next/2
    ]
 ).
 
@@ -43,7 +44,7 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec new (non_neg_integer(), non_neg_integer()) -> struct().
+-spec new (non_neg_integer(), non_neg_integer()) -> type().
 new (Number, PlayerIX) ->
    #player_turn
    {
@@ -51,8 +52,22 @@ new (Number, PlayerIX) ->
       player_ix = PlayerIX
    }.
 
--spec get_number (struct()) -> non_neg_integer().
+-spec get_number (type()) -> non_neg_integer().
 get_number (PlayerTurn) -> PlayerTurn#player_turn.number.
 
--spec get_player_ix (struct()) -> non_neg_integer().
+-spec get_player_ix (type()) -> non_neg_integer().
 get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.
+
+-spec next (non_neg_integer(), type()) -> type().
+next (PlayersCount, CurrentPlayerTurn) ->
+   CurrentPlayerIX = CurrentPlayerTurn#player_turn.player_ix,
+   CurrentTurnNumber = CurrentPlayerTurn#player_turn.number,
+
+   NextPlayerIX = ((CurrentPlayerIX + 1) rem PlayersCount),
+   NextTurnNumber =
+      case NextPlayerIX of
+         0 -> (CurrentTurnNumber + 1);
+         _ -> CurrentTurnNumber
+      end,
+
+   new(NextTurnNumber, NextPlayerIX).
