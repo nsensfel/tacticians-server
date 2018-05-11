@@ -49,7 +49,7 @@
 -export
 (
    [
-      random/4
+      new/4
    ]
 ).
 
@@ -164,7 +164,7 @@ set_current_player_turn (PlayerTurn, Battle) ->
       current_player_turn = PlayerTurn
    }.
 
--spec random
+-spec new
    (
       id(),
       list(player:type()),
@@ -172,45 +172,7 @@ set_current_player_turn (PlayerTurn, Battle) ->
       list(character:type())
    )
    -> type().
-random (ID, PlayersAsList, Battlemap, Characters) ->
-   BattlemapWidth = battlemap:get_width(Battlemap),
-   BattlemapHeight = battlemap:get_height(Battlemap),
-   {CharactersAsList, _ForbiddenLocations} =
-      lists:mapfoldl
-      (
-         fun (Character, ForbiddenLocations) ->
-            CharacterOwner = character:get_owner_id(Character),
-            NewCharacter =
-               character:random
-               (
-                  Character,
-                  BattlemapWidth,
-                  BattlemapHeight,
-                  ForbiddenLocations
-               ),
-            NewCharacterActive =
-               case CharacterOwner of
-                  <<"0">> ->
-                     character:set_is_active
-                     (
-                        true,
-                        NewCharacter
-                     );
-
-                  _ ->
-                     NewCharacter
-               end,
-            NewCharacterLocation =
-               character:get_location(NewCharacterActive),
-            {
-               NewCharacterActive,
-               [NewCharacterLocation|ForbiddenLocations]
-            }
-         end,
-         [],
-         Characters
-      ),
-
+new (ID, PlayersAsList, Battlemap, CharactersAsList) ->
    #battle
    {
       id = ID,

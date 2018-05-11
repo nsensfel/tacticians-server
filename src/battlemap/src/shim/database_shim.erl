@@ -47,6 +47,8 @@ add_to_db (ID, Val) ->
       non_neg_integer(),
       non_neg_integer(),
       non_neg_integer(),
+      battlemap:type(),
+      list(location:type()),
       list(character:type())
    )
    -> list(character:type()).
@@ -56,6 +58,8 @@ generate_random_characters
    0,
    _CharactersPerPlayer,
    _TotalCharacterCount,
+   _Battlemap,
+   _ForbiddenLocations,
    Result
 ) ->
    Result;
@@ -65,6 +69,8 @@ generate_random_characters
    0,
    CharactersPerPlayer,
    TotalCharacterCount,
+   Battlemap,
+   ForbiddenLocations,
    Result
 ) ->
    generate_random_characters
@@ -73,6 +79,8 @@ generate_random_characters
       CharactersPerPlayer,
       CharactersPerPlayer,
       TotalCharacterCount,
+      Battlemap,
+      ForbiddenLocations,
       Result
    );
 generate_random_characters
@@ -81,21 +89,34 @@ generate_random_characters
    PlayerCharacterCount,
    CharactersPerPlayer,
    TotalCharacterCount,
+   Battlemap,
+   ForbiddenLocations,
    Result
 ) ->
    NewCharacter =
       character:random
       (
          TotalCharacterCount,
-         list_to_binary(integer_to_list(MaxPlayerID))
+         list_to_binary(integer_to_list(MaxPlayerID)),
+         battlemap:get_width(Battlemap),
+         battlemap:get_height(Battlemap),
+         ForbiddenLocations
       ),
+   Character =
+      case MaxPlayerID of
+         0 -> character:set_is_active(true, NewCharacter);
+         _ -> NewCharacter
+      end,
+
    generate_random_characters
    (
       MaxPlayerID,
       (PlayerCharacterCount - 1),
       CharactersPerPlayer,
       (TotalCharacterCount + 1),
-      [NewCharacter|Result]
+      Battlemap,
+      [character:get_location(Character)|ForbiddenLocations],
+      [Character|Result]
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -111,16 +132,9 @@ generate_db (Heir) ->
    BattlemapWidth = roll:between(16, 64),
    BattlemapHeight = roll:between(16, 64),
    Battlemap = battlemap:random(0, BattlemapWidth, BattlemapHeight),
-   Characters = generate_random_characters(1, 8, 8, 0, []),
+   Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
    PlayersAsList = [player:new(<<"0">>), player:new(<<"1">>)],
-   Battle =
-      battle:random
-      (
-         <<"0">>,
-         PlayersAsList,
-         Battlemap,
-         Characters
-      ),
+   Battle = battle:new(<<"0">>, PlayersAsList, Battlemap, Characters),
 
    add_to_db({battle_db, <<"0">>}, Battle).
 
