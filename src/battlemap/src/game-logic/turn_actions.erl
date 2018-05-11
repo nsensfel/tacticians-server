@@ -102,7 +102,7 @@ get_path_cost_and_destination (Data, Path) ->
 -spec assert_character_can_move
    (
       character_turn_data:type(),
-      list(direction:type())
+      non_neg_integer()
    )
    -> 'ok'.
 assert_character_can_move (Data, Cost) ->
@@ -234,20 +234,14 @@ handle_attack_sequence
       AttackPlannedEffects
    ).
 
--spec handle_attack
+-spec get_attack_sequence
    (
-      character_turn_update:type(),
-      battle_action:type()
+      character_instance:type(),
+      character_instance:type()
    )
-   -> character_turn_update:type().
-handle_attack (Update, BattleAction) ->
-   Data = character_turn_update:get_data(Update),
-   Battle = character_turn_data:get_battle(Data),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
+   -> list(attack:step()).
+get_attack_sequence (CharacterInstance, TargetCharacterInstance) ->
    Character = character_instance:get_character(CharacterInstance),
-   TargetIX = battle_action:get_target_ix(BattleAction),
-   TargetCharacterInstance = battle:get_character_instance(TargetIX, Battle),
    TargetCharacter = character_instance:get_character(TargetCharacterInstance),
 
    Range =
@@ -263,8 +257,25 @@ handle_attack (Update, BattleAction) ->
    AttackingWeapon = weapon:from_id(AttackingWeaponID),
    DefendingWeapon = weapon:from_id(DefendingWeaponID),
 
+   attack:get_sequence(Range, AttackingWeapon, DefendingWeapon).
+
+
+-spec handle_attack
+   (
+      character_turn_update:type(),
+      battle_action:type()
+   )
+   -> character_turn_update:type().
+handle_attack (Update, BattleAction) ->
+   Data = character_turn_update:get_data(Update),
+   Battle = character_turn_data:get_battle(Data),
+   CharacterInstance = character_turn_data:get_character_instance(Data),
+   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
+   TargetIX = battle_action:get_target_ix(BattleAction),
+   TargetCharacterInstance = battle:get_character_instance(TargetIX, Battle),
+
    AttackSequence =
-      attack:get_sequence(Range, AttackingWeapon, DefendingWeapon),
+      get_attack_sequence(CharacterInstance, TargetCharacterInstance),
 
    {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =
       handle_attack_sequence
@@ -292,20 +303,27 @@ handle_attack (Update, BattleAction) ->
          ),
          Battle
       ),
-   {
-      % TODO: hide that into database_diff structs.
-      [], % TODO
-      [
+
+   S0Data = character_turn_data:set_battle(UpdatedBattle, Data),
+   S1Data =
+      character_turn_data:set_character_instance
+      (
+         UpdatedCharacterInstance,
+         S0Data
+      ),
+
+   S0Update =
+      character_turn_update:add_to_timeline
+      (
          turn_result:new_character_attacked
          (
             CharacterInstanceIX,
             TargetIX,
             AttackEffects
-         )
-      ],
-      UpdatedBattle,
-      UpdatedCharacterInstance
-   }.
+         ),
+         Update
+      ),
+   character_turn_update:set_data(S1Data, S0Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,7 +335,7 @@ handle_attack (Update, BattleAction) ->
 )
 -> character_turn_update:type().
 handle (Update, BattleAction) ->
-   case battle_action:get_type(BattleAction) of
+   case battle_action:get_category(BattleAction) of
       move -> handle_move(Update, BattleAction);
       switch_weapon -> handle_switch_weapon(Update);
       attack -> handle_attack(Update, BattleAction)

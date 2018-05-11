@@ -119,7 +119,7 @@ finalize_character_instance (Update) ->
          DisabledCharacterInstance,
          Data
       ),
-   FinalizedData = character_turn_data:cleanup(UpdatedData),
+   FinalizedData = character_turn_data:clean_battle(UpdatedData),
 
    character_turn_update:set_data(FinalizedData, Update).
 
@@ -164,8 +164,7 @@ update_timeline (Update) ->
    )
    -> character_turn_update:type().
 update_data (Data, Request) ->
-   EmptyUpdate = character_turn_update:new(Data),
-   PostActionsUpdate = handle_actions(EmptyUpdate, Request),
+   PostActionsUpdate = handle_actions(Data, Request),
    PostCharacterTurnUpdate = update_timeline(PostActionsUpdate),
 
    next_turn:update_if_needed(PostCharacterTurnUpdate).

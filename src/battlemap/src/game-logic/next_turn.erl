@@ -25,7 +25,11 @@ set_player_turn_to_next (Battle) ->
 
    battle:set_current_player_turn(NextPlayerTurn, Battle).
 
--spec reset_next_player_timeline (battle:type()) -> battle:type().
+-spec reset_next_player_timeline
+   (
+      battle:type()
+   )
+   -> {battle:type(), player:type()}.
 reset_next_player_timeline (Battle) ->
    NextPlayerTurn = battle:get_current_player_turn(Battle),
    NextPlayerIX = player_turn:get_player_ix(NextPlayerTurn),

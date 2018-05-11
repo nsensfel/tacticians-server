@@ -25,7 +25,7 @@
 
 -opaque type() :: #weapon{}.
 
--export_type([struct/0, id/0]).
+-export_type([type/0, id/0]).
 -export_type
 (
    [
