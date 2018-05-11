@@ -53,13 +53,7 @@ fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
 
-   Battle =
-      timed_cache:fetch
-      (
-         battle_db,
-         PlayerID,
-         BattleID
-      ),
+   Battle = timed_cache:fetch (battle_db, PlayerID, BattleID),
 
    #query_state
    {
@@ -81,10 +75,10 @@ generate_reply (QueryState, Input) ->
          (
             array:map
             (
-               fun (IX, CharacterInstance) ->
-                  add_char:generate(IX, CharacterInstance, PlayerID)
+               fun (IX, Character) ->
+                  add_char:generate(IX, Character, PlayerID)
                end,
-               battle:get_character_instances(Battle)
+               battle:get_characters(Battle)
             )
          )
       ]

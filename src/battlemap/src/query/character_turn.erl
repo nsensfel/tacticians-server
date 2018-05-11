@@ -1,5 +1,4 @@
 -module(character_turn).
-% FIXME: There's still too much of a mess in this module.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,12 +40,12 @@ authenticate_user (Request) ->
 fetch_data (Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
    BattleID = character_turn_request:get_battle_id(Request),
-   CharacterInstanceIX =
-      character_turn_request:get_character_instance_ix(Request),
+   CharacterIX =
+      character_turn_request:get_character_ix(Request),
 
    Battle = timed_cache:fetch(battle_db, PlayerID, BattleID),
 
-   character_turn_data:new(Battle, CharacterInstanceIX).
+   character_turn_data:new(Battle, CharacterIX).
 
 %%%% ASSERTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec assert_user_is_current_player
@@ -72,8 +71,7 @@ assert_user_is_current_player (Data, Request) ->
    ) -> 'ok'.
 assert_user_owns_played_character (Data, Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   Character = character_instance:get_character(CharacterInstance),
+   Character = character_turn_data:get_character(Data),
    CharacterOwnerID = character:get_owner_id(Character),
 
    true = (PlayerID == CharacterOwnerID),
@@ -82,9 +80,9 @@ assert_user_owns_played_character (Data, Request) ->
 
 -spec assert_character_can_be_played (character_turn_data:type()) -> 'ok'.
 assert_character_can_be_played (Data) ->
-   CharacterInstance = character_turn_data:get_character_instance(Data),
+   Character = character_turn_data:get_character(Data),
 
-   true = character_instance:get_is_active(CharacterInstance),
+   true = character:get_is_active(Character),
 
    ok.
 
@@ -101,22 +99,22 @@ assert_user_permissions (Data, Request) ->
    ok.
 
 %%%% QUERY LOGIC HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec finalize_character_instance
+-spec finalize_character
    (
       character_turn_update:type()
    )
    -> character_turn_update:type().
-finalize_character_instance (Update) ->
+finalize_character (Update) ->
    Data = character_turn_update:get_data(Update),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
+   Character = character_turn_data:get_character(Data),
 
-   DisabledCharacterInstance =
-      character_instance:set_is_active(false, CharacterInstance),
+   DisabledCharacter =
+      character:set_is_active(false, Character),
 
    UpdatedData =
-      character_turn_data:set_character_instance
+      character_turn_data:set_character
       (
-         DisabledCharacterInstance,
+         DisabledCharacter,
          Data
       ),
    FinalizedData = character_turn_data:clean_battle(UpdatedData),
@@ -136,7 +134,7 @@ handle_actions (Data, Request) ->
    PostActionsUpdate =
       lists:foldl(fun turn_actions:handle/2, EmptyUpdate, Actions),
 
-   finalize_character_instance(PostActionsUpdate).
+   finalize_character(PostActionsUpdate).
 
 -spec update_timeline
    (
@@ -205,13 +203,7 @@ send_to_cache (Update, Request) ->
    Data = character_turn_update:get_data(Update),
    Battle = character_turn_data:get_battle(Data),
 
-   timed_cache:update
-   (
-      battle_db,
-      PlayerID,
-      BattleID,
-      Battle
-   ),
+   timed_cache:update(battle_db, PlayerID, BattleID, Battle),
 
    ok.
 

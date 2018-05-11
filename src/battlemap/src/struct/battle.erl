@@ -11,7 +11,7 @@
    {
       id :: id(),
       battlemap :: battlemap:type(),
-      character_instances :: array:array(character_instance:type()),
+      characters :: array:array(character:type()),
       players :: array:array(player:type()),
       current_player_turn :: player_turn:type()
    }
@@ -30,16 +30,16 @@
    [
       get_id/1,
       get_battlemap/1,
-      get_character_instances/1,
-      get_character_instance/2,
+      get_characters/1,
+      get_character/2,
       get_players/1,
       get_player/2,
       get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
 
       set_battlemap/2,
-      set_character_instances/2,
-      set_character_instance/3,
+      set_characters/2,
+      set_character/3,
       set_players/2,
       set_player/3,
       set_current_player_turn/2
@@ -80,15 +80,13 @@ get_id (Battle) -> Battle#battle.id.
 get_battlemap (Battle) ->
    Battle#battle.battlemap.
 
--spec get_character_instances (type()) ->
-   array:array(character_instance:type()).
-get_character_instances (Battle) ->
-   Battle#battle.character_instances.
+-spec get_characters (type()) -> array:array(character:type()).
+get_characters (Battle) ->
+   Battle#battle.characters.
 
--spec get_character_instance (non_neg_integer(), type()) ->
-   character_instance:type().
-get_character_instance (IX, Battle) ->
-   array:get(IX, Battle#battle.character_instances).
+-spec get_character (non_neg_integer(), type()) -> character:type().
+get_character (IX, Battle) ->
+   array:get(IX, Battle#battle.characters).
 
 -spec get_players (type()) -> array:array(player:type()).
 get_players (Battle) ->
@@ -119,56 +117,34 @@ set_battlemap (Battlemap, Battle) ->
       battlemap = Battlemap
    }.
 
--spec set_character_instances
-   (
-      array:array(character_instance:type()),
-      type()
-   )
-   -> type().
-set_character_instances (CharacterInstances, Battle) ->
+-spec set_characters (array:array(character:type()), type()) -> type().
+set_characters (Characters, Battle) ->
    Battle#battle
    {
-      character_instances = CharacterInstances
+      characters = Characters
    }.
 
--spec set_character_instance
-   (
-      non_neg_integer(),
-      character_instance:type(),
-      type()
-   )
-   -> type().
-set_character_instance (IX, CharacterInstance, Battle) ->
+-spec set_character (non_neg_integer(), character:type(), type()) -> type().
+set_character (IX, Character, Battle) ->
    Battle#battle
    {
-      character_instances =
+      characters =
          array:set
          (
             IX,
-            CharacterInstance,
-            Battle#battle.character_instances
+            Character,
+            Battle#battle.characters
          )
    }.
 
--spec set_players
-   (
-      array:array(player:type()),
-      type()
-   )
-   -> type().
+-spec set_players (array:array(player:type()), type()) -> type().
 set_players (Players, Battle) ->
    Battle#battle
    {
       players = Players
    }.
 
--spec set_player
-   (
-      non_neg_integer(),
-      player:type(),
-      type()
-   )
-   -> type().
+-spec set_player (non_neg_integer(), player:type(), type()) -> type().
 set_player (IX, Player, Battle) ->
    Battle#battle
    {
@@ -181,12 +157,7 @@ set_player (IX, Player, Battle) ->
          )
    }.
 
--spec set_current_player_turn
-   (
-      player_turn:type(),
-      type()
-   )
-   -> type().
+-spec set_current_player_turn (player_turn:type(), type()) -> type().
 set_current_player_turn (PlayerTurn, Battle) ->
    Battle#battle
    {
@@ -204,36 +175,36 @@ set_current_player_turn (PlayerTurn, Battle) ->
 random (ID, PlayersAsList, Battlemap, Characters) ->
    BattlemapWidth = battlemap:get_width(Battlemap),
    BattlemapHeight = battlemap:get_height(Battlemap),
-   {CharacterInstancesAsList, _ForbiddenLocations} =
+   {CharactersAsList, _ForbiddenLocations} =
       lists:mapfoldl
       (
          fun (Character, ForbiddenLocations) ->
             CharacterOwner = character:get_owner_id(Character),
-            NewCharacterInstance =
-               character_instance:random
+            NewCharacter =
+               character:random
                (
                   Character,
                   BattlemapWidth,
                   BattlemapHeight,
                   ForbiddenLocations
                ),
-            NewCharacterInstanceActive =
+            NewCharacterActive =
                case CharacterOwner of
                   <<"0">> ->
-                     character_instance:set_is_active
+                     character:set_is_active
                      (
                         true,
-                        NewCharacterInstance
+                        NewCharacter
                      );
 
                   _ ->
-                     NewCharacterInstance
+                     NewCharacter
                end,
-            NewCharacterInstanceLocation =
-               character_instance:get_location(NewCharacterInstanceActive),
+            NewCharacterLocation =
+               character:get_location(NewCharacterActive),
             {
-               NewCharacterInstanceActive,
-               [NewCharacterInstanceLocation|ForbiddenLocations]
+               NewCharacterActive,
+               [NewCharacterLocation|ForbiddenLocations]
             }
          end,
          [],
@@ -244,7 +215,7 @@ random (ID, PlayersAsList, Battlemap, Characters) ->
    {
       id = ID,
       battlemap = Battlemap,
-      character_instances = array:from_list(CharacterInstancesAsList),
+      characters = array:from_list(CharactersAsList),
       players = array:from_list(PlayersAsList),
       current_player_turn = player_turn:new(0, 0)
    }.

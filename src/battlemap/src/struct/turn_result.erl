@@ -8,7 +8,7 @@
 (
    switched_weapon,
    {
-      character_instance_ix :: character_instance:id()
+      character_ix :: character:id()
    }
 ).
 
@@ -16,7 +16,7 @@
 (
    moved,
    {
-      character_instance_ix :: character_instance:id(),
+      character_ix :: character:id(),
       path :: list(direction:enum()),
       new_location :: location:type()
    }
@@ -26,8 +26,8 @@
 (
    attacked,
    {
-      attacker_ix :: character_instance:id(),
-      defender_ix :: character_instance:id(),
+      attacker_ix :: character:id(),
+      defender_ix :: character:id(),
       sequence :: list(attack:type())
    }
 ).
@@ -62,29 +62,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new_character_switched_weapons (character_instance:id()) -> type().
-new_character_switched_weapons (CharacterInstanceIX) ->
-   #switched_weapon { character_instance_ix = CharacterInstanceIX }.
+-spec new_character_switched_weapons (character:id()) -> type().
+new_character_switched_weapons (CharacterIX) ->
+   #switched_weapon { character_ix = CharacterIX }.
 
 -spec new_character_moved
    (
-      character_instance:id(),
+      character:id(),
       list(direction:enum()),
       location:type()
    )
    -> type().
-new_character_moved (CharacterInstanceIX, Path, NewLocation) ->
+new_character_moved (CharacterIX, Path, NewLocation) ->
    #moved
    {
-      character_instance_ix = CharacterInstanceIX,
+      character_ix = CharacterIX,
       path = Path,
       new_location = NewLocation
    }.
 
 -spec new_character_attacked
    (
-      character_instance:id(),
-      character_instance:id(),
+      character:id(),
+      character:id(),
       list(attack:type())
    )
    -> type().
@@ -98,16 +98,16 @@ new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
 
 -spec encode (type()) -> {list(any())}.
 encode (TurnResult) when is_record(TurnResult, switched_weapon) ->
-   CharacterInstanceIX = TurnResult#switched_weapon.character_instance_ix,
+   CharacterIX = TurnResult#switched_weapon.character_ix,
 
    {
       [
          {<<"t">>, <<"swp">>},
-         {<<"ix">>, CharacterInstanceIX}
+         {<<"ix">>, CharacterIX}
       ]
    };
 encode (TurnResult) when is_record(TurnResult, moved) ->
-   CharacterInstanceIX = TurnResult#moved.character_instance_ix,
+   CharacterIX = TurnResult#moved.character_ix,
    Path = TurnResult#moved.path,
    NewLocation = TurnResult#moved.new_location,
 
@@ -117,7 +117,7 @@ encode (TurnResult) when is_record(TurnResult, moved) ->
    {
       [
          {<<"t">>, <<"mv">>},
-         {<<"ix">>, CharacterInstanceIX},
+         {<<"ix">>, CharacterIX},
          {<<"p">>, EncodedPath},
          {<<"nlc">>, EncodedNewLocation}
       ]

@@ -49,23 +49,21 @@ reset_next_player_timeline (Battle) ->
    -> {battle:type(), list(non_neg_integer())}.
 activate_next_players_characters (Battle, NextPlayer) ->
    NextPlayerID = player:get_id(NextPlayer),
-   CharacterInstances = battle:get_character_instances(Battle),
+   Characters = battle:get_characters(Battle),
 
-   {UpdatedCharacterInstances, ModifiedIXs} =
+   {UpdatedCharacters, ModifiedIXs} =
       array_util:mapiff
       (
-         fun (CharacterInstance) ->
-            Character = character_instance:get_character(CharacterInstance),
+         fun (Character) ->
             (character:get_owner_id(Character) == NextPlayerID)
          end,
-         fun (CharacterInstance) ->
-            character_instance:set_is_active(true, CharacterInstance)
+         fun (Character) ->
+            character:set_is_active(true, Character)
          end,
-         CharacterInstances
+         Characters
       ),
 
-   UpdatedBattle =
-      battle:set_character_instances(UpdatedCharacterInstances, Battle),
+   UpdatedBattle = battle:set_characters(UpdatedCharacters, Battle),
 
    {UpdatedBattle, ModifiedIXs}.
 
@@ -92,10 +90,10 @@ update (Update) ->
 
    S0Battle = set_player_turn_to_next(Battle),
    {S1Battle, NextPlayer} = reset_next_player_timeline(S0Battle),
-   {S2Battle, ActivatedCharacterInstancesIX} =
+   {S2Battle, ActivatedCharactersIX} =
       activate_next_players_characters(S1Battle, NextPlayer),
 
-   S0Update = add_activation_updates(ActivatedCharacterInstancesIX, Update),
+   S0Update = add_activation_updates(ActivatedCharactersIX, Update),
 
    UpdatedData = character_turn_data:set_battle(S2Battle, Data),
 
@@ -105,9 +103,9 @@ update (Update) ->
 requires_update (Update) ->
    Data = character_turn_update:get_data(Update),
    Battle = character_turn_data:get_battle(Data),
-   CharacterInstances = battle:get_character_instances(Battle),
+   Characters = battle:get_characters(Battle),
 
-   array_util:none(fun character_instance:get_is_active/1, CharacterInstances).
+   array_util:none(fun character:get_is_active/1, Characters).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

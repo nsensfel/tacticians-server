@@ -9,8 +9,8 @@
    {
       dirty :: boolean(),
       battle :: battle:type(),
-      character_instance :: character_instance:type(),
-      character_instance_ix :: non_neg_integer()
+      character :: character:type(),
+      character_ix :: non_neg_integer()
    }
 ).
 
@@ -28,11 +28,11 @@
 
       get_battle_is_dirty/1,
       get_battle/1,
-      get_character_instance/1,
-      get_character_instance_ix/1,
+      get_character/1,
+      get_character_ix/1,
 
       set_battle/2,
-      set_character_instance/2
+      set_character/2
    ]
 ).
 
@@ -51,16 +51,15 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (battle:type(), non_neg_integer()) -> type().
-new (Battle, CharacterInstanceIX) ->
-   CharacterInstance =
-      battle:get_character_instance(CharacterInstanceIX, Battle),
+new (Battle, CharacterIX) ->
+   Character = battle:get_character(CharacterIX, Battle),
 
    #type
    {
       dirty = false,
       battle = Battle,
-      character_instance = CharacterInstance,
-      character_instance_ix = CharacterInstanceIX
+      character = Character,
+      character_ix = CharacterIX
    }.
 
 -spec get_battle_is_dirty (type()) -> boolean().
@@ -69,22 +68,22 @@ get_battle_is_dirty (Data) -> Data#type.dirty.
 -spec get_battle (type()) -> battle:type().
 get_battle (Data) -> Data#type.battle.
 
--spec get_character_instance (type()) -> character_instance:type().
-get_character_instance (Data) -> Data#type.character_instance.
+-spec get_character (type()) -> character:type().
+get_character (Data) -> Data#type.character.
 
--spec get_character_instance_ix (type()) -> non_neg_integer().
-get_character_instance_ix (Data) -> Data#type.character_instance_ix.
+-spec get_character_ix (type()) -> non_neg_integer().
+get_character_ix (Data) -> Data#type.character_ix.
 
 -spec set_battle (battle:type(), type()) -> type().
 set_battle (Battle, Data) ->
    Data#type{ battle = Battle }.
 
--spec set_character_instance (character_instance:type(), type()) -> type().
-set_character_instance (CharacterInstance, Data) ->
+-spec set_character (character:type(), type()) -> type().
+set_character (Character, Data) ->
    Data#type
    {
       dirty = true,
-      character_instance = CharacterInstance
+      character = Character
    }.
 
 -spec clean_battle (type()) -> type().
@@ -93,10 +92,10 @@ clean_battle (Data) ->
    {
       dirty = false,
       battle =
-         battle:set_character_instance
+         battle:set_character
          (
-            Data#type.character_instance_ix,
-            Data#type.character_instance,
+            Data#type.character_ix,
+            Data#type.character,
             Data#type.battle
          )
    }.

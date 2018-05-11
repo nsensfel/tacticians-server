@@ -35,19 +35,18 @@ attributes_as_json (Attributes) ->
 -spec generate
    (
       non_neg_integer(),
-      character_instance:type(),
+      character:type(),
       player:id()
    )
    -> {list(any())}.
-generate (IX, CharacterInstance, PlayerID) ->
-   Character = character_instance:get_character(CharacterInstance),
-   IsAlive = character_instance:get_is_alive(CharacterInstance),
+generate (IX, Character, PlayerID) ->
+   IsAlive = character:get_is_alive(Character),
    Attributes = character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
    OwnerID = character:get_owner_id(Character),
    Location =
       case IsAlive of
-         true -> character_instance:get_location(CharacterInstance);
+         true -> character:get_location(Character);
          _ -> location:get_nowhere()
       end,
 
@@ -60,14 +59,14 @@ generate (IX, CharacterInstance, PlayerID) ->
          {<<"prt">>, character:get_portrait(Character)},
          {
             <<"hea">>,
-            character_instance:get_current_health(CharacterInstance)
+            character:get_current_health(Character)
          },
          {<<"lc">>, location:encode(Location)},
          {<<"pla">>, OwnerID},
          {
             <<"ena">>,
             (
-               character_instance:get_is_active(CharacterInstance)
+               character:get_is_active(Character)
                and
                (OwnerID == PlayerID)
             )

@@ -25,9 +25,8 @@
    -> character_turn_update:type().
 handle_switch_weapon (Update) ->
    Data = character_turn_update:get_data(Update),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
-   Character = character_instance:get_character(CharacterInstance),
+   Character = character_turn_data:get_character(Data),
+   CharacterIX = character_turn_data:get_character_ix(Data),
    CharacterAttributes = character:get_attributes(Character),
    {PrimaryWeaponID, SecondaryWeaponID} = character:get_weapon_ids(Character),
 
@@ -40,23 +39,16 @@ handle_switch_weapon (Update) ->
          UpdatedCharacterStatistics,
          character:set_weapon_ids(UpdatedWeaponIDs, Character)
       ),
-   UpdatedCharacterInstance =
-      character_instance:set_character(UpdatedCharacter, CharacterInstance),
 
    % TODO: db update entries...
-   % {character_instance, CharacterInstanceIX, wp0, SecondaryWeaponID},
-   % {character_instance, CharacterInstanceIX, wp1, PrimaryWeaponID}
+   % {character, CharacterIX, wp0, SecondaryWeaponID},
+   % {character, CharacterIX, wp1, PrimaryWeaponID}
 
-   UpdatedData =
-      character_turn_data:set_character_instance
-      (
-         UpdatedCharacterInstance,
-         Data
-      ),
+   UpdatedData = character_turn_data:set_character(UpdatedCharacter, Data),
 
    character_turn_update:add_to_timeline
    (
-      turn_result:new_character_switched_weapons(CharacterInstanceIX),
+      turn_result:new_character_switched_weapons(CharacterIX),
       character_turn_update:set_data(UpdatedData, Update)
    ).
 
@@ -68,24 +60,24 @@ handle_switch_weapon (Update) ->
    )
    -> {non_neg_integer(), location:type()}.
 get_path_cost_and_destination (Data, Path) ->
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
+   Character = character_turn_data:get_character(Data),
+   CharacterIX = character_turn_data:get_character_ix(Data),
    Battle = character_turn_data:get_battle(Data),
    Battlemap = battle:get_battlemap(Battle),
 
    ForbiddenLocations =
       array:foldl
       (
-         fun (IX, CharInst, Prev) ->
-            IsAlive = character_instance:get_is_alive(CharInst),
+         fun (IX, Char, Prev) ->
+            IsAlive = character:get_is_alive(Char),
             if
-               (IX == CharacterInstanceIX) -> Prev;
+               (IX == CharacterIX) -> Prev;
                (not IsAlive) -> Prev;
-               true -> [character_instance:get_location(CharInst)|Prev]
+               true -> [character:get_location(Char)|Prev]
             end
          end,
          [],
-         battle:get_character_instances(Battle)
+         battle:get_characters(Battle)
       ),
 
    {NewLocation, Cost} =
@@ -94,7 +86,7 @@ get_path_cost_and_destination (Data, Path) ->
          Battlemap,
          ForbiddenLocations,
          Path,
-         character_instance:get_location(CharacterInstance)
+         character:get_location(Character)
       ),
 
    {Cost, NewLocation}.
@@ -106,8 +98,7 @@ get_path_cost_and_destination (Data, Path) ->
    )
    -> 'ok'.
 assert_character_can_move (Data, Cost) ->
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   Character = character_instance:get_character(CharacterInstance),
+   Character = character_turn_data:get_character(Data),
    CharacterStatistics = character:get_statistics(Character),
    CharacterMovementPoints =
       statistics:get_movement_points(CharacterStatistics),
@@ -125,32 +116,21 @@ assert_character_can_move (Data, Cost) ->
    -> character_turn_update:type().
 commit_move (Update, Path, NewLocation) ->
    Data = character_turn_update:get_data(Update),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
+   Character = character_turn_data:get_character(Data),
+   CharacterIX = character_turn_data:get_character_ix(Data),
 
-   UpdatedCharacterInstance =
-      character_instance:set_location(NewLocation, CharacterInstance),
+   UpdatedCharacter = character:set_location(NewLocation, Character),
 
-   UpdatedData =
-      character_turn_data:set_character_instance
-      (
-         UpdatedCharacterInstance,
-         Data
-      ),
+   UpdatedData = character_turn_data:set_character(UpdatedCharacter, Data),
 
    S0Update =
       character_turn_update:add_to_timeline
       (
-         turn_result:new_character_moved
-         (
-            CharacterInstanceIX,
-            Path,
-            NewLocation
-         ),
+         turn_result:new_character_moved(CharacterIX, Path, NewLocation),
          Update
       ),
 
-   %[{character_instance, CharacterInstanceIX, loc, NewLocation}],
+   %[{character, CharacterIX, loc, NewLocation}],
 
    character_turn_update:set_data(UpdatedData, S0Update).
 
@@ -172,19 +152,17 @@ handle_move (Update, BattleAction) ->
 %%%% ATTACKING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle_attack_sequence
    (
-      character_instance:type(),
-      character_instance:type(),
+      character:type(),
+      character:type(),
       list(attack:step())
    )
    -> {list(attack:type()), non_neg_integer(), non_neg_integer()}.
 handle_attack_sequence
 (
-   CharacterInstance,
-   TargetCharacterInstance,
+   Character,
+   TargetCharacter,
    AttackSequence
 ) ->
-   Character = character_instance:get_character(CharacterInstance),
-   TargetCharacter = character_instance:get_character(TargetCharacterInstance),
    CharacterStatistics = character:get_statistics(Character),
    TargetCharacterStatistics = character:get_statistics(TargetCharacter),
 
@@ -228,27 +206,24 @@ handle_attack_sequence
       end,
       {
          [],
-         character_instance:get_current_health(CharacterInstance),
-         character_instance:get_current_health(TargetCharacterInstance)
+         character:get_current_health(Character),
+         character:get_current_health(TargetCharacter)
       },
       AttackPlannedEffects
    ).
 
 -spec get_attack_sequence
    (
-      character_instance:type(),
-      character_instance:type()
+      character:type(),
+      character:type()
    )
    -> list(attack:step()).
-get_attack_sequence (CharacterInstance, TargetCharacterInstance) ->
-   Character = character_instance:get_character(CharacterInstance),
-   TargetCharacter = character_instance:get_character(TargetCharacterInstance),
-
+get_attack_sequence (Character, TargetCharacter) ->
    Range =
       location:dist
       (
-         character_instance:get_location(CharacterInstance),
-         character_instance:get_location(TargetCharacterInstance)
+         character:get_location(Character),
+         character:get_location(TargetCharacter)
       ),
 
    {AttackingWeaponID, _} = character:get_weapon_ids(Character),
@@ -269,46 +244,45 @@ get_attack_sequence (CharacterInstance, TargetCharacterInstance) ->
 handle_attack (Update, BattleAction) ->
    Data = character_turn_update:get_data(Update),
    Battle = character_turn_data:get_battle(Data),
-   CharacterInstance = character_turn_data:get_character_instance(Data),
-   CharacterInstanceIX = character_turn_data:get_character_instance_ix(Data),
+   Character = character_turn_data:get_character(Data),
+   CharacterIX = character_turn_data:get_character_ix(Data),
    TargetIX = battle_action:get_target_ix(BattleAction),
-   TargetCharacterInstance = battle:get_character_instance(TargetIX, Battle),
+   TargetCharacter = battle:get_character(TargetIX, Battle),
 
-   AttackSequence =
-      get_attack_sequence(CharacterInstance, TargetCharacterInstance),
+   AttackSequence = get_attack_sequence(Character, TargetCharacter),
 
    {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =
       handle_attack_sequence
       (
-         CharacterInstance,
-         TargetCharacterInstance,
+         Character,
+         TargetCharacter,
          AttackSequence
       ),
 
-   UpdatedCharacterInstance =
-      character_instance:set_current_health
+   UpdatedCharacter =
+      character:set_current_health
       (
          RemainingAttackerHealth,
-         CharacterInstance
+         Character
       ),
 
    UpdatedBattle =
-      battle:set_character_instance
+      battle:set_character
       (
          TargetIX,
-         character_instance:set_current_health
+         character:set_current_health
          (
             RemainingDefenderHealth,
-            TargetCharacterInstance
+            TargetCharacter
          ),
          Battle
       ),
 
    S0Data = character_turn_data:set_battle(UpdatedBattle, Data),
    S1Data =
-      character_turn_data:set_character_instance
+      character_turn_data:set_character
       (
-         UpdatedCharacterInstance,
+         UpdatedCharacter,
          S0Data
       ),
 
@@ -317,7 +291,7 @@ handle_attack (Update, BattleAction) ->
       (
          turn_result:new_character_attacked
          (
-            CharacterInstanceIX,
+            CharacterIX,
             TargetIX,
             AttackEffects
          ),
