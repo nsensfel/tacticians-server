@@ -64,9 +64,9 @@ get_db (Update) -> Update#type.db.
 set_data (Data, Update) ->
    Update#type{ data = Data}.
 
--spec add_to_timeline (any(), type()) -> type().
+-spec add_to_timeline (turn_result:type(), type()) -> type().
 add_to_timeline (Item, Update) ->
-   Update#type{ timeline = [Item|Update#type.timeline] }.
+   Update#type{ timeline = [turn_result:encode(Item)|Update#type.timeline] }.
 
 -spec add_to_db (any(), type()) -> type().
 add_to_db (Item, Update) ->

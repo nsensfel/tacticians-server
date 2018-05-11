@@ -107,4 +107,8 @@ get_target_ix (_) ->
 -spec get_category (type()) -> category().
 get_category (Action) when is_record(Action, attack) -> attack;
 get_category (Action) when is_record(Action, move) -> move;
-get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon.
+get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon;
+get_category (Action) ->
+   io:format("How'd you get there?~p~n", [Action]),
+   true = Action.
+

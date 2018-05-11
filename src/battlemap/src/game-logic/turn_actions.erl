@@ -136,11 +136,11 @@ commit_move (Update, Path, NewLocation) ->
 
 -spec handle_move
    (
-      character_turn_update:type(),
-      battle_action:type()
+      battle_action:type(),
+      character_turn_update:type()
    )
    -> character_turn_update:type().
-handle_move (Update, BattleAction) ->
+handle_move (BattleAction, Update) ->
    Data = character_turn_update:get_data(Update),
    Path = battle_action:get_path(BattleAction),
 
@@ -237,11 +237,11 @@ get_attack_sequence (Character, TargetCharacter) ->
 
 -spec handle_attack
    (
-      character_turn_update:type(),
-      battle_action:type()
+      battle_action:type(),
+      character_turn_update:type()
    )
    -> character_turn_update:type().
-handle_attack (Update, BattleAction) ->
+handle_attack (BattleAction, Update) ->
    Data = character_turn_update:get_data(Update),
    Battle = character_turn_data:get_battle(Data),
    Character = character_turn_data:get_character(Data),
@@ -304,13 +304,13 @@ handle_attack (Update, BattleAction) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle
 (
-   character_turn_update:type(),
-   battle_action:type()
+   battle_action:type(),
+   character_turn_update:type()
 )
 -> character_turn_update:type().
-handle (Update, BattleAction) ->
+handle (BattleAction, Update) ->
    case battle_action:get_category(BattleAction) of
-      move -> handle_move(Update, BattleAction);
+      move -> handle_move(BattleAction, Update);
       switch_weapon -> handle_switch_weapon(Update);
-      attack -> handle_attack(Update, BattleAction)
+      attack -> handle_attack(BattleAction, Update)
    end.
