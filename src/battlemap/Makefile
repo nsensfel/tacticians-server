@@ -58,7 +58,7 @@ all: build
 
 debug: debug_run
 
-build: $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
+build: $(REQUIRED_HEADERS) $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 
 run: yaws_run
 
