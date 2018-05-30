@@ -42,7 +42,11 @@
       set_character/3,
       set_players/2,
       set_player/3,
-      set_current_player_turn/2
+      set_current_player_turn/2,
+
+      get_characters_field/0,
+      get_players_field/0,
+      get_current_player_turn_field/0
    ]
 ).
 
@@ -181,3 +185,13 @@ new (ID, PlayersAsList, Battlemap, CharactersAsList) ->
       players = array:from_list(PlayersAsList),
       current_player_turn = player_turn:new(0, 0)
    }.
+
+
+-spec get_characters_field () -> non_neg_integer().
+get_characters_field () -> #battle.characters.
+
+-spec get_players_field () -> non_neg_integer().
+get_players_field () -> #battle.players.
+
+-spec get_current_player_turn_field () -> non_neg_integer().
+get_current_player_turn_field () -> #battle.current_player_turn.

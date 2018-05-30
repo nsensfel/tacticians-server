@@ -83,9 +83,9 @@ add_activation_updates ([IX|NextIXs], Update) ->
       (
          db_query:update_indexed
          (
-            character,
+            battle:get_characters_field(),
             IX,
-            [db_query:set_field(active, true)]
+            [db_query:set_field(character:get_active_field(), true)]
          ),
          Update
       )

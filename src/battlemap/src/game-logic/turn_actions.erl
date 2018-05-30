@@ -43,11 +43,14 @@ handle_switch_weapon (Update) ->
    DBQuery =
       db_query:update_indexed
       (
-         character,
+         battle:get_characters_field(),
          CharacterIX,
          [
-            db_query:set_field(wp0, SecondaryWeaponID),
-            db_query:set_field(wp1, PrimaryWeaponID)
+            db_query:set_field
+            (
+               character:get_weapons_field(),
+               UpdatedWeaponIDs
+            )
          ]
       ),
 
@@ -146,9 +149,15 @@ commit_move (Update, Path, NewLocation) ->
       (
          db_query:update_indexed
          (
-            character,
+            battle:get_characters_field(),
             CharacterIX,
-            [db_query:set_field(loc, NewLocation)]
+            [
+               db_query:set_field
+               (
+                  character:get_location_field(),
+                  NewLocation
+               )
+            ]
          ),
          S0Update
       ),
@@ -325,9 +334,15 @@ handle_attack (BattleAction, Update) ->
    DBQuery =
       db_query:update_indexed
       (
-         character,
+         battle:get_characters_field(),
          TargetIX,
-         [ db_query:set_field(health, RemainingDefenderHealth) ]
+         [
+            db_query:set_field
+            (
+               character:get_current_health_field(),
+               RemainingDefenderHealth
+            )
+         ]
       ),
 
    character_turn_update:add_to_db(DBQuery, S1Update).

@@ -50,7 +50,13 @@
       set_statistics/2,
       set_location/2,
       set_current_health/2,
-      set_is_active/2
+      set_is_active/2,
+
+      get_statistics_field/0,
+      get_weapons_field/0,
+      get_location_field/0,
+      get_current_health_field/0,
+      get_active_field/0
    ]
 ).
 
@@ -220,3 +226,14 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       current_health = statistics:get_health(Statistics),
       active = false
    }.
+
+-spec get_statistics_field() -> non_neg_integer().
+get_statistics_field () -> #character.statistics.
+-spec get_weapons_field() -> non_neg_integer().
+get_weapons_field () -> #character.weapon_ids.
+-spec get_location_field() -> non_neg_integer().
+get_location_field () -> #character.location.
+-spec get_current_health_field() -> non_neg_integer().
+get_current_health_field () -> #character.current_health.
+-spec get_active_field() -> non_neg_integer().
+get_active_field () -> #character.active.

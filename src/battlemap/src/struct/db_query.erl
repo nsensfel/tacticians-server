@@ -8,7 +8,7 @@
 (
    set_field,
    {
-      name :: atom(),
+      field :: non_neg_integer(),
       value :: any()
    }
 ).
@@ -17,7 +17,7 @@
 (
    add_to_field,
    {
-      name :: atom(),
+      field :: non_neg_integer(),
       values :: list(any())
    }
 ).
@@ -26,7 +26,7 @@
 (
    update_indexed,
    {
-      name :: atom(),
+      field :: non_neg_integer(),
       ix :: non_neg_integer(),
       update :: list(type())
    }
@@ -55,14 +55,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec set_field (atom(), any()) -> type().
-set_field (Name, Value) ->
-   #set_field { name = Name, value = Value }.
+-spec set_field (non_neg_integer(), any()) -> type().
+set_field (Field, Value) ->
+   #set_field { field = Field, value = Value }.
 
--spec add_to_field (atom(), list(any())) -> type().
-add_to_field (Name, Values) ->
-   #add_to_field { name = Name, values = Values }.
+-spec add_to_field (non_neg_integer(), list(any())) -> type().
+add_to_field (Field, Values) ->
+   #add_to_field { field = Field, values = Values }.
 
--spec update_indexed (atom(), non_neg_integer(), list(type())) -> type().
-update_indexed (Name, IX, Updates) ->
-   #update_indexed { name = Name, ix = IX, update = Updates}.
+-spec update_indexed
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      list(type())
+   )
+   -> type().
+update_indexed (Field, IX, Updates) ->
+   #update_indexed { field = Field, ix = IX, update = Updates}.
