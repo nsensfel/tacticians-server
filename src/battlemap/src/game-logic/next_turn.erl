@@ -76,11 +76,19 @@ activate_next_players_characters (Battle, NextPlayer) ->
 add_activation_updates ([], Update) ->
    Update;
 add_activation_updates ([IX|NextIXs], Update) ->
-   % TODO: use DB update elements.
    add_activation_updates
    (
       NextIXs,
-      character_turn_update:add_to_db(IX, Update)
+      character_turn_update:add_to_db
+      (
+         db_query:update_indexed
+         (
+            character,
+            IX,
+            [db_query:set_field(active, true)]
+         ),
+         Update
+      )
    ).
 
 -spec update (character_turn_update:type()) -> character_turn_update:type().

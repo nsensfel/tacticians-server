@@ -40,17 +40,28 @@ handle_switch_weapon (Update) ->
          character:set_weapon_ids(UpdatedWeaponIDs, Character)
       ),
 
-   % TODO: db update entries...
-   % {character, CharacterIX, wp0, SecondaryWeaponID},
-   % {character, CharacterIX, wp1, PrimaryWeaponID}
+   DBQuery =
+      db_query:update_indexed
+      (
+         character,
+         CharacterIX,
+         [
+            db_query:set_field(wp0, SecondaryWeaponID),
+            db_query:set_field(wp1, PrimaryWeaponID)
+         ]
+      ),
 
    UpdatedData = character_turn_data:set_character(UpdatedCharacter, Data),
 
-   character_turn_update:add_to_timeline
-   (
-      turn_result:new_character_switched_weapons(CharacterIX),
-      character_turn_update:set_data(UpdatedData, Update)
-   ).
+   S0Update = character_turn_update:set_data(UpdatedData, Update),
+   S1Update =
+      character_turn_update:add_to_timeline
+      (
+         turn_result:new_character_switched_weapons(CharacterIX),
+         S0Update
+      ),
+
+   character_turn_update:add_to_db(DBQuery, S1Update).
 
 %%%% MOVING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_path_cost_and_destination
@@ -130,9 +141,19 @@ commit_move (Update, Path, NewLocation) ->
          Update
       ),
 
-   %[{character, CharacterIX, loc, NewLocation}],
+   S1Update =
+      character_turn_update:add_to_db
+      (
+         db_query:update_indexed
+         (
+            character,
+            CharacterIX,
+            [db_query:set_field(loc, NewLocation)]
+         ),
+         S0Update
+      ),
 
-   character_turn_update:set_data(UpdatedData, S0Update).
+   character_turn_update:set_data(UpdatedData, S1Update).
 
 -spec handle_move
    (
@@ -278,6 +299,7 @@ handle_attack (BattleAction, Update) ->
          Battle
       ),
 
+
    S0Data = character_turn_data:set_battle(UpdatedBattle, Data),
    S1Data =
       character_turn_data:set_character
@@ -285,6 +307,7 @@ handle_attack (BattleAction, Update) ->
          UpdatedCharacter,
          S0Data
       ),
+
 
    S0Update =
       character_turn_update:add_to_timeline
@@ -297,7 +320,17 @@ handle_attack (BattleAction, Update) ->
          ),
          Update
       ),
-   character_turn_update:set_data(S1Data, S0Update).
+   S1Update = character_turn_update:set_data(S1Data, S0Update),
+
+   DBQuery =
+      db_query:update_indexed
+      (
+         character,
+         TargetIX,
+         [ db_query:set_field(health, RemainingDefenderHealth) ]
+      ),
+
+   character_turn_update:add_to_db(DBQuery, S1Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

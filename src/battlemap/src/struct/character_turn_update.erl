@@ -9,7 +9,7 @@
    {
       data :: character_turn_data:type(),
       timeline :: list(any()),
-      db :: list(any())
+      db :: list(db_query:type())
    }
 ).
 
@@ -68,6 +68,6 @@ set_data (Data, Update) ->
 add_to_timeline (Item, Update) ->
    Update#type{ timeline = [turn_result:encode(Item)|Update#type.timeline] }.
 
--spec add_to_db (any(), type()) -> type().
+-spec add_to_db (db_query:type(), type()) -> type().
 add_to_db (Item, Update) ->
    Update#type{ db = [Item|Update#type.db] }.

@@ -180,7 +180,8 @@ send_to_database (Update, Request) ->
    Data = character_turn_update:get_data(Update),
    Battle = character_turn_data:get_battle(Data),
 
-   %% TODO: differential commit
+   % TODO: send queries to an actual DB...
+
    database_shim:commit
    (
       battle_db,
@@ -229,7 +230,7 @@ disconnect_user (Request) ->
    ok.
 
 %%%% REPLY GENERATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_reply (character_turn_update:data()) -> binary().
+-spec generate_reply (character_turn_update:type()) -> binary().
 generate_reply (Update) ->
    NewTimelineItems = character_turn_update:get_timeline(Update),
 
