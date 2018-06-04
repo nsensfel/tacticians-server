@@ -19,8 +19,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-get_value([]) -> [];
-get_value([#regval{ val = Val }]) -> [Val].
+get_value ([]) -> not_found;
+get_value ([Regval]) -> {ok, Regval}.
+
+get_value(DB, ID) -> get_value(mnesia:read(DB, ID)).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -32,11 +34,13 @@ insert (DB, ID, Owner, Value) ->
    StoredItem = #regval{ id = ID, owner = Owner, val = Value },
    % FIXME: handle return value, mnesia:write -> (transaction abort | ok).
    % FIXME: is this an atomic OP? Is the lock freed afterwards?
-   mnesia:write(DB, StoredItem, sticky_write).
+   mnesia:write(DB, StoredItem, sticky_write),
+   ok.
 
-update (DB, ID, Update) ->
+update (DB, ID, Query) ->
+   {ok, Item} = get_value(DB, ID),
+   {ok, UpdatedItem} = db_query:apply_to(Query, Item),
    % FIXME: handle return value, mnesia:write -> (transaction abort | ok).
-   case mnesia:read(DB, ID) of
-      [] -> error;
-      _ -> unimplemented
-   end.
+   % FIXME: is this an atomic OP? Is the lock freed afterwards?
+   mnesia:write(DB, UpdatedItem, sticky_write),
+   ok.
