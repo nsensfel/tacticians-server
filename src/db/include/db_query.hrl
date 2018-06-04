@@ -1,8 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type db_user() :: ({'user', any()} | 'admin' | 'any').
-
 -record
 (
    set_field,
@@ -34,9 +32,9 @@
 
 -record
 (
-   set_user,
+   set_perm,
    {
-      user :: db_user()
+      perm :: db_user:permission()
    }
 ).
 
@@ -46,12 +44,12 @@
    {
       db :: atom(),
       id :: any(),
-      user :: db_user(),
+      user :: db_user:user(),
       ops :: list(db_query_master_op())
    }
 ).
 
 -type db_query_op() :: (#set_field{} | #add_to_field{} | #update_indexed{}).
--type db_query_master_op() :: (db_query_op() | #set_user{}).
+-type db_query_master_op() :: (db_query_op() | #set_perm{}).
 -type db_query() :: #db_query{}.
 

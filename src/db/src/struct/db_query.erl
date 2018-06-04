@@ -1,9 +1,9 @@
--module(storage_query).
+-module(db_query).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../include/db_query.hrl").
+-include("../../include/db_query.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,7 +13,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_user (db_query()) -> db_user().
+-spec get_user (db_query()) -> db_user:user().
 get_user (#db_query{ user = Result }) -> Result.
 
 -spec apply_update_indexed (#update_indexed{}, any()) -> any().
@@ -65,10 +65,10 @@ apply_op_to (Op, Elem) when is_record(Elem, update_indexed) ->
       db_item:type()
    )
    -> db_item:type().
-apply_master_op_to (MOp, Elem) when is_record(MOp, set_user) ->
-   NewUser = MOp#set_user.user,
+apply_master_op_to (MOp, Elem) when is_record(MOp, set_perm) ->
+   NewPerm = MOp#set_perm.perm,
 
-   db_item:set_user(NewUser, Elem);
+   db_item:set_perm(NewPerm, Elem);
 apply_master_op_to (MOp, Elem) ->
    OldValue = db_item:get_value(Elem),
    NewValue = apply_op_to(MOp, OldValue),
@@ -85,6 +85,6 @@ apply_master_op_to (MOp, Elem) ->
    )
    -> ({'ok', db_item:type()} | 'error').
 apply_to (DBQuery, DBItem) ->
-   true = db_user:has_permission(db_item:get_user(DBItem), get_user(DBQuery)),
+   true = db_user:can_access(db_item:get_permission(DBItem), get_user(DBQuery)),
    {ok, apply_master_op_to(DBQuery, DBItem)}.
 
