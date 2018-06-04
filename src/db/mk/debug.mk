@@ -1,56 +1,40 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-MODULES ?= battlemap db
-MODULES_DIR ?= ${CURDIR}/src
+DIALYZER_PLT_FILE ?= tacticians-server.plt
+DIALYZER ?= dialyzer
 
-YAWS_CONFIG_TEMPLATE ?= ${CURDIR}/conf/yaws.conf.m4
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-MODULES_SRC = $(addprefix $(MODULES_DIR)/,$(MODULES))
+SRC_FILES ?= $(wildcard $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl)
 
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
-MISSING_MODULES_DIR = \
-	$(filter-out $(wildcard $(MODULES_SRC)),$(MODULES_SRC))
-
-ifneq ($(MISSING_MODULES_DIR),)
-$(error "The following modules are missing: $(MISSING_MODULES_DIR)")
-endif
 
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-export
+DEBUG_RESULT = $(DIALYZER_PLT_FILE)
 
-all:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module all; \
-	done
-
-debug:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module debug ; \
-	done
-
-build:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module build ; \
-	done
-
-run:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module run; \
-	done
-
-clean:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module clean; \
-	done
+debug_rebuild:
+	$(MAKE) clean
+	$(MAKE) ERLC_OPTS=+debug_info
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
+ifeq ($(wildcard $(DIALYZER_PLT_FILE)),)
+debug_run:
+	$(DIALYZER) --build_plt --apps erts kernel stdlib --output_plt \
+		$(DIALYZER_PLT_FILE)
+	$(MAKE) debug_rebuild
+	$(DIALYZER) --add_to_plt --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)
+else
+debug_run:
+	$(MAKE) debug_rebuild
+	$(DIALYZER) --check_plt --plt $(DIALYZER_PLT_FILE)
+	$(DIALYZER) --get_warnings $(SRC_DIR)/*.erl $(SRC_DIR)/*/*.erl \
+		--src --plt $(DIALYZER_PLT_FILE)
+endif

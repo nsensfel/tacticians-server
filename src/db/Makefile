@@ -1,56 +1,63 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-MODULES ?= battlemap db
-MODULES_DIR ?= ${CURDIR}/src
+MODULE_NAME ?= $ $(shell basename ${CURDIR})
+MODULE_PORT ?= 8002
 
-YAWS_CONFIG_TEMPLATE ?= ${CURDIR}/conf/yaws.conf.m4
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
+DIALYZER_PLT_FILE ?= tacticians-server.plt
+
+## Main Directories
+SRC_DIR ?= ${CURDIR}/src
+CONF_DIR ?= ${CURDIR}/conf
+
+#### Optional Dirs
+BIN_DIR ?= ${CURDIR}/ebin
+INCLUDE_DIR ?= ${CURDIR}/include
+
+## Binaries
+ERLC ?= erlc
+ERLC_OPTS ?=
+DIALYZER ?= dialyzer
+
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-MODULES_SRC = $(addprefix $(MODULES_DIR)/,$(MODULES))
+OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR)
 
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
-MISSING_MODULES_DIR = \
-	$(filter-out $(wildcard $(MODULES_SRC)),$(MODULES_SRC))
+DIALYZER_PLT_FILE ?= tacticians-server.plt
 
-ifneq ($(MISSING_MODULES_DIR),)
-$(error "The following modules are missing: $(MISSING_MODULES_DIR)")
-endif
+## Main Directories
+SRC_DIR ?= src
+CONF_DIR ?= conf
+
+################################################################################
+## INCLUDES ####################################################################
+################################################################################
+main_target: all
+
+include ${CURDIR}/mk/debug.mk
+include ${CURDIR}/mk/erlang.mk
+include ${CURDIR}/mk/preprocessor.mk
 
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-export
+all: build
 
-all:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module all; \
-	done
+debug: debug_run
 
-debug:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module debug ; \
-	done
-
-build:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module build ; \
-	done
+build: $(REQUIRED_HEADERS) $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 
 run:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module run; \
-	done
 
 clean:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module clean; \
-	done
+	rm -rf $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
+$(OPTIONAL_DIRS): %:
+	mkdir -p $@

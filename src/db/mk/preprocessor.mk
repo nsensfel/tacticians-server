@@ -1,56 +1,34 @@
 ################################################################################
 ## CONFIG ######################################################################
 ################################################################################
-MODULES ?= battlemap db
-MODULES_DIR ?= ${CURDIR}/src
+CONFIG_FILE ?= ${CURDIR}/module.conf
 
-YAWS_CONFIG_TEMPLATE ?= ${CURDIR}/conf/yaws.conf.m4
-YAWS_API_HEADER ?= /my/src/yaws/include/yaws_api.hrl
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
 ################################################################################
-MODULES_SRC = $(addprefix $(MODULES_DIR)/,$(MODULES))
+PREPROCESSOR_FILES = $(shell find ${CURDIR} -name "*.m4")
+PREPROCESSED_FILES = $(patsubst %.m4,%,$(PREPROCESSOR_FILES))
+
+MAKEFILE_TO_M4 = \
+	--define=__MAKEFILE_MODULE_NAME=$(MODULE_NAME) \
+	--define=__MAKEFILE_MODULE_PORT=$(MODULE_PORT) \
+	--define=__MAKEFILE_BIN_DIR=$(BIN_DIR) \
+	--define=__MAKEFILE_INCLUDE_DIR=$(INCLUDE_DIR)
 
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
-MISSING_MODULES_DIR = \
-	$(filter-out $(wildcard $(MODULES_SRC)),$(MODULES_SRC))
-
-ifneq ($(MISSING_MODULES_DIR),)
-$(error "The following modules are missing: $(MISSING_MODULES_DIR)")
+ifeq ($(wildcard $(CONFIG_FILE)),)
+$(error "Missing CONFIG_FILE ($(CONFIG_FILE)).")
 endif
 
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
-export
-
-all:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module all; \
-	done
-
-debug:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module debug ; \
-	done
-
-build:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module build ; \
-	done
-
-run:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module run; \
-	done
-
-clean:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module clean; \
-	done
+PREPROCESSOR_RESULT = $(PREPROCESSED_FILES)
 
 ################################################################################
 ## INTERNAL RULES ##############################################################
 ################################################################################
+$(PREPROCESSED_FILES): %: $(CONFIG_FILE) %.m4
+	m4 -P $^ > $@
