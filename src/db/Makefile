@@ -17,6 +17,13 @@ INCLUDE_DIR ?= ${CURDIR}/include
 ## Binaries
 ERLC ?= erlc
 ERLC_OPTS ?=
+ERL ?= erl
+ERL_OPTS ?= \
+	-connect_all false \
+	-name db_node \
+	-pa $(BIN_DIR) \
+	-run db_node start
+
 DIALYZER ?= dialyzer
 
 ################################################################################
@@ -52,6 +59,7 @@ debug: debug_run
 build: $(REQUIRED_HEADERS) $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)
 
 run:
+	$(ERL) $(ERL_OPTS)
 
 clean:
 	rm -rf $(PREPROCESSOR_RESULT) $(ERLANG_RESULT)

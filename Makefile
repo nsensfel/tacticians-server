@@ -41,10 +41,11 @@ build:
 		$(MAKE) -C $$module build ; \
 	done
 
-run:
-	for module in $(MODULES_SRC) ; do \
-		$(MAKE) -C $$module run; \
-	done
+run_battlemap:
+	$(MAKE) -C $(MODULES_DIR)/battlemap/ run
+
+run_db:
+	$(MAKE) -C $(MODULES_DIR)/db/ run
 
 clean:
 	for module in $(MODULES_SRC) ; do \
