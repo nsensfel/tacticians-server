@@ -8,6 +8,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-export
+(
+   [
+      get_database/1,
+      get_entry_id/1
+   ]
+).
 -export([apply_to/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +32,8 @@ apply_update_indexed (Op, Elem) ->
    IndexedFieldValue = element(FieldNumber, Elem),
    ArrayValue = array:get(IX, IndexedFieldValue),
    UpdatedArrayValue = lists:foldl(fun apply_op_to/2, ArrayValue, Ops),
-   UpdatedIndexedFieldValue = array:set(IX, UpdatedArrayValue),
+   UpdatedIndexedFieldValue =
+      array:set(IX, UpdatedArrayValue, IndexedFieldValue),
 
    setelement(FieldNumber, Elem, UpdatedIndexedFieldValue).
 
@@ -52,11 +60,11 @@ apply_set_field (Op, Elem) ->
    setelement(FieldNumber, Elem, NewValue).
 
 -spec apply_op_to (db_query_op(), any()) -> any().
-apply_op_to (Op, Elem) when is_record(Elem, set_field) ->
+apply_op_to (Op, Elem) when is_record(Op, set_field) ->
    apply_set_field(Op, Elem);
-apply_op_to (Op, Elem) when is_record(Elem, add_to_field) ->
+apply_op_to (Op, Elem) when is_record(Op, add_to_field) ->
    apply_add_to_field(Op, Elem);
-apply_op_to (Op, Elem) when is_record(Elem, update_indexed) ->
+apply_op_to (Op, Elem) when is_record(Op, update_indexed) ->
    apply_update_indexed(Op, Elem).
 
 -spec apply_master_op_to
@@ -69,6 +77,10 @@ apply_master_op_to (MOp, Elem) when is_record(MOp, set_perm) ->
    NewPerm = MOp#set_perm.perm,
 
    db_item:set_perm(NewPerm, Elem);
+apply_master_op_to (MOp, Elem) when is_record(MOp, set_val) ->
+   NewVal = MOp#set_val.val,
+
+   db_item:set_value(NewVal, Elem);
 apply_master_op_to (MOp, Elem) ->
    OldValue = db_item:get_value(Elem),
    NewValue = apply_op_to(MOp, OldValue),
@@ -78,6 +90,12 @@ apply_master_op_to (MOp, Elem) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_database (db_query()) -> atom().
+get_database (#db_query{ db = Result }) -> Result.
+
+-spec get_entry_id (db_query()) -> any().
+get_entry_id (#db_query{ id = Result }) -> Result.
+
 -spec apply_to
    (
       db_query(),
@@ -86,5 +104,6 @@ apply_master_op_to (MOp, Elem) ->
    -> ({'ok', db_item:type()} | 'error').
 apply_to (DBQuery, DBItem) ->
    true = db_user:can_access(db_item:get_permission(DBItem), get_user(DBQuery)),
-   {ok, apply_master_op_to(DBQuery, DBItem)}.
+   MOps = DBQuery#db_query.ops,
+   {ok, lists:foldl(fun apply_master_op_to/2, DBItem, MOps)}.
 

@@ -24,7 +24,9 @@
       set_permission/2,
       set_value/2,
 
-      get_id_field/0
+      get_id_field/0,
+      get_record_info/0,
+      get_record_name/0
    ]
 ).
 
@@ -61,4 +63,8 @@ set_value (Value, Item) -> Item#db_item{ val = Value }.
 
 -spec get_id_field () -> non_neg_integer().
 get_id_field () -> #db_item.id.
+
+get_record_info () -> record_info(fields, db_item).
+
+get_record_name () -> db_item.
 

@@ -10,36 +10,17 @@
 -export
 (
    [
-      generate_db/1,
+      generate_db/0,
       fetch/2,
-      commit/4
+      commit/1
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec create_db (pid()) -> 'ok'.
-create_db (_Heir) ->
-   ets:new
-   (
-      db_shim,
-      [
-         set,
-         public,
-         named_table,
-         {keypos, 1},
-         {read_concurrency, true}
-      ]
-   ),
-   io:format("~ndb_shim ets created.~n"),
-   ok.
-
--spec add_to_db (any(), any()) -> 'ok'.
-add_to_db (ID, Val) ->
-   io:format("~nadd to db_shim: ~p.~n", [{ID, Val}]),
-   ets:insert(db_shim, {ID, Val}),
-   ok.
+get_db_node () ->
+   list_to_atom("db_node@" ++ net_adm:localhost()).
 
 -spec generate_random_characters
    (
@@ -122,13 +103,8 @@ generate_random_characters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_db (pid()) -> 'ok'.
-generate_db (Heir) ->
-   Pid = self(),
-   spawn(fun () -> create_db(Heir), Pid ! ok, receive ok -> ok end end),
-   receive
-      ok -> ok
-   end,
+-spec generate_db () -> 'ok'.
+generate_db () ->
    BattlemapWidth = roll:between(16, 64),
    BattlemapHeight = roll:between(16, 64),
    Battlemap = battlemap:random(0, BattlemapWidth, BattlemapHeight),
@@ -136,16 +112,26 @@ generate_db (Heir) ->
    PlayersAsList = [player:new(<<"0">>), player:new(<<"1">>)],
    Battle = battle:new(<<"0">>, PlayersAsList, Battlemap, Characters),
 
-   add_to_db({battle_db, <<"0">>}, Battle).
+   {atomic, ok} =
+      rpc:call
+      (
+         get_db_node(),
+         storage_access,
+         insert,
+         [battle_db, <<"0">>, any, Battle]
+      ),
 
--spec fetch (atom(), any()) -> ({'ok', any()} | 'nothing').
+   ok.
+
+-spec fetch (atom(), any()) -> ({'ok', any()} | 'not_found').
 fetch (DB, ObjectID) ->
-   io:format("~ndb_shim lookup: ~p.~n", [{DB, ObjectID}]),
-   case ets:lookup(db_shim, {DB, ObjectID}) of
-      [{_Key, Value}] -> {ok, Value};
-      [] -> nothing
-   end.
+   {atomic, Reply} =
+      rpc:call(get_db_node(), storage_access, read, [DB, ObjectID]),
+   io:format("~ndb_shim:fetch(~p) -> ~p.~n", [{DB, ObjectID}, Reply]),
+   Reply.
 
--spec commit (atom(), any(), any(), any()) -> 'ok'.
-commit (DB, _Owner, ObjectID, Value) ->
-   add_to_db({DB, ObjectID}, Value).
+-spec commit (db_query:type()) -> 'ok'.
+commit (Query) ->
+   {atomic, ok} = rpc:call(get_db_node(), storage_access, query, [Query]),
+   io:format("~ndb_shim:commit(~p) -> ok.~n", [Query]),
+   ok.

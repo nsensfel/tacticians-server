@@ -40,6 +40,14 @@
 
 -record
 (
+   set_val,
+   {
+      val :: any()
+   }
+).
+
+-record
+(
    db_query,
    {
       db :: atom(),
@@ -50,6 +58,6 @@
 ).
 
 -type db_query_op() :: (#set_field{} | #add_to_field{} | #update_indexed{}).
--type db_query_master_op() :: (db_query_op() | #set_perm{}).
+-type db_query_master_op() :: (db_query_op() | #set_perm{} | #set_val{}).
 -type db_query() :: #db_query{}.
 

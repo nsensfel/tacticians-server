@@ -177,18 +177,12 @@ update_data (Data, Request) ->
 send_to_database (Update, Request) ->
    PlayerID = character_turn_request:get_player_id(Request),
    BattleID = character_turn_request:get_battle_id(Request),
-   Data = character_turn_update:get_data(Update),
-   Battle = character_turn_data:get_battle(Data),
+   Ops = character_turn_update:get_db(Update),
+   Query = db_query:new(battle_db, BattleID, {user, PlayerID}, Ops),
 
    % TODO: send queries to an actual DB...
 
-   database_shim:commit
-   (
-      battle_db,
-      PlayerID,
-      BattleID,
-      Battle
-   ),
+   database_shim:commit(Query),
 
    ok.
 

@@ -3,7 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../../include/db_item.hrl").
 
 -record
 (
@@ -61,7 +60,8 @@ start (Model) ->
    (
       DBName,
       [
-         {attributes, record_info(fields, db_item)},
+         {record_name, db_item:get_record_name()},
+         {attributes, db_item:get_record_info()},
          {disc_copies, [node()|Neighbors]},
          {disc_only_copies, []},
          {ram_copies, []},
