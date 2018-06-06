@@ -32,7 +32,7 @@ handle_switch_weapon (Update) ->
 
    UpdatedWeaponIDs = {SecondaryWeaponID, PrimaryWeaponID},
    UpdatedCharacterStatistics =
-      bm_statistics:new(CharacterAttributes, UpdatedWeaponIDs),
+      sh_statistics:new(CharacterAttributes, UpdatedWeaponIDs),
    UpdatedCharacter =
       bm_character:set_statistics
       (
@@ -115,7 +115,7 @@ assert_character_can_move (Data, Cost) ->
    Character = bm_character_turn_data:get_character(Data),
    CharacterStatistics = bm_character:get_statistics(Character),
    CharacterMovementPoints =
-      bm_statistics:get_movement_points(CharacterStatistics),
+      sh_statistics:get_movement_points(CharacterStatistics),
 
    true = (Cost =< CharacterMovementPoints),
 
@@ -247,10 +247,10 @@ handle_attack_sequence
       bm_character:type(),
       bm_character:type()
    )
-   -> list(attack:step()).
+   -> list(bm_attack:step()).
 get_attack_sequence (Character, TargetCharacter) ->
    Range =
-      location:dist
+      bm_location:dist
       (
          bm_character:get_location(Character),
          bm_character:get_location(TargetCharacter)
@@ -259,8 +259,8 @@ get_attack_sequence (Character, TargetCharacter) ->
    {AttackingWeaponID, _} = bm_character:get_weapon_ids(Character),
    {DefendingWeaponID, _} = bm_character:get_weapon_ids(TargetCharacter),
 
-   AttackingWeapon = bm_weapon:from_id(AttackingWeaponID),
-   DefendingWeapon = bm_weapon:from_id(DefendingWeaponID),
+   AttackingWeapon = sh_weapon:from_id(AttackingWeaponID),
+   DefendingWeapon = sh_weapon:from_id(DefendingWeaponID),
 
    bm_attack:get_sequence(Range, AttackingWeapon, DefendingWeapon).
 

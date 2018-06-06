@@ -1,4 +1,4 @@
--module(bm_weapon).
+-module(sh_weapon).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -339,9 +339,9 @@ random_id () -> sh_roll:between(0, 24).
 -spec apply_to_attributes
    (
       sh_attributes:type(),
-      bm_weapon:type()
+      type()
    )
-   -> attributes:type().
+   -> sh_attributes:type().
 apply_to_attributes (Attributes, Weapon) ->
    Dexterity = sh_attributes:get_dexterity(Attributes),
    Speed = sh_attributes:get_speed(Attributes),

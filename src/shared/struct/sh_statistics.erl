@@ -54,16 +54,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec ceil (float()) -> integer().
-ceil (F) ->
+-spec float_to_int (float()) -> integer().
+float_to_int (F) ->
    I = trunc(F),
    case (F > I) of
       true -> (I + 1);
       _ -> I
    end.
-
--spec float_to_int (float()) -> integer().
-float_to_int (F) -> ceil(F).
 
 -spec min_max (number(), number(), number()) -> number().
 min_max (Min, Max, V) -> min(Max, max(Min, V)).
@@ -146,21 +143,21 @@ get_damages (Stats) ->
 
 -spec new
    (
-      attributes:type(),
-      {weapon:id(), weapon:id()}
+      sh_attributes:type(),
+      {sh_weapon:id(), sh_weapon:id()}
    )
    -> type().
 new (BaseAttributes, WeaponIDs) ->
    {ActiveWeaponID, _} = WeaponIDs,
-   ActiveWeapon = weapon:from_id(ActiveWeaponID),
-   {MinDamage, MaxDamage} = weapon:get_damages(ActiveWeapon),
-   Attributes = weapon:apply_to_attributes(BaseAttributes, ActiveWeapon),
-   Constitution = attributes:get_constitution(Attributes),
-   Dexterity = attributes:get_dexterity(Attributes),
-   Intelligence = attributes:get_intelligence(Attributes),
-   Mind = attributes:get_mind(Attributes),
-   Speed = attributes:get_speed(Attributes),
-   Strength = attributes:get_strength(Attributes),
+   ActiveWeapon = sh_weapon:from_id(ActiveWeaponID),
+   {MinDamage, MaxDamage} = sh_weapon:get_damages(ActiveWeapon),
+   Attributes = sh_weapon:apply_to_attributes(BaseAttributes, ActiveWeapon),
+   Constitution = sh_attributes:get_constitution(Attributes),
+   Dexterity = sh_attributes:get_dexterity(Attributes),
+   Intelligence = sh_attributes:get_intelligence(Attributes),
+   Mind = sh_attributes:get_mind(Attributes),
+   Speed = sh_attributes:get_speed(Attributes),
+   Strength = sh_attributes:get_strength(Attributes),
    DamageBaseModifier = damage_base_modifier(Strength),
 
    #statistics

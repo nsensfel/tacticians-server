@@ -1,4 +1,4 @@
--module(set_map).
+-module(bm_set_timeline).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,13 +16,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (battlemap:type()) -> {list(any())}.
-generate (Battlemap) ->
+-spec generate (list(any())) -> {list(any())}.
+generate (EncodedClientUpdate) ->
+   io:format("~nSending timeline:~n~p~n", [EncodedClientUpdate]),
    {
       [
-         {<<"msg">>, <<"set_map">>},
-         {<<"w">>, battlemap:get_width(Battlemap)},
-         {<<"h">>, battlemap:get_height(Battlemap)},
-         {<<"t">>, array:sparse_to_list(battlemap:get_tile_ids(Battlemap))}
+         {<<"msg">>, <<"set_timeline">>},
+         {<<"cnt">>, EncodedClientUpdate}
       ]
    }.

@@ -92,7 +92,7 @@ can_follow (switch_weapon, attack) -> true;
 can_follow (move, attack) -> true;
 can_follow (_, _) -> false.
 
--spec get_path (type()) -> list(direction:type()).
+-spec get_path (type()) -> list(bm_direction:type()).
 get_path (Action) when is_record(Action, move) ->
    Action#move.path;
 get_path (_) ->

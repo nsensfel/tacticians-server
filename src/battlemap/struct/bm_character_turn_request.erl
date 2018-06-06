@@ -68,7 +68,7 @@ decode (Map) ->
       actions = Actions
    }.
 
--spec get_player_id (type()) -> player:id().
+-spec get_player_id (type()) -> bm_player:id().
 get_player_id (Request) -> Request#type.player_id.
 
 -spec get_session_token (type()) -> binary().

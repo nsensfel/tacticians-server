@@ -1,4 +1,4 @@
--module(turn_results).
+-module(bm_set_map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,12 +16,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (list(any())) -> {list(any())}.
-generate (EncodedClientUpdate) ->
-   io:format("~nSending turn results:~n~p~n", [EncodedClientUpdate]),
+-spec generate (bm_battlemap:type()) -> {list(any())}.
+generate (Battlemap) ->
    {
       [
-         {<<"msg">>, <<"turn_results">>},
-         {<<"cnt">>, EncodedClientUpdate}
+         {<<"msg">>, <<"set_map">>},
+         {<<"w">>, bm_battlemap:get_width(Battlemap)},
+         {<<"h">>, bm_battlemap:get_height(Battlemap)},
+         {<<"t">>, array:sparse_to_list(bm_battlemap:get_tile_ids(Battlemap))}
       ]
    }.

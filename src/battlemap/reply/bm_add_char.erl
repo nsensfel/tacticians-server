@@ -1,4 +1,4 @@
--module(add_char).
+-module(bm_add_char).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,18 +14,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec attributes_as_json
    (
-      attributes:type()
+      sh_attributes:type()
    ) ->
    {list({binary(), non_neg_integer()})}.
 attributes_as_json (Attributes) ->
    {
       [
-         {<<"con">>, attributes:get_constitution(Attributes)},
-         {<<"dex">>, attributes:get_dexterity(Attributes)},
-         {<<"int">>, attributes:get_intelligence(Attributes)},
-         {<<"min">>, attributes:get_mind(Attributes)},
-         {<<"spe">>, attributes:get_speed(Attributes)},
-         {<<"str">>, attributes:get_strength(Attributes)}
+         {<<"con">>, sh_attributes:get_constitution(Attributes)},
+         {<<"dex">>, sh_attributes:get_dexterity(Attributes)},
+         {<<"int">>, sh_attributes:get_intelligence(Attributes)},
+         {<<"min">>, sh_attributes:get_mind(Attributes)},
+         {<<"spe">>, sh_attributes:get_speed(Attributes)},
+         {<<"str">>, sh_attributes:get_strength(Attributes)}
       ]
    }.
 
@@ -35,38 +35,38 @@ attributes_as_json (Attributes) ->
 -spec generate
    (
       non_neg_integer(),
-      character:type(),
-      player:id()
+      bm_character:type(),
+      bm_player:id()
    )
    -> {list(any())}.
 generate (IX, Character, PlayerID) ->
-   IsAlive = character:get_is_alive(Character),
-   Attributes = character:get_attributes(Character),
-   {ActiveWeapon, SecondaryWeapon} = character:get_weapon_ids(Character),
-   OwnerID = character:get_owner_id(Character),
+   IsAlive = bm_character:get_is_alive(Character),
+   Attributes = bm_character:get_attributes(Character),
+   {ActiveWeapon, SecondaryWeapon} = bm_character:get_weapon_ids(Character),
+   OwnerID = bm_character:get_owner_id(Character),
    Location =
       case IsAlive of
-         true -> character:get_location(Character);
-         _ -> location:get_nowhere()
+         true -> bm_character:get_location(Character);
+         _ -> bm_location:get_nowhere()
       end,
 
    {
       [
          {<<"msg">>, <<"add_char">>},
          {<<"ix">>, IX},
-         {<<"nam">>, character:get_name(Character)},
-         {<<"ico">>, character:get_icon(Character)},
-         {<<"prt">>, character:get_portrait(Character)},
+         {<<"nam">>, bm_character:get_name(Character)},
+         {<<"ico">>, bm_character:get_icon(Character)},
+         {<<"prt">>, bm_character:get_portrait(Character)},
          {
             <<"hea">>,
-            character:get_current_health(Character)
+            bm_character:get_current_health(Character)
          },
-         {<<"lc">>, location:encode(Location)},
+         {<<"lc">>, bm_location:encode(Location)},
          {<<"pla">>, OwnerID},
          {
             <<"ena">>,
             (
-               character:get_is_active(Character)
+               bm_character:get_is_active(Character)
                and
                (OwnerID == PlayerID)
             )

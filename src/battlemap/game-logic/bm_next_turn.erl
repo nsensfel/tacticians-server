@@ -127,7 +127,7 @@ requires_update (Update) ->
    (
       bm_character_turn_update:type()
    )
-   -> character_turn_update:type().
+   -> bm_character_turn_update:type().
 update_if_needed (Update) ->
    case requires_update(Update) of
       true -> update(Update);

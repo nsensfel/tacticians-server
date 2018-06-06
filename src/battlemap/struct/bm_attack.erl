@@ -47,13 +47,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec roll_precision
    (
-      bm_statistics:type(),
-      bm_statistics:type()
+      sh_statistics:type(),
+      sh_statistics:type()
    )
    -> precision().
 roll_precision (AttackerStatistics, DefenderStatistics) ->
-   DefenderDodges = bm_statistics:get_dodges(DefenderStatistics),
-   AttackerAccuracy = bm_statistics:get_accuracy(AttackerStatistics),
+   DefenderDodges = sh_statistics:get_dodges(DefenderStatistics),
+   AttackerAccuracy = sh_statistics:get_accuracy(AttackerStatistics),
    MissChance = max(0, (DefenderDodges - AttackerAccuracy)),
    case sh_roll:percentage() of
       X when (X =< MissChance) -> misses;
@@ -63,31 +63,31 @@ roll_precision (AttackerStatistics, DefenderStatistics) ->
 
 -spec roll_damage
    (
-      bm_statistics:type(),
-      bm_statistics:type()
+      sh_statistics:type(),
+      sh_statistics:type()
    )
    -> {non_neg_integer(), boolean()}.
 roll_damage (AttackerStatistics, _DefenderStatistics) ->
    {MinimumDamage, MaximumDamage} =
-      bm_statistics:get_damages(AttackerStatistics),
+      sh_statistics:get_damages(AttackerStatistics),
    MaximumRoll = max(1, MaximumDamage - MinimumDamage),
    BaseDamage = MinimumDamage + (rand:uniform(MaximumRoll) - 1),
-   CriticalHitChance = bm_statistics:get_critical_hits(AttackerStatistics),
+   CriticalHitChance = sh_statistics:get_critical_hits(AttackerStatistics),
    case sh_roll:percentage() of
       X when (X =< CriticalHitChance) -> {(BaseDamage * 2), true};
       _ -> {BaseDamage, false}
    end.
 
--spec roll_parry (bm_statistics:type()) -> boolean().
+-spec roll_parry (sh_statistics:type()) -> boolean().
 roll_parry (DefenderStatistics) ->
-   DefenderParryChance = bm_statistics:get_parries(DefenderStatistics),
+   DefenderParryChance = sh_statistics:get_parries(DefenderStatistics),
    (sh_roll:percentage() =< DefenderParryChance).
 
 -spec effect_of_attack
    (
       order(),
-      bm_statistics:type(),
-      bm_statistics:type(),
+      sh_statistics:type(),
+      sh_statistics:type(),
       boolean()
    )
    -> type().
@@ -134,8 +134,8 @@ encode_precision (misses) -> <<"m">>.
 -spec get_description_of
    (
       step(),
-      bm_statistics:type(),
-      bm_statistics:type()
+      sh_statistics:type(),
+      sh_statistics:type()
    )
    -> maybe_type().
 get_description_of
@@ -152,7 +152,7 @@ get_description_of
    DefenderStatistics
 ) ->
    AttackerDoubleAttackChange =
-      bm_statistics:get_double_hits(AttackerStatistics),
+      sh_statistics:get_double_hits(AttackerStatistics),
 
    case sh_roll:percentage() of
       X when (X =< AttackerDoubleAttackChange) ->
@@ -246,28 +246,28 @@ when
 -spec get_sequence
    (
       non_neg_integer(),
-      bm_weapon:type(),
-      bm_weapon:type()
+      sh_weapon:type(),
+      sh_weapon:type()
    )
    -> list(step()).
 get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
    {AttackerDefenseRange, AttackerAttackRange} =
-      bm_weapon:get_ranges(AttackerWeapon),
+      sh_weapon:get_ranges(AttackerWeapon),
    {DefenderDefenseRange, DefenderAttackRange} =
-      bm_weapon:get_ranges(DefenderWeapon),
+      sh_weapon:get_ranges(DefenderWeapon),
 
    AttackerCanAttack = (AttackRange =< AttackerAttackRange),
    AttackerCanAttack = true,
    AttackerCanDefend =
       (AttackerCanAttack and (AttackRange > AttackerDefenseRange)),
    AttackerCanParry =
-      (AttackerCanDefend and weapon:can_parry(AttackerWeapon)),
+      (AttackerCanDefend and sh_weapon:can_parry(AttackerWeapon)),
 
    DefenderCanAttack = (AttackRange =< DefenderAttackRange),
    DefenderCanDefend =
       (DefenderCanAttack and (AttackRange > DefenderDefenseRange)),
    DefenderCanParry =
-      (DefenderCanDefend and weapon:can_parry(DefenderWeapon)),
+      (DefenderCanDefend and sh_weapon:can_parry(DefenderWeapon)),
 
    First = {first, DefenderCanParry},
    Second = {second, DefenderCanParry},

@@ -83,7 +83,7 @@ format_status (_, [_, State]) ->
 handle_info(timeout, State) ->
    {stop, normal, State};
 handle_info(_, {DB, ObjectID}) ->
-   {noreply, {DB, ObjectID}, timed_caches_manager:get_timeout()}.
+   {noreply, {DB, ObjectID}, sh_timed_caches_manager:get_timeout()}.
 
 %%%% Interface Functions
 -spec fetch (atom(), any(), any()) -> any().

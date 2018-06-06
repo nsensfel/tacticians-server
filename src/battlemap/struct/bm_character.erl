@@ -15,8 +15,8 @@
       icon :: binary(),
       portrait :: binary(),
       attributes :: sh_attributes:type(),
-      statistics :: bm_statistics:type(),
-      weapon_ids :: {bm_weapon:id(), bm_weapon:id()},
+      statistics :: sh_statistics:type(),
+      weapon_ids :: {sh_weapon:id(), sh_weapon:id()},
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: non_neg_integer(),
       active :: boolean()
@@ -78,8 +78,8 @@
    )
    -> {non_neg_integer(), non_neg_integer()}.
 find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
-   X = roll:between(0, (BattlemapWidth - 1)),
-   Y = roll:between(0, (BattlemapHeight - 1)),
+   X = sh_roll:between(0, (BattlemapWidth - 1)),
+   Y = sh_roll:between(0, (BattlemapHeight - 1)),
 
    IsForbidden = lists:member({X, Y}, ForbiddenLocations),
 
@@ -117,10 +117,10 @@ get_portrait (Char) -> Char#character.portrait.
 -spec get_attributes (type()) -> sh_attributes:type().
 get_attributes (Char) -> Char#character.attributes.
 
--spec get_weapon_ids (type()) -> {bm_weapon:id(), bm_weapon:id()}.
+-spec get_weapon_ids (type()) -> {sh_weapon:id(), sh_weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
 
--spec get_statistics (type()) -> bm_statistics:type().
+-spec get_statistics (type()) -> sh_statistics:type().
 get_statistics (Char) -> Char#character.statistics.
 
 -spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
@@ -171,7 +171,7 @@ set_is_active (Active, Char) ->
 
 -spec set_weapon_ids
    (
-      {bm_weapon:id(), bm_weapon:id()},
+      {sh_weapon:id(), sh_weapon:id()},
       type()
    )
    -> type().
@@ -183,7 +183,7 @@ set_weapon_ids (WeaponIDs, Char) ->
 
 -spec set_statistics
    (
-      bm_statistics:type(),
+      sh_statistics:type(),
       type()
    )
    -> type().
@@ -206,9 +206,9 @@ set_statistics (Stats, Char) ->
 random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    Location =
       find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations),
-   WeaponIDs = {bm_weapon:random_id(), bm_weapon:random_id()},
+   WeaponIDs = {sh_weapon:random_id(), sh_weapon:random_id()},
    Attributes = sh_attributes:random(),
-   Statistics = bm_statistics:new(Attributes, WeaponIDs),
+   Statistics = sh_statistics:new(Attributes, WeaponIDs),
    IDAsListString = integer_to_list(ID),
    IDAsBinaryString = list_to_binary(IDAsListString),
 
@@ -223,7 +223,7 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       weapon_ids = WeaponIDs,
       statistics = Statistics,
       location = Location,
-      current_health = bm_statistics:get_health(Statistics),
+      current_health = sh_statistics:get_health(Statistics),
       active = false
    }.
 

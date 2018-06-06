@@ -3,7 +3,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../include/db_user.hrl").
+-type db_named_user() :: {'user', any()}.
+-type db_user() :: (db_named_user() | 'admin' | 'any').
+-type db_permission() :: (list(db_named_user()) | 'any').
+
 
 -type user() :: db_user().
 -type permission() :: db_permission().

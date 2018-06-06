@@ -53,7 +53,7 @@ fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
 
-   Battle = timed_cache:fetch (battle_db, PlayerID, BattleID),
+   Battle = sh_timed_cache:fetch(battle_db, PlayerID, BattleID),
 
    #query_state
    {
