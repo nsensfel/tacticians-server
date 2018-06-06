@@ -140,7 +140,7 @@ handle_info(_, State) ->
 
 %%%% Interface Functions
 start () ->
-   gen_server:start(timed_caches_manager, [], []).
+   gen_server:start(?MODULE, [], []).
 
 new_cache (ManagerPid, DB, Heir) ->
    gen_server:cast(ManagerPid, {add, DB, Heir}).

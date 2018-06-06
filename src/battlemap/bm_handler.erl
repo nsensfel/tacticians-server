@@ -18,6 +18,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 start (_YawsParams) ->
    {ok, Pid} = sh_timed_caches_manager:start(),
-   bm_database_shim:generate_db(),
+   case sh_database:fetch(battle_db, <<"0">>) of
+      {ok, _} -> ok;
+      not_found ->
+         sh_database:insert
+         (
+            battle_db,
+            <<"0">>,
+            any,
+            bm_shim:generate_random_battle()
+         )
+   end,
    sh_timed_caches_manager:new_cache(Pid, battle_db, none),
    ok.

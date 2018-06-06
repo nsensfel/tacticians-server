@@ -11,15 +11,18 @@ INCLUDE_DIR ?= ${CURDIR}/include
 WWW_DIR ?= ${CURDIR}/www
 LOG_DIR ?= ${CURDIR}/log
 
-## Binaries
-YAWS ?= yaws
-YAWS_OPTS ?=
+## Local only?
+ERL_NAME_VS_SNAME ?= -sname
 
+## Binaries
 ERLC ?= erlc
 ERLC_OPTS ?=
 
 ERL ?= erl
-ERL_OPTS ?=
+ERL_OPTS ?= -connect_all false -pa $(BIN_DIR)
+
+YAWS ?= yaws
+YAWS_OPTS ?= $(ERL_NAME_VS_SNAME) query_node -erlarg "$(ERL_OPTS)"
 
 DIALYZER ?= dialyzer
 DIALYZER_OPTS ?=
@@ -29,6 +32,9 @@ M4_OPTS ?=
 
 ## Filenames
 DIALYZER_PLT_FILE ?= tacticians-server.plt
+
+YAWS_CONFIG_FILE ?= $(CONFIG_DIR)/yaws.conf
+
 
 ################################################################################
 ## MAKEFILE MAGIC ##############################################################
@@ -59,6 +65,16 @@ M4_EXEC = $(M4) $(M4_OPTS)
 ## SANITY CHECKS ###############################################################
 ################################################################################
 
+
+################################################################################
+## PREPROCESSOR-VISIBLE MAKEFILE VARIABLES #####################################
+################################################################################
+
+MAKEFILE_TO_M4 = \
+	--define=__MAKEFILE_BIN_DIR=$(BIN_DIR) \
+	--define=__MAKEFILE_LOG_DIR=$(LOG_DIR) \
+	--define=__MAKEFILE_WWW_DIR=$(WWW_DIR) \
+	--define=__MAKEFILE_INCLUDE_DIR=$(INCLUDE_DIR)
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################
@@ -69,7 +85,11 @@ debug: debug_run
 build: $(OPTIONAL_DIRS) $(REQUIRED_HEADERS) \
 	$(PREPROCESSED_FILES) $(ERL_BIN_FILES)
 
-run: yaws_run
+run_db_node: build
+	$(ERL_EXEC) $(ERL_NAME_VS_SNAME) db_node -run db_node start
+
+run_query_node: build $(YAWS_CONFIG_FILE)
+	$(YAWS_EXEC) --conf $(YAWS_CONFIG_FILE)
 
 clean:
 	# Preprocessor
@@ -104,7 +124,7 @@ debug_run:
 endif
 
 $(PREPROCESSED_FILES): %: $(PREPROCESSOR_CONFIG_FILES) %.m4
-	$(M4_EXEC) -P $^ > $@
+	$(M4_EXEC) -P $(MAKEFILE_TO_M4) $^> $@
 
 $(OPTIONAL_DIRS): %:
 	mkdir -p $@
