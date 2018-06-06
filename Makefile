@@ -99,7 +99,7 @@ else
 debug_run:
 	$(MAKE) debug_rebuild
 	$(DIALYZER_EXEC) --check_plt --plt $(DIALYZER_PLT_FILE)
-	$(DIALYZER_EXEC) --get_warnings $(ERL_SRC_FILES) \\
+	$(DIALYZER_EXEC) --get_warnings $(ERL_SRC_FILES) \
 		--src --plt $(DIALYZER_PLT_FILE)
 endif
 

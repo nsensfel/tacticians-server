@@ -37,7 +37,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec add_to_cache (atom(), any(), any()) -> any().
 add_to_cache (DB, Owner, ObjectID) ->
-   {ok, TimerPID} = sh_gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
+   {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
    {ok, Data} = sh_database:fetch(DB, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.

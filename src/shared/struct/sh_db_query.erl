@@ -54,7 +54,7 @@
    {
       db :: atom(),
       id :: any(),
-      user :: db_user:user(),
+      user :: sh_db_user:user(),
       ops :: list(db_query_master_op())
    }
 ).
@@ -76,7 +76,7 @@
    [
       new/4,
       set_field/2,
-      add_to_field/2,
+      add_to_field/3,
       update_indexed/3
    ]
 ).
@@ -148,7 +148,7 @@ apply_op_to (Op, Elem) when is_record(Op, update_indexed) ->
 apply_master_op_to (MOp, Elem) when is_record(MOp, set_perm) ->
    NewPerm = MOp#set_perm.perm,
 
-   sh_db_item:set_perm(NewPerm, Elem);
+   sh_db_item:set_permission(NewPerm, Elem);
 apply_master_op_to (MOp, Elem) when is_record(MOp, set_val) ->
    NewVal = MOp#set_val.val,
 
@@ -176,9 +176,9 @@ new (DBName, ObjectID, User, Ops) ->
 set_field (Field, Value) ->
    #set_field { field = Field, value = Value }.
 
--spec add_to_field (non_neg_integer(), list(any())) -> op().
-add_to_field (Field, Values) ->
-   #add_to_field { field = Field, values = Values }.
+-spec add_to_field (non_neg_integer(), list(any()), boolean()) -> op().
+add_to_field (Field, Values, IsPrefix) ->
+   #add_to_field { field = Field, values = Values, head = IsPrefix}.
 
 -spec update_indexed
    (

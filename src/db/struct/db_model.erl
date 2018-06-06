@@ -60,8 +60,8 @@ start (Model) ->
    (
       DBName,
       [
-         {record_name, db_item:get_record_name()},
-         {attributes, db_item:get_record_info()},
+         {record_name, sh_db_item:get_record_name()},
+         {attributes, sh_db_item:get_record_info()},
          {disc_copies, [node()|Neighbors]},
          {disc_only_copies, []},
          {ram_copies, []},

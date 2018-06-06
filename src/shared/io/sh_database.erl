@@ -130,7 +130,7 @@ fetch (DB, ObjectID) ->
    io:format("~ndb_shim:fetch(~p) -> ~p.~n", [{DB, ObjectID}, Reply]),
    Reply.
 
--spec commit (db_query:type()) -> 'ok'.
+-spec commit (sh_db_query:type()) -> 'ok'.
 commit (Query) ->
    {atomic, ok} = rpc:call(get_db_node(), storage_access, query, [Query]),
    io:format("~ndb_shim:commit(~p) -> ok.~n", [Query]),
