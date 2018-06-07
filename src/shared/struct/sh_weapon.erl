@@ -6,9 +6,9 @@
 -opaque id() :: non_neg_integer().
 
 -type range_type() :: 'ranged' | 'melee'.
--type range_mod() :: 'long' | 'short'.
+-type range_modifier() :: 'long' | 'short'.
 -type damage_type() :: 'slash' | 'pierce' | 'blunt'.
--type damage_mod() :: 'heavy' | 'light'.
+-type damage_modifier() :: 'heavy' | 'light'.
 
 -record
 (
@@ -17,9 +17,10 @@
       id :: id(),
       name :: binary(),
       range_type :: range_type(),
-      range_mod :: range_mod(),
+      range_mod :: range_modifier(),
       damage_type :: damage_type(),
-      damage_mod :: damage_mod()
+      damage_mod :: damage_modifier(),
+      coef :: float()
    }
 ).
 
@@ -30,9 +31,9 @@
 (
    [
       range_type/0,
-      range_mod/0,
+      range_modifier/0,
       damage_type/0,
-      damage_mod/0
+      damage_modifier/0
    ]
 ).
 
@@ -44,7 +45,12 @@
 (
    [
       get_id/1,
+      get_name/1,
       get_range_type/1,
+      get_range_modifier/1,
+      get_damage_type/1,
+      get_damage_modifier/1,
+      get_coefficient/1,
       get_ranges/1,
       get_damages/1
    ]
@@ -66,7 +72,7 @@
 -spec ranges_of_type
    (
       range_type(),
-      range_mod()
+      range_modifier()
    )
    -> {non_neg_integer(), non_neg_integer()}.
 ranges_of_type (ranged, long) -> {2, 6};
@@ -77,7 +83,7 @@ ranges_of_type (melee, short) -> {0, 1}.
 -spec damages_of_type
    (
       range_type(),
-      damage_mod()
+      damage_modifier()
    )
    -> {non_neg_integer(), non_neg_integer()}.
 damages_of_type (ranged, heavy) -> {10, 25};
@@ -92,8 +98,23 @@ damages_of_type (melee, light) -> {15, 30}.
 -spec get_id (type()) -> id().
 get_id (Wp) -> Wp#weapon.id.
 
+-spec get_name (type()) -> binary().
+get_name (Wp) -> Wp#weapon.name.
+
 -spec get_range_type (type()) -> range_type().
 get_range_type (Wp) -> Wp#weapon.range_type.
+
+-spec get_range_modifier (type()) -> range_modifier().
+get_range_modifier (Wp) -> Wp#weapon.range_mod.
+
+-spec get_damage_type (type()) -> damage_type().
+get_damage_type (Wp) -> Wp#weapon.damage_type.
+
+-spec get_damage_modifier (type()) -> damage_modifier().
+get_damage_modifier (Wp) -> Wp#weapon.damage_mod.
+
+-spec get_coefficient (type()) -> float().
+get_coefficient (Wp) -> Wp#weapon.coef.
 
 -spec get_ranges (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_ranges (Wp) ->
@@ -101,7 +122,9 @@ get_ranges (Wp) ->
 
 -spec get_damages (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_damages (Wp) ->
-   damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod).
+   Coef = Wp#weapon.coef,
+   {Min, Max} = damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod),
+   {erlang:ceil(Min * Coef), erlang:ceil(Max * Coef)}.
 
 -spec can_parry (type()) -> boolean().
 can_parry (Wp) -> (Wp#weapon.range_type == melee).
@@ -114,7 +137,8 @@ from_id (0) ->
       range_type = melee,
       range_mod = short,
       damage_type = blunt,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (1) ->
    #weapon{
@@ -123,7 +147,8 @@ from_id (1) ->
       range_type = melee,
       range_mod = short,
       damage_type = slash,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (2) ->
    #weapon{
@@ -132,7 +157,8 @@ from_id (2) ->
       range_type = melee,
       range_mod = short,
       damage_type = slash,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (3) ->
    #weapon{
@@ -141,7 +167,8 @@ from_id (3) ->
       range_type = melee,
       range_mod = long,
       damage_type = slash,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (4) ->
    #weapon{
@@ -150,7 +177,8 @@ from_id (4) ->
       range_type = melee,
       range_mod = long,
       damage_type = slash,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (5) ->
    #weapon{
@@ -159,7 +187,8 @@ from_id (5) ->
       range_type = melee,
       range_mod = short,
       damage_type = pierce,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (6) ->
    #weapon{
@@ -168,7 +197,8 @@ from_id (6) ->
       range_type = melee,
       range_mod = short,
       damage_type = pierce,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (7) ->
    #weapon{
@@ -177,7 +207,8 @@ from_id (7) ->
       range_type = melee,
       range_mod = long,
       damage_type = pierce,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (8) ->
    #weapon{
@@ -186,7 +217,8 @@ from_id (8) ->
       range_type = melee,
       range_mod = long,
       damage_type = pierce,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (9) ->
    #weapon{
@@ -195,7 +227,8 @@ from_id (9) ->
       range_type = melee,
       range_mod = short,
       damage_type = blunt,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (10) ->
    #weapon{
@@ -204,7 +237,8 @@ from_id (10) ->
       range_type = melee,
       range_mod = short,
       damage_type = blunt,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (11) ->
    #weapon{
@@ -213,7 +247,8 @@ from_id (11) ->
       range_type = melee,
       range_mod = long,
       damage_type = blunt,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (12) ->
    #weapon{
@@ -222,7 +257,8 @@ from_id (12) ->
       range_type = melee,
       range_mod = long,
       damage_type = blunt,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (13) ->
    #weapon{
@@ -231,7 +267,8 @@ from_id (13) ->
       range_type = ranged,
       range_mod = short,
       damage_type = slash,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (14) ->
    #weapon{
@@ -240,7 +277,8 @@ from_id (14) ->
       range_type = ranged,
       range_mod = short,
       damage_type = blunt,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (15) ->
    #weapon{
@@ -249,7 +287,8 @@ from_id (15) ->
       range_type = ranged,
       range_mod = short,
       damage_type = pierce,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (16) ->
    #weapon{
@@ -258,7 +297,8 @@ from_id (16) ->
       range_type = ranged,
       range_mod = long,
       damage_type = slash,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (17) ->
    #weapon{
@@ -267,7 +307,8 @@ from_id (17) ->
       range_type = ranged,
       range_mod = long,
       damage_type = blunt,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (18) ->
    #weapon{
@@ -276,7 +317,8 @@ from_id (18) ->
       range_type = ranged,
       range_mod = long,
       damage_type = pierce,
-      damage_mod = light
+      damage_mod = light,
+      coef = 1.0
    };
 from_id (19) ->
    #weapon{
@@ -285,7 +327,8 @@ from_id (19) ->
       range_type = ranged,
       range_mod = short,
       damage_type = slash,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (20) ->
    #weapon{
@@ -294,7 +337,8 @@ from_id (20) ->
       range_type = ranged,
       range_mod = short,
       damage_type = blunt,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (21) ->
    #weapon{
@@ -303,7 +347,8 @@ from_id (21) ->
       range_type = ranged,
       range_mod = short,
       damage_type = pierce,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (22) ->
    #weapon{
@@ -312,7 +357,8 @@ from_id (22) ->
       range_type = ranged,
       range_mod = long,
       damage_type = slash,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (23) ->
    #weapon{
@@ -321,7 +367,8 @@ from_id (23) ->
       range_type = ranged,
       range_mod = long,
       damage_type = blunt,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    };
 from_id (24) ->
    #weapon{
@@ -330,7 +377,8 @@ from_id (24) ->
       range_type = ranged,
       range_mod = long,
       damage_type = pierce,
-      damage_mod = heavy
+      damage_mod = heavy,
+      coef = 1.0
    }.
 
 -spec random_id () -> id().
@@ -338,23 +386,32 @@ random_id () -> sh_roll:between(0, 24).
 
 -spec apply_to_attributes
    (
-      sh_attributes:type(),
-      type()
+      type(),
+      sh_attributes:type()
    )
    -> sh_attributes:type().
-apply_to_attributes (Attributes, Weapon) ->
+apply_to_attributes (Weapon, Attributes) ->
    Dexterity = sh_attributes:get_dexterity(Attributes),
    Speed = sh_attributes:get_speed(Attributes),
    RangeModifier = Weapon#weapon.range_mod,
    DamageModifier = Weapon#weapon.damage_mod,
-   WithRangeModifier =
-      case RangeModifier of
-         long ->
-            sh_attributes:set_dexterity(max(0, (Dexterity - 20)), Attributes);
-         _ -> Attributes
-      end,
-   case DamageModifier of
-      heavy -> sh_attributes:set_speed(max(0, (Speed - 20)), WithRangeModifier);
-      _ -> WithRangeModifier
-   end.
 
+   Impact = (-20.0 * Weapon#weapon.coef),
+   FullImpact = erlang:ceil(Impact),
+   QuarterImpact = erlang:ceil(Impact / 4.0),
+
+   ResultingDexterity =
+      case RangeModifier of
+         long -> (Dexterity - FullImpact);
+         short -> (Dexterity - QuarterImpact)
+      end,
+   ResultingSpeed =
+      case DamageModifier of
+         heavy -> (Speed - FullImpact);
+         light -> (Speed - QuarterImpact)
+      end,
+
+   S0Attributes = sh_attributes:set_speed(ResultingSpeed, Attributes),
+   S1Attributes = sh_attributes:set_dexterity(ResultingDexterity, S0Attributes),
+
+   S1Attributes.

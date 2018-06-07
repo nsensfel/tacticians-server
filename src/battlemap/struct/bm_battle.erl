@@ -10,6 +10,8 @@
    battle,
    {
       id :: id(),
+      used_armor_ids:: list(sh_armor:id()),
+      used_weapon_ids :: list(sh_weapon:id()),
       battlemap :: bm_battlemap:type(),
       characters :: array:array(bm_character:type()),
       players :: array:array(bm_player:type()),
@@ -29,6 +31,8 @@
 (
    [
       get_id/1,
+      get_used_weapon_ids/1,
+      get_used_armor_ids/1,
       get_battlemap/1,
       get_characters/1,
       get_character/2,
@@ -53,7 +57,7 @@
 -export
 (
    [
-      new/4
+      new/6
    ]
 ).
 
@@ -80,13 +84,17 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
 -spec get_id (type()) -> id().
 get_id (Battle) -> Battle#battle.id.
 
+-spec get_used_weapon_ids (type()) -> list(sh_weapon:id()).
+get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
+
+-spec get_used_armor_ids (type()) -> list(sh_armor:id()).
+get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
+
 -spec get_battlemap (type()) -> bm_battlemap:type().
-get_battlemap (Battle) ->
-   Battle#battle.battlemap.
+get_battlemap (Battle) -> Battle#battle.battlemap.
 
 -spec get_characters (type()) -> array:array(bm_character:type()).
-get_characters (Battle) ->
-   Battle#battle.characters.
+get_characters (Battle) -> Battle#battle.characters.
 
 -spec get_character (non_neg_integer(), type()) -> bm_character:type().
 get_character (IX, Battle) ->
@@ -173,13 +181,17 @@ set_current_player_turn (PlayerTurn, Battle) ->
       id(),
       list(bm_player:type()),
       bm_battlemap:type(),
-      list(bm_character:type())
+      list(bm_character:type()),
+      list(sh_weapon:id()),
+      list(sh_armor:id())
    )
    -> type().
-new (ID, PlayersAsList, Battlemap, CharactersAsList) ->
+new (ID, PlayersAsList, Battlemap, CharactersAsList, UWIDs, UAIDs) ->
    #battle
    {
       id = ID,
+      used_weapon_ids = UWIDs,
+      used_armor_ids = UAIDs,
       battlemap = Battlemap,
       characters = array:from_list(CharactersAsList),
       players = array:from_list(PlayersAsList),

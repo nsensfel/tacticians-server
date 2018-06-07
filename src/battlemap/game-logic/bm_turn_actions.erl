@@ -28,11 +28,12 @@ handle_switch_weapon (Update) ->
    Character = bm_character_turn_data:get_character(Data),
    CharacterIX = bm_character_turn_data:get_character_ix(Data),
    CharacterAttributes = bm_character:get_attributes(Character),
+   ArmorID = bm_character:get_armor_id(Character),
    {PrimaryWeaponID, SecondaryWeaponID} = bm_character:get_weapon_ids(Character),
 
    UpdatedWeaponIDs = {SecondaryWeaponID, PrimaryWeaponID},
    UpdatedCharacterStatistics =
-      sh_statistics:new(CharacterAttributes, UpdatedWeaponIDs),
+      sh_statistics:new(CharacterAttributes, UpdatedWeaponIDs, ArmorID),
    UpdatedCharacter =
       bm_character:set_statistics
       (
@@ -52,6 +53,11 @@ handle_switch_weapon (Update) ->
             (
                bm_character:get_weapons_field(),
                UpdatedWeaponIDs
+            ),
+            sh_db_query:set_field
+            (
+               bm_character:get_statistics_field(),
+               UpdatedCharacterStatistics
             )
          ]
       ),

@@ -47,7 +47,7 @@
 -export
 (
    [
-      new/2
+      new/3
    ]
 ).
 
@@ -144,14 +144,21 @@ get_damages (Stats) ->
 -spec new
    (
       sh_attributes:type(),
-      {sh_weapon:id(), sh_weapon:id()}
+      {sh_weapon:id(), sh_weapon:id()},
+      sh_armor:id()
    )
    -> type().
-new (BaseAttributes, WeaponIDs) ->
+new (BaseAttributes, WeaponIDs, ArmorID) ->
    {ActiveWeaponID, _} = WeaponIDs,
    ActiveWeapon = sh_weapon:from_id(ActiveWeaponID),
    {MinDamage, MaxDamage} = sh_weapon:get_damages(ActiveWeapon),
-   Attributes = sh_weapon:apply_to_attributes(BaseAttributes, ActiveWeapon),
+   Armor = sh_armor:from_id(ArmorID),
+   Attributes =
+      sh_armor:apply_to_attributes
+      (
+         Armor,
+         sh_weapon:apply_to_attributes(ActiveWeapon, BaseAttributes)
+      ),
    Constitution = sh_attributes:get_constitution(Attributes),
    Dexterity = sh_attributes:get_dexterity(Attributes),
    Intelligence = sh_attributes:get_intelligence(Attributes),

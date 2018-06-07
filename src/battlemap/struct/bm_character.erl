@@ -17,6 +17,7 @@
       attributes :: sh_attributes:type(),
       statistics :: sh_statistics:type(),
       weapon_ids :: {sh_weapon:id(), sh_weapon:id()},
+      armor_id :: sh_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: non_neg_integer(),
       active :: boolean()
@@ -41,12 +42,14 @@
       get_attributes/1,
       get_statistics/1,
       get_weapon_ids/1,
+      get_armor_id/1,
       get_location/1,
       get_current_health/1,
       get_is_alive/1,
       get_is_active/1,
 
       set_weapon_ids/2,
+      set_armor_id/2,
       set_statistics/2,
       set_location/2,
       set_current_health/2,
@@ -117,6 +120,9 @@ get_portrait (Char) -> Char#character.portrait.
 -spec get_attributes (type()) -> sh_attributes:type().
 get_attributes (Char) -> Char#character.attributes.
 
+-spec get_armor_id (type()) -> sh_armor:id().
+get_armor_id (Char) -> Char#character.armor_id.
+
 -spec get_weapon_ids (type()) -> {sh_weapon:id(), sh_weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
 
@@ -169,12 +175,14 @@ set_is_active (Active, Char) ->
       active = Active
    }.
 
--spec set_weapon_ids
-   (
-      {sh_weapon:id(), sh_weapon:id()},
-      type()
-   )
-   -> type().
+-spec set_armor_id (sh_armor:id(), type()) -> type().
+set_armor_id (ArmorID, Char) ->
+   Char#character
+   {
+      armor_id = ArmorID
+   }.
+
+-spec set_weapon_ids ({sh_weapon:id(), sh_weapon:id()}, type()) -> type().
 set_weapon_ids (WeaponIDs, Char) ->
    Char#character
    {
@@ -207,8 +215,9 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    Location =
       find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations),
    WeaponIDs = {sh_weapon:random_id(), sh_weapon:random_id()},
+   ArmorID = sh_armor:random_id(),
    Attributes = sh_attributes:random(),
-   Statistics = sh_statistics:new(Attributes, WeaponIDs),
+   Statistics = sh_statistics:new(Attributes, WeaponIDs, ArmorID),
    IDAsListString = integer_to_list(ID),
    IDAsBinaryString = list_to_binary(IDAsListString),
 
@@ -221,6 +230,7 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       portrait = IDAsBinaryString,
       attributes = Attributes,
       weapon_ids = WeaponIDs,
+      armor_id = ArmorID,
       statistics = Statistics,
       location = Location,
       current_health = sh_statistics:get_health(Statistics),

@@ -32,7 +32,7 @@
    [
       get_id/1,
       get_name/1,
-      get_coef/1,
+      get_coefficient/1,
       get_category/1
    ]
 ).
@@ -61,8 +61,8 @@ get_id (Ar) -> Ar#armor.id.
 -spec get_name (type()) -> binary().
 get_name (Ar) -> Ar#armor.name.
 
--spec get_coef (type()) -> float().
-get_coef (Ar) -> Ar#armor.coef.
+-spec get_coefficient (type()) -> float().
+get_coefficient (Ar) -> Ar#armor.coef.
 
 -spec get_category (type()) -> category().
 get_category (Ar) -> Ar#armor.category.
@@ -105,15 +105,15 @@ from_id (4) ->
    }.
 
 -spec random_id () -> id().
-random_id () -> sh_roll:between(0, 24).
+random_id () -> sh_roll:between(0, 4).
 
 -spec apply_to_attributes
    (
-      sh_attributes:type(),
-      type()
+      type(),
+      sh_attributes:type()
    )
    -> sh_attributes:type().
-apply_to_attributes (Att, Ar) ->
+apply_to_attributes (Ar, Att) ->
    Dexterity = sh_attributes:get_dexterity(Att),
    Speed = sh_attributes:get_speed(Att),
    Strength = sh_attributes:get_strength(Att),

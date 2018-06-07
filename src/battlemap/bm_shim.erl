@@ -101,6 +101,31 @@ generate_random_battle () ->
    Battlemap = bm_battlemap:random(0, BattlemapWidth, BattlemapHeight),
    Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
    PlayersAsList = [bm_player:new(<<"0">>), bm_player:new(<<"1">>)],
-   Battle = bm_battle:new(<<"0">>, PlayersAsList, Battlemap, Characters),
+
+   {UsedWeaponIDs, UsedArmorIDs} =
+      lists:foldl
+      (
+         fun (Character, {UWIDs, UAIDs}) ->
+            {MWpID, SWpID} = bm_character:get_weapon_ids(Character),
+            AID = bm_character:get_armor_id(Character),
+            {
+               sets:add_element(MWpID, sets:add_element(SWpID, UWIDs)),
+               sets:add_element(AID, UAIDs)
+            }
+         end,
+         {sets:new(), sets:new()},
+         Characters
+      ),
+
+   Battle =
+      bm_battle:new
+      (
+         <<"0">>,
+         PlayersAsList,
+         Battlemap,
+         Characters,
+         sets:to_list(UsedWeaponIDs),
+         sets:to_list(UsedArmorIDs)
+      ),
 
    Battle.
