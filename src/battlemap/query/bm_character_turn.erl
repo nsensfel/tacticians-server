@@ -114,7 +114,18 @@ finalize_character (Update) ->
    UpdatedData = bm_character_turn_data:set_character(DisabledCharacter, Data),
    FinalizedData = bm_character_turn_data:clean_battle(UpdatedData),
 
-   bm_character_turn_update:set_data(FinalizedData, Update).
+   DBQuery =
+      sh_db_query:update_indexed
+      (
+         bm_battle:get_characters_field(),
+         bm_character_turn_data:get_character_ix(Data),
+         [ sh_db_query:set_field(bm_character:get_active_field(), false) ]
+      ),
+
+   S0Update = bm_character_turn_update:set_data(FinalizedData, Update),
+   S1Update = bm_character_turn_update:add_to_db(DBQuery, S0Update),
+
+   S1Update.
 
 -spec handle_actions
    (
@@ -148,7 +159,26 @@ update_timeline (Update) ->
    UpdatedBattle = bm_battle:set_player(PlayerIX, UpdatedPlayer, Battle),
    UpdatedData = bm_character_turn_data:set_battle(UpdatedBattle, Data),
 
-   bm_character_turn_update:set_data(UpdatedData, Update).
+   DBQuery =
+      sh_db_query:update_indexed
+      (
+         bm_battle:get_players_field(),
+         PlayerIX,
+         [
+            sh_db_query:add_to_field
+            (
+               bm_player:get_timeline_field(),
+               NewTimelineElements,
+               true % We add those to the start of the list
+            )
+         ]
+      ),
+
+   S0Update = bm_character_turn_update:set_data(UpdatedData, Update),
+   S1Update = bm_character_turn_update:add_to_db(DBQuery, S0Update),
+
+   S1Update.
+
 
 -spec update_data
    (
@@ -174,8 +204,6 @@ send_to_database (Update, Request) ->
    BattleID = bm_character_turn_request:get_battle_id(Request),
    Ops = bm_character_turn_update:get_db(Update),
    Query = sh_db_query:new(battle_db, BattleID, {user, PlayerID}, Ops),
-
-   % TODO: send queries to an actual DB...
 
    sh_database:commit(Query),
 

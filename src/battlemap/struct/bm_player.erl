@@ -26,7 +26,9 @@
       get_id/1,
       get_timeline/1,
       add_to_timeline/2,
-      reset_timeline/1
+      reset_timeline/1,
+
+      get_timeline_field/0
    ]
 ).
 
@@ -70,3 +72,5 @@ new (ID) ->
       timeline = []
    }.
 
+-spec get_timeline_field () -> non_neg_integer().
+get_timeline_field () -> #player.timeline.

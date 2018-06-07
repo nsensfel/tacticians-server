@@ -19,8 +19,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_db_node () -> node().
 get_db_node () -> list_to_atom("db_node@" ++ net_adm:localhost()).
 
+-spec do_remote_operation (atom(), list(any())) ->
+   (
+      {'badrpc', any()}
+      | {'aborted', any()}
+      | {'atomic', ({'ok', any()} | 'ok' | 'not_found')}
+   ).
 do_remote_operation (Op, Params) ->
    rpc:call(get_db_node(), db_access, Op, Params).
 

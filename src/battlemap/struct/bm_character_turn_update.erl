@@ -30,7 +30,7 @@
       get_db/1,
 
       set_data/2,
-      add_to_timeline/2,
+      add_to_timeline/3,
       add_to_db/2
    ]
 ).
@@ -64,9 +64,21 @@ get_db (Update) -> Update#type.db.
 set_data (Data, Update) ->
    Update#type{ data = Data}.
 
--spec add_to_timeline (bm_turn_result:type(), type()) -> type().
-add_to_timeline (Item, Update) ->
-   Update#type{ timeline = [bm_turn_result:encode(Item)|Update#type.timeline] }.
+-spec add_to_timeline
+   (
+      bm_turn_result:type(),
+      sh_db_query:op(),
+      type()
+   ) -> type().
+add_to_timeline (Item, DBUpdate, Update) ->
+   add_to_db
+   (
+      DBUpdate,
+      Update#type
+      {
+         timeline = [bm_turn_result:encode(Item)|Update#type.timeline]
+      }
+   ).
 
 -spec add_to_db (sh_db_query:op(), type()) -> type().
 add_to_db (Item, Update) ->

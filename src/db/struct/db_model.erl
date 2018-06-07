@@ -45,6 +45,7 @@ new (DBName, StorageFile, Neighbors) ->
       neighbors = Neighbors
    }.
 
+-spec start(type()) -> 'ok'.
 start (Model) ->
    DBName = Model#db_model.name,
    StorageFile = Model#db_model.store_file,
@@ -68,4 +69,6 @@ start (Model) ->
          {type, ordered_set},
          {local_content, false}
       ]
-   ).
+   ),
+
+   ok.

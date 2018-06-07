@@ -18,12 +18,22 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_value (list(sh_db_item:type())) -> ({'ok', any()} | 'not_found').
 get_value ([]) -> not_found;
 get_value ([Regval]) -> {ok, sh_db_item:get_value(Regval)}.
 
+-spec read_transaction (atom(), any()) -> ({'ok', any()} | 'not_found').
 read_transaction (DB, ID) ->
    get_value(mnesia:read(DB, ID)).
 
+-spec insert_transaction
+   (
+      atom(),
+      any(),
+      sh_db_user:permission(),
+      any()
+   )
+   -> 'ok'.
 insert_transaction (DB, ID, Perm, Value) ->
    StoredItem = sh_db_item:new(ID, Perm, Value),
    % FIXME: handle return value, mnesia:write -> (transaction abort | ok).
@@ -31,6 +41,7 @@ insert_transaction (DB, ID, Perm, Value) ->
    mnesia:write(DB, StoredItem, sticky_write),
    ok.
 
+-spec query_transaction (sh_db_query:type()) -> 'ok'.
 query_transaction (Query) ->
    DB = sh_db_query:get_database(Query),
    ID = sh_db_query:get_entry_id(Query),
@@ -44,11 +55,16 @@ query_transaction (Query) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec read (atom(), any())
+   -> ({'aborted', any()} | {'atomic', ({'ok', any()} | 'not_found')}).
 read (DB, ID) ->
    mnesia:transaction(fun read_transaction/2, [DB, ID]).
 
+-spec insert (atom(), any(), sh_db_user:permission(), any())
+   -> ({'aborted', any()} | {'atomic', 'ok'}).
 insert (DB, ID, Perm, Value) ->
    mnesia:transaction(fun insert_transaction/4, [DB, ID, Perm, Value]).
 
+-spec query (sh_db_query:type()) -> ({'aborted', any()} | {'atomic', 'ok'}).
 query (Query) ->
    mnesia:transaction(fun query_transaction/1, [Query]).

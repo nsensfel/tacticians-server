@@ -40,6 +40,8 @@ handle_switch_weapon (Update) ->
          bm_character:set_weapon_ids(UpdatedWeaponIDs, Character)
       ),
 
+   TimelineItem = bm_turn_result:new_character_switched_weapons(CharacterIX),
+
    DBQuery =
       sh_db_query:update_indexed
       (
@@ -57,14 +59,8 @@ handle_switch_weapon (Update) ->
    UpdatedData = bm_character_turn_data:set_character(UpdatedCharacter, Data),
 
    S0Update = bm_character_turn_update:set_data(UpdatedData, Update),
-   S1Update =
-      bm_character_turn_update:add_to_timeline
-      (
-         bm_turn_result:new_character_switched_weapons(CharacterIX),
-         S0Update
-      ),
 
-   bm_character_turn_update:add_to_db(DBQuery, S1Update).
+   bm_character_turn_update:add_to_timeline(TimelineItem, DBQuery, S0Update).
 
 %%%% MOVING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_path_cost_and_destination
@@ -137,32 +133,32 @@ commit_move (Update, Path, NewLocation) ->
 
    UpdatedData = bm_character_turn_data:set_character(UpdatedCharacter, Data),
 
+   TimelineItem =
+      bm_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
+
+   DBQuery =
+      sh_db_query:update_indexed
+      (
+         bm_battle:get_characters_field(),
+         CharacterIX,
+         [
+            sh_db_query:set_field
+            (
+               bm_character:get_location_field(),
+               NewLocation
+            )
+         ]
+      ),
+
    S0Update =
       bm_character_turn_update:add_to_timeline
       (
-         bm_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
+         TimelineItem,
+         DBQuery,
          Update
       ),
 
-   S1Update =
-      bm_character_turn_update:add_to_db
-      (
-         sh_db_query:update_indexed
-         (
-            bm_battle:get_characters_field(),
-            CharacterIX,
-            [
-               sh_db_query:set_field
-               (
-                  bm_character:get_location_field(),
-                  NewLocation
-               )
-            ]
-         ),
-         S0Update
-      ),
-
-   bm_character_turn_update:set_data(UpdatedData, S1Update).
+   bm_character_turn_update:set_data(UpdatedData, S0Update).
 
 -spec handle_move
    (
@@ -282,19 +278,10 @@ handle_attack (BattleAction, Update) ->
    AttackSequence = get_attack_sequence(Character, TargetCharacter),
 
    {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =
-      handle_attack_sequence
-      (
-         Character,
-         TargetCharacter,
-         AttackSequence
-      ),
+      handle_attack_sequence(Character, TargetCharacter, AttackSequence),
 
    UpdatedCharacter =
-      bm_character:set_current_health
-      (
-         RemainingAttackerHealth,
-         Character
-      ),
+      bm_character:set_current_health(RemainingAttackerHealth, Character),
 
    UpdatedBattle =
       bm_battle:set_character
@@ -310,26 +297,15 @@ handle_attack (BattleAction, Update) ->
 
 
    S0Data = bm_character_turn_data:set_battle(UpdatedBattle, Data),
-   S1Data =
-      bm_character_turn_data:set_character
-      (
-         UpdatedCharacter,
-         S0Data
-      ),
+   S1Data = bm_character_turn_data:set_character(UpdatedCharacter, S0Data),
 
-
-   S0Update =
-      bm_character_turn_update:add_to_timeline
+   TimelineItem =
+      bm_turn_result:new_character_attacked
       (
-         bm_turn_result:new_character_attacked
-         (
-            CharacterIX,
-            TargetIX,
-            AttackEffects
-         ),
-         Update
+         CharacterIX,
+         TargetIX,
+         AttackEffects
       ),
-   S1Update = bm_character_turn_update:set_data(S1Data, S0Update),
 
    DBQuery =
       sh_db_query:update_indexed
@@ -345,7 +321,15 @@ handle_attack (BattleAction, Update) ->
          ]
       ),
 
-   bm_character_turn_update:add_to_db(DBQuery, S1Update).
+   S0Update =
+      bm_character_turn_update:add_to_timeline
+      (
+         TimelineItem,
+         DBQuery,
+         Update
+      ),
+
+   bm_character_turn_update:set_data(S1Data, S0Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
