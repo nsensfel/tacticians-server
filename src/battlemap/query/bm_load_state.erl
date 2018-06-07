@@ -64,27 +64,49 @@ fetch_data (Input) ->
 generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
    Battle = QueryState#query_state.battle,
+   SetTimeline =
+      bm_set_timeline:generate
+      (
+         bm_battle:get_encoded_last_turns_effects(Battle)
+      ),
+
+   SetMap = bm_set_map:generate(bm_battle:get_battlemap(Battle)),
+
+   AddCharList =
+      array:sparse_to_list
+      (
+         array:map
+         (
+            fun (IX, Character) ->
+               bm_add_char:generate(IX, Character, PlayerID)
+            end,
+            bm_battle:get_characters(Battle)
+         )
+      ),
+
+   AddWeaponList =
+      lists:map
+      (
+         fun (WeaponID) ->
+            bm_add_weapon:generate(sh_weapon:from_id(WeaponID))
+         end,
+         bm_battle:get_used_weapon_ids(Battle)
+      ),
+
+   AddArmorList =
+      lists:map
+      (
+         fun (ArmorID) ->
+            bm_add_armor:generate(sh_armor:from_id(ArmorID))
+         end,
+         bm_battle:get_used_armor_ids(Battle)
+      ),
 
    jiffy:encode
    (
-      [
-         bm_set_timeline:generate
-         (
-            bm_battle:get_encoded_last_turns_effects(Battle)
-         ),
-         bm_set_map:generate(bm_battle:get_battlemap(Battle))
-         |
-         array:sparse_to_list
-         (
-            array:map
-            (
-               fun (IX, Character) ->
-                  bm_add_char:generate(IX, Character, PlayerID)
-               end,
-               bm_battle:get_characters(Battle)
-            )
-         )
-      ]
+      [SetTimeline, SetMap | AddWeaponList]
+      ++ AddArmorList
+      ++ AddCharList
    ).
 
 -spec handle (binary()) -> binary().

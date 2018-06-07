@@ -73,6 +73,7 @@ generate (IX, Character, PlayerID) ->
          },
          {<<"att">>, attributes_as_json(Attributes)},
          {<<"awp">>, ActiveWeapon},
-         {<<"swp">>, SecondaryWeapon}
+         {<<"swp">>, SecondaryWeapon},
+         {<<"ar">>, bm_character:get_armor_id(Character)}
       ]
    }.
