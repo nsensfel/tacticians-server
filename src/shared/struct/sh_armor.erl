@@ -42,7 +42,8 @@
    [
       random_id/0,
       from_id/1,
-      apply_to_attributes/2
+      apply_to_attributes/2,
+      get_resistance_to/2
    ]
 ).
 
@@ -142,3 +143,27 @@ apply_to_attributes (Ar, Att) ->
             )
          )
    end.
+
+-spec get_resistance_to (sh_weapon:damage_type(), type()) -> non_neg_integer().
+get_resistance_to (DamageType, Armor) ->
+   ArmorCategory = Armor#armor.category,
+   BaseResistance =
+      case {DamageType, ArmorCategory} of
+         {slash, kinetic} -> 0.0;
+         {slash, leather} -> 5.0;
+         {slash, chain} -> 10.0;
+         {slash, plate} -> 10.0;
+         {blunt, kinetic} -> 10.0;
+         {blunt, leather} -> 5.0;
+         {blunt, chain} -> 5.0;
+         {blunt, plate} -> 5.0;
+         {pierce, kinetic} -> 5.0;
+         {pierce, leather} -> 5.0;
+         {pierce, chain} -> 5.0;
+         {pierce, plate} -> 10.0
+      end,
+
+   ArmorCoefficient = Armor#armor.coef,
+   ActualResistance = (ArmorCoefficient * BaseResistance),
+
+   erlang:ceil(ActualResistance).

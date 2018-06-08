@@ -96,8 +96,8 @@ generate_random_characters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_random_battle () -> bm_battle:type().
 generate_random_battle () ->
-   BattlemapWidth = sh_roll:between(16, 64),
-   BattlemapHeight = sh_roll:between(16, 64),
+   BattlemapWidth = sh_roll:between(16, 32),
+   BattlemapHeight = sh_roll:between(16, 32),
    Battlemap = bm_battlemap:random(0, BattlemapWidth, BattlemapHeight),
    Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
    PlayersAsList = [bm_player:new(<<"0">>), bm_player:new(<<"1">>)],

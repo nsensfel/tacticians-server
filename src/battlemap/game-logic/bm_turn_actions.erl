@@ -195,9 +195,6 @@ handle_attack_sequence
    TargetCharacter,
    AttackSequence
 ) ->
-   CharacterStatistics = bm_character:get_statistics(Character),
-   TargetCharacterStatistics = bm_character:get_statistics(TargetCharacter),
-
    AttackPlannedEffects =
       lists:map
       (
@@ -205,8 +202,8 @@ handle_attack_sequence
             bm_attack:get_description_of
             (
                AttackStep,
-               CharacterStatistics,
-               TargetCharacterStatistics
+               Character,
+               TargetCharacter
             )
          end,
          AttackSequence

@@ -86,27 +86,44 @@ roll_parry (DefenderStatistics) ->
 -spec effect_of_attack
    (
       order(),
-      sh_statistics:type(),
-      sh_statistics:type(),
+      bm_character:type(),
+      bm_character:type(),
       boolean()
    )
    -> type().
-effect_of_attack (Order, AttackerStatistics, DefenderStatistics, CanParry) ->
+effect_of_attack (Order, Attacker, Defender, CanParry) ->
+   AttackerStatistics = bm_character:get_statistics(Attacker),
+   DefenderStatistics = bm_character:get_statistics(Defender),
+
    ParryIsSuccessful = (CanParry and roll_parry(DefenderStatistics)),
+
    {ActualAtkStatistics, ActualDefStatistics} =
       case ParryIsSuccessful of
          true -> {DefenderStatistics, AttackerStatistics};
          false -> {AttackerStatistics, DefenderStatistics}
       end,
+   {ActualAttacker, ActualDefender} =
+      case ParryIsSuccessful of
+         true -> {Defender, Attacker};
+         false -> {Attacker, Defender}
+      end,
+
+   ActualDefArmor = sh_armor:from_id(bm_character:get_armor_id(ActualDefender)),
+   {ActualAtkWeaponID, _} = bm_character:get_weapon_ids(ActualAttacker),
+   ActualAtkWeaponDmgType =
+      sh_weapon:get_damage_type(sh_weapon:from_id(ActualAtkWeaponID)),
 
    Precision = roll_precision(ActualAtkStatistics, ActualDefStatistics),
    {Damage, IsCritical} = roll_damage(ActualAtkStatistics, ActualDefStatistics),
-   ActualDamage =
+   S0Damage =
       case Precision of
          misses -> 0;
          grazes -> trunc(Damage / 2);
          hits -> Damage
       end,
+   ArmorResistance =
+      sh_armor:get_resistance_to(ActualAtkWeaponDmgType, ActualDefArmor),
+   ActualDamage = max(0, (S0Damage - ArmorResistance)),
 
    #attack
    {
@@ -134,46 +151,26 @@ encode_precision (misses) -> <<"m">>.
 -spec get_description_of
    (
       step(),
-      sh_statistics:type(),
-      sh_statistics:type()
+      bm_character:type(),
+      bm_character:type()
    )
    -> maybe_type().
-get_description_of
-(
-   {first, CanParry},
-   AttackerStatistics,
-   DefenderStatistics
-) ->
-   effect_of_attack(first, AttackerStatistics, DefenderStatistics, CanParry);
-get_description_of
-(
-   {second, CanParry},
-   AttackerStatistics,
-   DefenderStatistics
-) ->
+get_description_of ({first, CanParry}, Attacker, Defender) ->
+   effect_of_attack(first, Attacker, Defender, CanParry);
+get_description_of ({second, CanParry}, Attacker, Defender) ->
+   AttackerStatistics = bm_character:get_statistics(Attacker),
    AttackerDoubleAttackChange =
       sh_statistics:get_double_hits(AttackerStatistics),
 
    case sh_roll:percentage() of
       X when (X =< AttackerDoubleAttackChange) ->
-         effect_of_attack
-         (
-            second,
-            AttackerStatistics,
-            DefenderStatistics,
-            CanParry
-         );
+         effect_of_attack (second, Attacker, Defender, CanParry);
 
       _ ->
          nothing
    end;
-get_description_of
-(
-   {counter, CanParry},
-   AttackerStatistics,
-   DefenderStatistics
-) ->
-   effect_of_attack(counter, DefenderStatistics, AttackerStatistics, CanParry).
+get_description_of ({counter, CanParry}, Attacker, Defender) ->
+   effect_of_attack(counter, Defender, Attacker, CanParry).
 
 -spec apply_to_healths
    (
