@@ -396,7 +396,7 @@ apply_to_attributes (Weapon, Attributes) ->
    RangeModifier = Weapon#weapon.range_mod,
    DamageModifier = Weapon#weapon.damage_mod,
 
-   Impact = (-20.0 * Weapon#weapon.coef),
+   Impact = (20.0 * Weapon#weapon.coef),
    FullImpact = erlang:ceil(Impact),
    QuarterImpact = erlang:ceil(Impact / 4.0),
 

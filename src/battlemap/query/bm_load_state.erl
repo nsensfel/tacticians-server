@@ -102,12 +102,15 @@ generate_reply (QueryState, Input) ->
          bm_battle:get_used_armor_ids(Battle)
       ),
 
-   jiffy:encode
-   (
-      [SetTimeline, SetMap | AddWeaponList]
-      ++ AddArmorList
-      ++ AddCharList
-   ).
+   OutputList =
+      (
+         [SetTimeline, SetMap | AddWeaponList]
+         ++ AddArmorList
+         ++ AddCharList
+      ),
+   Output = jiffy:encode(OutputList),
+
+   Output.
 
 -spec handle (binary()) -> binary().
 handle (Req) ->

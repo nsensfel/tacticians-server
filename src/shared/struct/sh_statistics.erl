@@ -72,17 +72,17 @@ average (L) -> lists:sum(L) / length(L).
 % V | 010 | 030 | 050 | 070 | 100 |
 % F | 004 | 023 | 058 | 104 | 200 |
 -spec gentle_squared_growth (number()) -> non_neg_integer().
-gentle_squared_growth (V) -> float_to_int(math:pow(V, 1.8) / 20).
+gentle_squared_growth (V) -> float_to_int(math:pow(V, 1.8) / 20.0).
 
 % V | 010 | 030 | 050 | 070 | 100 |
 % F | 001 | 005 | 018 | 041 | 100 |
 -spec sudden_squared_growth (number()) -> non_neg_integer().
-sudden_squared_growth (V) -> float_to_int(math:pow(V, 2.5) / 1000).
+sudden_squared_growth (V) -> float_to_int(math:pow(V, 2.5) / 1000.0).
 
 % V | 010 | 030 | 050 | 070 | 100 |
 % F | 002 | 006 | 016 | 049 | 256 |
 -spec sudden_exp_growth (number()) -> non_neg_integer().
-sudden_exp_growth (V) -> float_to_int(math:pow(4, V / 25)).
+sudden_exp_growth (V) -> float_to_int(math:pow(4.0, V / 25.0)).
 
 % V | 010 | 030 | 050 | 070 | 100 |
 % F | 040 | 066 | 079 | 088 | 099 |

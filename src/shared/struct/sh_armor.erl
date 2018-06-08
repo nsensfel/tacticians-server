@@ -118,7 +118,7 @@ apply_to_attributes (Ar, Att) ->
    Speed = sh_attributes:get_speed(Att),
    Strength = sh_attributes:get_strength(Att),
    Mind = sh_attributes:get_mind(Att),
-   Impact = erlang:ceil(-20.0 * Ar#armor.coef),
+   Impact = erlang:ceil(20.0 * Ar#armor.coef),
    Category = Ar#armor.category,
 
    case Category of
