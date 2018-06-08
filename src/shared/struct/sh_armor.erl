@@ -119,7 +119,7 @@ apply_to_attributes (Ar, Att) ->
    Speed = sh_attributes:get_speed(Att),
    Strength = sh_attributes:get_strength(Att),
    Mind = sh_attributes:get_mind(Att),
-   Impact = erlang:ceil(20.0 * Ar#armor.coef),
+   Impact = sh_math_util:ceil(20.0 * Ar#armor.coef),
    Category = Ar#armor.category,
 
    case Category of
@@ -166,4 +166,4 @@ get_resistance_to (DamageType, Armor) ->
    ArmorCoefficient = Armor#armor.coef,
    ActualResistance = (ArmorCoefficient * BaseResistance),
 
-   erlang:ceil(ActualResistance).
+   sh_math_util:ceil(ActualResistance).

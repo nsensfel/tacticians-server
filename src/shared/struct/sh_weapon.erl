@@ -124,7 +124,7 @@ get_ranges (Wp) ->
 get_damages (Wp) ->
    Coef = Wp#weapon.coef,
    {Min, Max} = damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod),
-   {erlang:ceil(Min * Coef), erlang:ceil(Max * Coef)}.
+   {sh_math_util:ceil(Min * Coef), sh_math_util:ceil(Max * Coef)}.
 
 -spec can_parry (type()) -> boolean().
 can_parry (Wp) -> (Wp#weapon.range_type == melee).
@@ -397,8 +397,8 @@ apply_to_attributes (Weapon, Attributes) ->
    DamageModifier = Weapon#weapon.damage_mod,
 
    Impact = (20.0 * Weapon#weapon.coef),
-   FullImpact = erlang:ceil(Impact),
-   QuarterImpact = erlang:ceil(Impact / 4.0),
+   FullImpact = sh_math_util:ceil(Impact),
+   QuarterImpact = sh_math_util:ceil(Impact / 4.0),
 
    ResultingDexterity =
       case RangeModifier of
