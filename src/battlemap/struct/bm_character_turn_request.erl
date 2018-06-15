@@ -55,7 +55,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec decode (map()) -> type().
 decode (Map) ->
-   CharacterIX = binary_to_integer(maps:get(?CHAR_IX_FIELD, Map)),
+   CharacterIX = maps:get(?CHAR_IX_FIELD, Map),
    EncodedActions = maps:get(?ACTIONS_FIELD, Map),
    Actions = lists:map(fun bm_battle_action:decode/1, EncodedActions),
 
