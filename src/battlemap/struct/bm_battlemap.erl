@@ -38,7 +38,8 @@
 -export
 (
    [
-      random/3
+      random/3,
+      from_list/4
    ]
 ).
 
@@ -111,6 +112,25 @@ get_tile_id (Location, Battlemap) ->
 random (ID, Width, Height) ->
    InitialTile = bm_tile:random_id(),
    TileIDs = generate_random_tile_ids(InitialTile, [], Width, Height, Width),
+
+   #battlemap
+   {
+      id = list_to_binary(integer_to_list(ID)),
+      width = Width,
+      height = Height,
+      tile_ids = array:from_list(TileIDs)
+   }.
+
+-spec from_list
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      non_neg_integer(),
+      list(non_neg_integer())
+   )
+   -> type().
+from_list (ID, Width, Height, List) ->
+   TileIDs = lists:map(fun bm_tile:id_from_int/1, List),
 
    #battlemap
    {

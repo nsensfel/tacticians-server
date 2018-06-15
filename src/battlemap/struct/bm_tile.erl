@@ -21,7 +21,8 @@
 -export
 (
    [
-      random_id/0
+      random_id/0,
+      id_from_int/1
    ]
 ).
 
@@ -37,11 +38,16 @@ cost_when_oob () -> 255.
 
 -spec get_cost (id()) -> non_neg_integer().
 get_cost (N) ->
-   if
-      (N =< 200) -> (N + 8);
-      true -> cost_when_oob()
+   case N of
+      0 -> 6;
+      1 -> 12;
+      2 -> 24;
+      _ -> cost_when_oob()
    end.
 
 -spec random_id () -> id().
 random_id () ->
    sh_roll:between(0, 15).
+
+-spec id_from_int (non_neg_integer()) -> id().
+id_from_int (I) -> I.
