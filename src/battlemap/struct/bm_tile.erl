@@ -58,7 +58,7 @@ class_id_to_type_id (ClassID) ->
       0 -> 0;
       1 -> 1;
       2 -> 2;
-      N when ((N >= 3) and (N =< 16)) -> 3
+      N when ((N >= 3) and (N =< 17)) -> 3
    end.
 
 -spec from_id (id()) -> type().

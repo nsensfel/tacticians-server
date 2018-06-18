@@ -411,7 +411,8 @@ apply_to_attributes (Weapon, Attributes) ->
          light -> (Speed - QuarterImpact)
       end,
 
-   S0Attributes = sh_attributes:set_speed(ResultingSpeed, Attributes),
-   S1Attributes = sh_attributes:set_dexterity(ResultingDexterity, S0Attributes),
+   S0Attributes = sh_attributes:set_unsafe_speed(ResultingSpeed, Attributes),
+   S1Attributes =
+      sh_attributes:set_unsafe_dexterity(ResultingDexterity, S0Attributes),
 
    S1Attributes.
