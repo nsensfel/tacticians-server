@@ -30,7 +30,9 @@ cross (_Battlemap, _ForbiddenLocations, [], Cost, Location) ->
    {Location, Cost};
 cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
    NextLocation = bm_location:apply_direction(Step, Location),
-   NextTile = bm_battlemap:get_tile_id(NextLocation, Battlemap),
+   NextTileClassID = bm_battlemap:get_tile_class_id(NextLocation, Battlemap),
+   NextTileID = bm_tile:class_id_to_type_id(NextTileClassID),
+   NextTile = bm_tile:from_id(NextTileID),
    NextCost = (Cost + bm_tile:get_cost(NextTile)),
    IsForbidden =
       lists:foldl

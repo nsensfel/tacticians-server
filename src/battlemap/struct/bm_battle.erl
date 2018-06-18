@@ -10,8 +10,9 @@
    battle,
    {
       id :: id(),
-      used_armor_ids:: list(sh_armor:id()),
+      used_armor_ids :: list(sh_armor:id()),
       used_weapon_ids :: list(sh_weapon:id()),
+      used_tile_ids :: list(bm_tile:id()),
       battlemap :: bm_battlemap:type(),
       characters :: array:array(bm_character:type()),
       players :: array:array(bm_player:type()),
@@ -33,6 +34,7 @@
       get_id/1,
       get_used_weapon_ids/1,
       get_used_armor_ids/1,
+      get_used_tile_ids/1,
       get_battlemap/1,
       get_characters/1,
       get_character/2,
@@ -57,7 +59,7 @@
 -export
 (
    [
-      new/6
+      new/7
    ]
 ).
 
@@ -89,6 +91,9 @@ get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
 
 -spec get_used_armor_ids (type()) -> list(sh_armor:id()).
 get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
+
+-spec get_used_tile_ids (type()) -> list(bm_tile:id()).
+get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 
 -spec get_battlemap (type()) -> bm_battlemap:type().
 get_battlemap (Battle) -> Battle#battle.battlemap.
@@ -183,15 +188,17 @@ set_current_player_turn (PlayerTurn, Battle) ->
       bm_battlemap:type(),
       list(bm_character:type()),
       list(sh_weapon:id()),
-      list(sh_armor:id())
+      list(sh_armor:id()),
+      list(bm_tile:id())
    )
    -> type().
-new (ID, PlayersAsList, Battlemap, CharactersAsList, UWIDs, UAIDs) ->
+new (ID, PlayersAsList, Battlemap, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
    #battle
    {
       id = ID,
       used_weapon_ids = UWIDs,
       used_armor_ids = UAIDs,
+      used_tile_ids = UTIDs,
       battlemap = Battlemap,
       characters = array:from_list(CharactersAsList),
       players = array:from_list(PlayersAsList),

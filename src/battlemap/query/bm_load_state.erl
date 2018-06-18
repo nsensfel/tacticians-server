@@ -102,11 +102,21 @@ generate_reply (QueryState, Input) ->
          bm_battle:get_used_armor_ids(Battle)
       ),
 
+   AddTileList =
+      lists:map
+      (
+         fun (TileID) ->
+            bm_add_tile:generate(bm_tile:from_id(TileID))
+         end,
+         bm_battle:get_used_tile_ids(Battle)
+      ),
+
    OutputList =
       (
          [SetTimeline, SetMap | AddWeaponList]
          ++ AddArmorList
          ++ AddCharList
+         ++ AddTileList
       ),
    Output = jiffy:encode(OutputList),
 

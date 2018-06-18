@@ -12,7 +12,7 @@
       id :: id(),
       width :: integer(),
       height :: integer(),
-      tile_ids :: array:array(bm_tile:id())
+      tile_class_ids :: array:array(bm_tile:class_id())
    }
 ).
 
@@ -30,15 +30,14 @@
       get_id/1,
       get_width/1,
       get_height/1,
-      get_tile_ids/1,
-      get_tile_id/2
+      get_tile_class_ids/1,
+      get_tile_class_id/2
    ]
 ).
 
 -export
 (
    [
-      random/3,
       from_list/4
    ]
 ).
@@ -46,27 +45,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_random_tile_ids
-   (
-      bm_tile:id(),
-      list(bm_tile:id()),
-      non_neg_integer(),
-      non_neg_integer(),
-      non_neg_integer()
-   )
-   -> list(bm_tile:id()).
-generate_random_tile_ids (_PreviousTileID, Result, _X, 0, _Width) ->
-   Result;
-generate_random_tile_ids (PreviousTileID, Result, 0, Y, Width) ->
-   generate_random_tile_ids(PreviousTileID, Result, Width, (Y - 1), Width);
-generate_random_tile_ids (PreviousTileID, Result, X, Y, Width) ->
-   NewTile =
-      case sh_roll:percentage() of
-         N when (N >= 10) -> PreviousTileID;
-         _ -> bm_tile:random_id()
-      end,
-   generate_random_tile_ids(NewTile, [NewTile|Result], (X - 1), Y, Width).
-
 -spec location_to_array_index
    (
       non_neg_integer(),
@@ -94,32 +72,13 @@ get_width (Battlemap) -> Battlemap#battlemap.width.
 -spec get_height (type()) -> integer().
 get_height (Battlemap) -> Battlemap#battlemap.height.
 
--spec get_tile_ids (type()) -> array:array(bm_tile:id()).
-get_tile_ids (Battlemap) -> Battlemap#battlemap.tile_ids.
+-spec get_tile_class_ids (type()) -> array:array(bm_tile:class_id()).
+get_tile_class_ids (Battlemap) -> Battlemap#battlemap.tile_class_ids.
 
--spec get_tile_id (bm_location:type(), type()) -> bm_tile:id().
-get_tile_id (Location, Battlemap) ->
+-spec get_tile_class_id (bm_location:type(), type()) -> bm_tile:class_id().
+get_tile_class_id (Location, Battlemap) ->
    TileIX = location_to_array_index(Battlemap#battlemap.width, Location),
-   array:get(TileIX, Battlemap#battlemap.tile_ids).
-
--spec random
-   (
-      non_neg_integer(),
-      non_neg_integer(),
-      non_neg_integer()
-   )
-   -> type().
-random (ID, Width, Height) ->
-   InitialTile = bm_tile:random_id(),
-   TileIDs = generate_random_tile_ids(InitialTile, [], Width, Height, Width),
-
-   #battlemap
-   {
-      id = list_to_binary(integer_to_list(ID)),
-      width = Width,
-      height = Height,
-      tile_ids = array:from_list(TileIDs)
-   }.
+   array:get(TileIX, Battlemap#battlemap.tile_class_ids).
 
 -spec from_list
    (
@@ -130,12 +89,12 @@ random (ID, Width, Height) ->
    )
    -> type().
 from_list (ID, Width, Height, List) ->
-   TileIDs = lists:map(fun bm_tile:id_from_int/1, List),
+   TileClassIDs = lists:map(fun bm_tile:class_id_from_int/1, List),
 
    #battlemap
    {
       id = list_to_binary(integer_to_list(ID)),
       width = Width,
       height = Height,
-      tile_ids = array:from_list(TileIDs)
+      tile_class_ids = array:from_list(TileClassIDs)
    }.

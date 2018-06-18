@@ -23,6 +23,9 @@ generate (Battlemap) ->
          {<<"msg">>, <<"set_map">>},
          {<<"w">>, bm_battlemap:get_width(Battlemap)},
          {<<"h">>, bm_battlemap:get_height(Battlemap)},
-         {<<"t">>, array:sparse_to_list(bm_battlemap:get_tile_ids(Battlemap))}
+         {
+            <<"t">>,
+            array:sparse_to_list(bm_battlemap:get_tile_class_ids(Battlemap))
+         }
       ]
    }.

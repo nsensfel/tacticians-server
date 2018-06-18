@@ -154,6 +154,20 @@ generate_random_battle () ->
          Characters
       ),
 
+   UsedTileIDs =
+      array:sparse_foldl
+      (
+         fun (_IX, TileClassID, CurrentTileIDs) ->
+            sets:add_element
+            (
+               bm_tile:class_id_to_type_id(TileClassID),
+               CurrentTileIDs
+            )
+         end,
+         sets:new(),
+         bm_battlemap:get_tile_class_ids(Battlemap)
+      ),
+
    Battle =
       bm_battle:new
       (
@@ -162,7 +176,8 @@ generate_random_battle () ->
          Battlemap,
          Characters,
          sets:to_list(UsedWeaponIDs),
-         sets:to_list(UsedArmorIDs)
+         sets:to_list(UsedArmorIDs),
+         sets:to_list(UsedTileIDs)
       ),
 
    Battle.
