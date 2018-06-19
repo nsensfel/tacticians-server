@@ -94,13 +94,16 @@ from_id (3) ->
    {
       id = 3,
       name = <<"[Grassland] Clear Water">>,
-      cost = cost_when_oob(),
+      cost = cost_when_occupied(),
       class_range_min = 3,
       class_range_max = 17
    }.
 
 -spec cost_when_oob () -> non_neg_integer().
 cost_when_oob () -> 255.
+
+-spec cost_when_occupied () -> non_neg_integer().
+cost_when_occupied () -> 201.
 
 -spec get_id (type()) -> non_neg_integer().
 get_id (Tile) -> Tile#tile.id.
