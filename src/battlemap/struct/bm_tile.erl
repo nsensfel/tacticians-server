@@ -68,8 +68,8 @@ from_id (0) ->
       id = 0,
       name = <<"[Grassland] Grass">>,
       cost = 6,
-      class_range_min = 1,
-      class_range_max = 1
+      class_range_min = 0,
+      class_range_max = 0
    };
 from_id (1) ->
    #tile
@@ -92,7 +92,7 @@ from_id (2) ->
 from_id (3) ->
    #tile
    {
-      id = 2,
+      id = 3,
       name = <<"[Grassland] Clear Water">>,
       cost = cost_when_oob(),
       class_range_min = 3,

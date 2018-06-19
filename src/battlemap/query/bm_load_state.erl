@@ -113,10 +113,10 @@ generate_reply (QueryState, Input) ->
 
    OutputList =
       (
-         [SetTimeline, SetMap | AddWeaponList]
+         AddTileList
+         ++ [SetTimeline, SetMap | AddWeaponList]
          ++ AddArmorList
          ++ AddCharList
-         ++ AddTileList
       ),
    Output = jiffy:encode(OutputList),
 
