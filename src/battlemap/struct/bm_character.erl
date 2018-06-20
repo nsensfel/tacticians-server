@@ -19,7 +19,7 @@
       weapon_ids :: {sh_weapon:id(), sh_weapon:id()},
       armor_id :: sh_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
-      current_health :: non_neg_integer(),
+      current_health :: integer(), %% Negative integers let us reverse attacks.
       active :: boolean()
    }
 ).
@@ -134,7 +134,7 @@ get_location (Char) ->
    true = get_is_alive(Char),
    Char#character.location.
 
--spec get_current_health (type()) -> non_neg_integer().
+-spec get_current_health (type()) -> integer().
 get_current_health (Char) -> Char#character.current_health.
 
 -spec get_is_alive (type()) -> boolean().
@@ -161,11 +161,11 @@ set_location (Location, Char) ->
       location = Location
    }.
 
--spec set_current_health (non_neg_integer(), type()) -> type().
+-spec set_current_health (integer(), type()) -> type().
 set_current_health (Health, Char) ->
    Char#character
    {
-      current_health = max(0, Health)
+      current_health = Health
    }.
 
 -spec set_is_active (boolean(), type()) -> type().
