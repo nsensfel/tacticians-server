@@ -174,8 +174,7 @@ new (BaseAttributes, WeaponIDs, ArmorID) ->
          (
             average([Mind, Constitution, Constitution, Speed, Speed, Speed])
          ),
-      health =
-         gentle_squared_growth(average([Mind, Constitution, Constitution])),
+      health = gentle_squared_growth(Constitution),
       dodges =
          min_max(0, 100, sudden_exp_growth(average([Dexterity, Mind, Speed]))),
       parries =
