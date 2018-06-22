@@ -310,7 +310,7 @@ handle_attack (BattleAction, Update) ->
          AttackEffects
       ),
 
-   DBQuery =
+   DBQuery0 =
       sh_db_query:update_indexed
       (
          bm_battle:get_characters_field(),
@@ -324,15 +324,36 @@ handle_attack (BattleAction, Update) ->
          ]
       ),
 
+   DBQuery1 =
+      sh_db_query:update_indexed
+      (
+         bm_battle:get_characters_field(),
+         CharacterIX,
+         [
+            sh_db_query:set_field
+            (
+               bm_character:get_current_health_field(),
+               RemainingAttackerHealth
+            )
+         ]
+      ),
+
    S0Update =
       bm_character_turn_update:add_to_timeline
       (
          TimelineItem,
-         DBQuery,
+         DBQuery0,
          Update
       ),
 
-   bm_character_turn_update:set_data(S1Data, S0Update).
+   S1Update =
+      bm_character_turn_update:add_to_db
+      (
+         DBQuery1,
+         S0Update
+      ),
+
+   bm_character_turn_update:set_data(S1Data, S1Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

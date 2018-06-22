@@ -188,6 +188,18 @@ apply_to_healths
    {nothing, AttackerHealth, DefenderHealth};
 apply_to_healths
 (
+   _Attack,
+   AttackerHealth,
+   DefenderHealth
+)
+when
+(
+   (AttackerHealth =< 0)
+   or (DefenderHealth =< 0)
+) ->
+   {nothing, AttackerHealth, DefenderHealth};
+apply_to_healths
+(
    Attack,
    AttackerHealth,
    DefenderHealth
@@ -200,17 +212,11 @@ when
 ) ->
    Damage = Attack#attack.damage,
 
-   case AttackerHealth of
-      N when (N =< 0) ->
-         {nothing, AttackerHealth, DefenderHealth};
-
-      _ ->
-         {
-            Attack,
-            AttackerHealth,
-            (DefenderHealth - Damage)
-         }
-   end;
+   {
+      Attack,
+      AttackerHealth,
+      (DefenderHealth - Damage)
+   };
 apply_to_healths
 (
    Attack,
@@ -228,18 +234,11 @@ when
 ) ->
    Damage = Attack#attack.damage,
 
-   %% This actually allows you to parry the counter of a dead character.
-   case DefenderHealth of
-      N when (N =< 0) ->
-         {nothing, AttackerHealth, DefenderHealth};
-
-      _ ->
-         {
-            Attack,
-            (AttackerHealth - Damage),
-            DefenderHealth
-         }
-   end.
+   {
+      Attack,
+      (AttackerHealth - Damage),
+      DefenderHealth
+   }.
 
 -spec get_sequence
    (
