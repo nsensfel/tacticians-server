@@ -40,15 +40,10 @@ attributes_as_json (Attributes) ->
    )
    -> {list(any())}.
 generate (IX, Character, PlayerID) ->
-   IsAlive = bm_character:get_is_alive(Character),
    Attributes = bm_character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = bm_character:get_weapon_ids(Character),
    OwnerID = bm_character:get_owner_id(Character),
-   Location =
-      case IsAlive of
-         true -> bm_character:get_location(Character);
-         _ -> bm_location:get_nowhere()
-      end,
+   Location = bm_character:get_location(Character),
 
    {
       [

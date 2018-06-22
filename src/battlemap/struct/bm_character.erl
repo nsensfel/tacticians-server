@@ -130,9 +130,7 @@ get_weapon_ids (Char) -> Char#character.weapon_ids.
 get_statistics (Char) -> Char#character.statistics.
 
 -spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
-get_location (Char) ->
-   true = get_is_alive(Char),
-   Char#character.location.
+get_location (Char) -> Char#character.location.
 
 -spec get_current_health (type()) -> integer().
 get_current_health (Char) -> Char#character.current_health.

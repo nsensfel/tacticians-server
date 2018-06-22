@@ -201,14 +201,14 @@ when
    Damage = Attack#attack.damage,
 
    case AttackerHealth of
-      0 ->
+      N when (N =< 0) ->
          {nothing, AttackerHealth, DefenderHealth};
 
       _ ->
          {
             Attack,
             AttackerHealth,
-            max(0, (DefenderHealth - Damage))
+            (DefenderHealth - Damage)
          }
    end;
 apply_to_healths
@@ -228,14 +228,15 @@ when
 ) ->
    Damage = Attack#attack.damage,
 
+   %% This actually allows you to parry the counter of a dead character.
    case DefenderHealth of
-      0 ->
+      N when (N =< 0) ->
          {nothing, AttackerHealth, DefenderHealth};
 
       _ ->
          {
             Attack,
-            max(0, (AttackerHealth - Damage)),
+            (AttackerHealth - Damage),
             DefenderHealth
          }
    end.
