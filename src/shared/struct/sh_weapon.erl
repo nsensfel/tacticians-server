@@ -86,8 +86,8 @@ ranges_of_type (melee, short) -> {0, 1}.
       damage_modifier()
    )
    -> {non_neg_integer(), non_neg_integer()}.
-damages_of_type (ranged, heavy) -> {10, 25};
-damages_of_type (ranged, light) -> {5, 20};
+damages_of_type (ranged, heavy) -> {15, 30};
+damages_of_type (ranged, light) -> {10, 25};
 damages_of_type (melee, heavy) -> {20, 35};
 damages_of_type (melee, light) -> {15, 30}.
 
@@ -138,7 +138,7 @@ from_id (0) ->
       range_mod = short,
       damage_type = blunt,
       damage_mod = light,
-      coef = 1.0
+      coef = 0.3
    };
 from_id (1) ->
    #weapon{

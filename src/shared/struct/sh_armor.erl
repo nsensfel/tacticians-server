@@ -166,17 +166,17 @@ get_resistance_to (DamageType, Armor) ->
    BaseResistance =
       case {DamageType, ArmorCategory} of
          {slash, kinetic} -> 0.0;
-         {slash, leather} -> 5.0;
-         {slash, chain} -> 10.0;
-         {slash, plate} -> 10.0;
-         {blunt, kinetic} -> 10.0;
-         {blunt, leather} -> 5.0;
-         {blunt, chain} -> 5.0;
-         {blunt, plate} -> 5.0;
-         {pierce, kinetic} -> 5.0;
-         {pierce, leather} -> 5.0;
-         {pierce, chain} -> 5.0;
-         {pierce, plate} -> 10.0
+         {slash, leather} -> 15.0;
+         {slash, chain} -> 20.0;
+         {slash, plate} -> 20.0;
+         {blunt, kinetic} -> 15.0;
+         {blunt, leather} -> 15.0;
+         {blunt, chain} -> 15.0;
+         {blunt, plate} -> 15.0;
+         {pierce, kinetic} -> 15.0;
+         {pierce, leather} -> 15.0;
+         {pierce, chain} -> 15.0;
+         {pierce, plate} -> 20.0
       end,
 
    ArmorCoefficient = Armor#armor.coef,
