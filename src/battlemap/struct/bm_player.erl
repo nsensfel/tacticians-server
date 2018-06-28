@@ -9,6 +9,7 @@
 (
    player,
    {
+      ix :: non_neg_integer(),
       id :: id(),
       timeline :: list(any())
    }
@@ -24,6 +25,7 @@
 (
    [
       get_id/1,
+      get_index/1,
       get_timeline/1,
       add_to_timeline/2,
       reset_timeline/1,
@@ -35,7 +37,7 @@
 -export
 (
    [
-      new/1
+      new/2
    ]
 ).
 
@@ -48,6 +50,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_id (type()) -> id().
 get_id (Player) -> Player#player.id.
+
+-spec get_index (type()) -> non_neg_integer().
+get_index (Player) -> Player#player.ix.
 
 -spec get_timeline (type()) -> list(any()).
 get_timeline (Player) -> Player#player.timeline.
@@ -64,10 +69,11 @@ add_to_timeline (NewEvents, Player) ->
 -spec reset_timeline (type()) -> type().
 reset_timeline (Player) -> Player#player{ timeline = [] }.
 
--spec new (id()) -> type().
-new (ID) ->
+-spec new (non_neg_integer(), id()) -> type().
+new (IX, ID) ->
    #player
    {
+      ix = IX,
       id = ID,
       timeline = []
    }.

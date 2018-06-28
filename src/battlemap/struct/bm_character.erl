@@ -4,6 +4,7 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type id() :: non_neg_integer().
+-type rank() :: ('optional' | 'target' | 'commander').
 
 -record
 (
@@ -12,6 +13,7 @@
       id :: id(),
       owner_id :: bm_player:id(),
       name :: binary(),
+      rank :: rank(),
       icon :: binary(),
       portrait :: binary(),
       attributes :: sh_attributes:type(),
@@ -26,7 +28,7 @@
 
 -opaque type() :: #character{}.
 
--export_type([type/0, id/0]).
+-export_type([type/0, rank/0, id/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,6 +39,7 @@
       get_id/1,
       get_owner_id/1,
       get_name/1,
+      get_rank/1,
       get_icon/1,
       get_portrait/1,
       get_attributes/1,
@@ -110,6 +113,9 @@ get_owner_id (Char) -> Char#character.owner_id.
 
 -spec get_name (type()) -> binary().
 get_name (Char) -> Char#character.name.
+
+-spec get_rank (type()) -> rank().
+get_rank (Char) -> Char#character.rank.
 
 -spec get_icon (type()) -> binary().
 get_icon (Char) -> Char#character.icon.
@@ -224,6 +230,11 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       id = ID,
       owner_id = OwnerID,
       name = list_to_binary("Char" ++ IDAsListString),
+      rank =
+         if
+            ((ID rem 8) == 0) -> commander;
+            true -> optional
+         end,
       icon = IDAsBinaryString,
       portrait = IDAsBinaryString,
       attributes = Attributes,

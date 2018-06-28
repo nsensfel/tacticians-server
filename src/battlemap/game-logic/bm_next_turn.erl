@@ -114,17 +114,28 @@ update (Update) ->
       activate_next_players_characters(S1Battle, NextPlayer),
 
    S0Data = bm_character_turn_data:set_battle(S2Battle, Data),
-   S0Update = bm_character_turn_update:set_data(S0Data, Update),
+   S0Update =
+      bm_character_turn_update:add_to_timeline
+      (
+         bm_turn_result:new_player_turn_started
+         (
+            bm_player:get_index(NextPlayer)
+         ),
+         DBQuery0,
+         Update
+      ),
 
-   S1Update =
+   S1Update = bm_character_turn_update:set_data(S0Data, S0Update),
+
+   S2Update =
       lists:foldl
       (
          fun bm_character_turn_update:add_to_db/2,
-         S0Update,
-         [DBQuery0|[DBQuery1|DBQueries]]
+         S1Update,
+         [DBQuery1|DBQueries]
       ),
 
-   S1Update.
+   S2Update.
 
 -spec requires_update (bm_character_turn_update:type()) -> boolean().
 requires_update (Update) ->

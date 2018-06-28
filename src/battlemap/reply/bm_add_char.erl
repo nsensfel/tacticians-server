@@ -12,6 +12,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec rank_to_string (bm_character:rank()) -> binary().
+rank_to_string (Rank) ->
+   case Rank of
+      optional -> <<"o">>;
+      target -> <<"t">>;
+      commander -> <<"c">>
+   end.
+
 -spec attributes_as_json
    (
       sh_attributes:type()
@@ -50,6 +58,7 @@ generate (IX, Character, PlayerID) ->
          {<<"msg">>, <<"add_char">>},
          {<<"ix">>, IX},
          {<<"nam">>, bm_character:get_name(Character)},
+         {<<"rnk">>, rank_to_string(bm_character:get_rank(Character))},
          {<<"ico">>, bm_character:get_icon(Character)},
          {<<"prt">>, bm_character:get_portrait(Character)},
          {

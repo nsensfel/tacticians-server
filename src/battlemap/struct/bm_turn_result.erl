@@ -32,7 +32,38 @@
    }
 ).
 
--opaque type() :: (#switched_weapon{} | #moved{} | #attacked{}).
+-record
+(
+   player_won,
+   {
+      player_ix :: non_neg_integer()
+   }
+).
+
+-record
+(
+   player_lost,
+   {
+      player_ix :: non_neg_integer()
+   }
+).
+
+-record
+(
+   player_turn_started,
+   {
+      player_ix :: non_neg_integer()
+   }
+).
+
+-opaque type() :: (
+   #switched_weapon{}
+   | #moved{}
+   | #attacked{}
+   | #player_won{}
+   | #player_lost{}
+   | #player_turn_started{}
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,6 +73,9 @@
 -export
 (
    [
+      new_player_won/1,
+      new_player_lost/1,
+      new_player_turn_started/1,
       new_character_switched_weapons/1,
       new_character_moved/3,
       new_character_attacked/3
@@ -62,6 +96,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec new_player_won (non_neg_integer()) -> type().
+new_player_won (PlayerIX) ->
+   #player_won { player_ix = PlayerIX }.
+
+-spec new_player_lost (non_neg_integer()) -> type().
+new_player_lost (PlayerIX) ->
+   #player_lost { player_ix = PlayerIX }.
+
+-spec new_player_turn_started (non_neg_integer()) -> type().
+new_player_turn_started (PlayerIX) ->
+   #player_turn_started { player_ix = PlayerIX }.
+
 -spec new_character_switched_weapons (bm_character:id()) -> type().
 new_character_switched_weapons (CharacterIX) ->
    #switched_weapon { character_ix = CharacterIX }.
@@ -135,6 +181,33 @@ encode (TurnResult) when is_record(TurnResult, attacked) ->
          {<<"aix">>, AttackerIX},
          {<<"dix">>, DefenderIX},
          {<<"seq">>, EncodedSequence}
+      ]
+   };
+encode (TurnResult) when is_record(TurnResult, player_won) ->
+   PlayerIX = TurnResult#player_won.player_ix,
+
+   {
+      [
+         {<<"t">>, <<"pwo">>},
+         {<<"ix">>, PlayerIX}
+      ]
+   };
+encode (TurnResult) when is_record(TurnResult, player_lost) ->
+   PlayerIX = TurnResult#player_lost.player_ix,
+
+   {
+      [
+         {<<"t">>, <<"plo">>},
+         {<<"ix">>, PlayerIX}
+      ]
+   };
+encode (TurnResult) when is_record(TurnResult, player_turn_started) ->
+   PlayerIX = TurnResult#player_turn_started.player_ix,
+
+   {
+      [
+         {<<"t">>, <<"pts">>},
+         {<<"ix">>, PlayerIX}
       ]
    };
 encode (Other) ->
