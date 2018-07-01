@@ -22,7 +22,7 @@ set_player_turn_to_next (Battle) ->
    Players = bm_battle:get_players(Battle),
    CurrentPlayerTurn = bm_battle:get_current_player_turn(Battle),
 
-   NextPlayerTurn = bm_player_turn:next(array:size(Players), CurrentPlayerTurn),
+   NextPlayerTurn = bm_player_turn:next(Players, CurrentPlayerTurn),
 
    UpdatedBattle = bm_battle:set_current_player_turn(NextPlayerTurn, Battle),
 
@@ -86,7 +86,7 @@ activate_next_players_characters (Battle, NextPlayer) ->
                [
                   sh_db_query:set_field
                   (
-                     bm_character:get_active_field(),
+                     bm_character:get_is_active_field(),
                      true
                   )
                ]

@@ -40,6 +40,30 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-spec next_valid_player
+   (
+      non_neg_integer(),
+      array:array(bm_player:type()),
+      non_neg_integer(),
+      non_neg_integer()
+   ) -> non_neg_integer().
+next_valid_player (StartingPoint, _Players, _PlayersCount, StartingPoint) ->
+   StartingPoint;
+next_valid_player (CandidateIX, Players, PlayersCount, StartingPoint) ->
+   Candidate = array:get(CandidateIX, Players),
+
+   case bm_player:get_is_active(Candidate) of
+      true -> CandidateIX;
+      _ ->
+         next_valid_player
+         (
+            ((CandidateIX + 1) rem PlayersCount),
+            Players,
+            PlayersCount,
+            StartingPoint
+         )
+   end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -58,15 +82,23 @@ get_number (PlayerTurn) -> PlayerTurn#player_turn.number.
 -spec get_player_ix (type()) -> non_neg_integer().
 get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.
 
--spec next (non_neg_integer(), type()) -> type().
-next (PlayersCount, CurrentPlayerTurn) ->
+-spec next (array:array(bm_player:type()), type()) -> type().
+next (Players, CurrentPlayerTurn) ->
    CurrentPlayerIX = CurrentPlayerTurn#player_turn.player_ix,
    CurrentTurnNumber = CurrentPlayerTurn#player_turn.number,
 
-   NextPlayerIX = ((CurrentPlayerIX + 1) rem PlayersCount),
+   NextPlayerIX =
+      next_valid_player
+      (
+         CurrentPlayerIX,
+         Players,
+         array:size(Players),
+         CurrentPlayerIX
+      ),
+
    NextTurnNumber =
-      case NextPlayerIX of
-         0 -> (CurrentTurnNumber + 1);
+      case (NextPlayerIX < CurrentPlayerIX) of
+         true -> (CurrentTurnNumber + 1);
          _ -> CurrentTurnNumber
       end,
 

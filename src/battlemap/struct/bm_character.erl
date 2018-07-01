@@ -4,7 +4,7 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type id() :: non_neg_integer().
--type rank() :: ('optional' | 'target' | 'commander').
+-type rank() :: ('optional' | 'target' | 'commander' | 'defeated').
 
 -record
 (
@@ -22,7 +22,7 @@
       armor_id :: sh_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
-      active :: boolean()
+      is_active :: boolean()
    }
 ).
 
@@ -62,7 +62,7 @@
       get_weapons_field/0,
       get_location_field/0,
       get_current_health_field/0,
-      get_active_field/0
+      get_is_active_field/0
    ]
 ).
 
@@ -148,9 +148,9 @@ get_is_alive (Char) ->
 -spec get_is_active (type()) -> boolean().
 get_is_active (Char) ->
    (
-      Char#character.active
-      and
-      get_is_alive(Char)
+      (Char#character.rank /= defeated)
+      and Char#character.is_active
+      and get_is_alive(Char)
    ).
 
 -spec set_location
@@ -176,7 +176,7 @@ set_current_health (Health, Char) ->
 set_is_active (Active, Char) ->
    Char#character
    {
-      active = Active
+      is_active = Active
    }.
 
 -spec set_armor_id (sh_armor:id(), type()) -> type().
@@ -243,7 +243,7 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       statistics = Statistics,
       location = Location,
       current_health = sh_statistics:get_health(Statistics),
-      active = false
+      is_active = false
    }.
 
 -spec get_statistics_field() -> non_neg_integer().
@@ -254,5 +254,5 @@ get_weapons_field () -> #character.weapon_ids.
 get_location_field () -> #character.location.
 -spec get_current_health_field() -> non_neg_integer().
 get_current_health_field () -> #character.current_health.
--spec get_active_field() -> non_neg_integer().
-get_active_field () -> #character.active.
+-spec get_is_active_field() -> non_neg_integer().
+get_is_active_field () -> #character.is_active.

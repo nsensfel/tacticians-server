@@ -137,7 +137,7 @@ generate_random_battle () ->
    %Battlemap = bm_battlemap:random(0, BattlemapWidth, BattlemapHeight),
    Battlemap = bm_battlemap:from_list(0, 32, 32, demo_map()),
    Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
-   PlayersAsList = [bm_player:new(0, <<"0">>), bm_player:new(1, <<"1">>)],
+   PlayersAsList = [bm_player:new(0, 8, <<"0">>), bm_player:new(1, 0, <<"1">>)],
 
    {UsedWeaponIDs, UsedArmorIDs} =
       lists:foldl

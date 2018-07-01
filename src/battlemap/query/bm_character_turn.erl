@@ -119,7 +119,7 @@ finalize_character (Update) ->
       (
          bm_battle:get_characters_field(),
          bm_character_turn_data:get_character_ix(Data),
-         [ sh_db_query:set_field(bm_character:get_active_field(), false) ]
+         [ sh_db_query:set_field(bm_character:get_is_active_field(), false) ]
       ),
 
    S0Update = bm_character_turn_update:set_data(FinalizedData, Update),
