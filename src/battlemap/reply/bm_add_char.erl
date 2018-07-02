@@ -17,7 +17,8 @@ rank_to_string (Rank) ->
    case Rank of
       optional -> <<"o">>;
       target -> <<"t">>;
-      commander -> <<"c">>
+      commander -> <<"c">>;
+      defeated -> <<"d">>
    end.
 
 -spec attributes_as_json

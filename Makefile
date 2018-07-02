@@ -12,7 +12,8 @@ WWW_DIR ?= ${CURDIR}/www
 LOG_DIR ?= ${CURDIR}/log
 
 ## Local only?
-ERL_NAME_VS_SNAME ?= -name
+#ERL_NAME_VS_SNAME ?= -name
+ERL_NAME_VS_SNAME ?= -sname
 
 ## Binaries
 ERLC ?= erlc

@@ -43,7 +43,7 @@ handle_player_defeat (PlayerIX, Update) ->
    S1Update =
       lists:foldl
       (
-         fun (NextUpdate, IX) ->
+         fun (IX, NextUpdate) ->
             bm_character_turn_update:add_to_db
             (
                sh_db_query:update_indexed
@@ -79,7 +79,7 @@ handle_player_defeat (PlayerIX, Update) ->
          [
             sh_db_query:set_field
             (
-               bm_character:get_is_active_field(),
+               bm_player:get_is_active_field(),
                false
             )
          ]
