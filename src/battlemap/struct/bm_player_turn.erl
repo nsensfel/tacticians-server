@@ -86,13 +86,14 @@ get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.
 next (Players, CurrentPlayerTurn) ->
    CurrentPlayerIX = CurrentPlayerTurn#player_turn.player_ix,
    CurrentTurnNumber = CurrentPlayerTurn#player_turn.number,
+   PlayersCount = array:size(Players),
 
    NextPlayerIX =
       next_valid_player
       (
-         CurrentPlayerIX,
+         ((CurrentPlayerIX + 1) rem PlayersCount),
          Players,
-         array:size(Players),
+         PlayersCount,
          CurrentPlayerIX
       ),
 
