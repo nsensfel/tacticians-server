@@ -64,6 +64,19 @@ fetch_data (Input) ->
 generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
    Battle = QueryState#query_state.battle,
+   Players = bm_battle:get_players(Battle),
+
+   PlayerIX =
+      sh_array_util:first
+      (
+         fun (Player) ->
+            (bm_player:get_id(Player) == PlayerID)
+         end,
+         Players
+      ),
+
+   true = (PlayerIX >= 0),
+
    SetTimeline =
       bm_set_timeline:generate
       (
@@ -78,7 +91,7 @@ generate_reply (QueryState, Input) ->
          array:map
          (
             fun (IX, Character) ->
-               bm_add_char:generate(IX, Character, PlayerID)
+               bm_add_char:generate(IX, Character, PlayerIX)
             end,
             bm_battle:get_characters(Battle)
          )

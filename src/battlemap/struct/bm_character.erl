@@ -11,7 +11,7 @@
    character,
    {
       id :: id(),
-      owner_id :: bm_player:id(),
+      player_ix :: non_neg_integer(),
       name :: binary(),
       rank :: rank(),
       icon :: binary(),
@@ -37,7 +37,7 @@
 (
    [
       get_id/1,
-      get_owner_id/1,
+      get_player_index/1,
       get_name/1,
       get_rank/1,
       get_icon/1,
@@ -51,6 +51,7 @@
       get_is_alive/1,
       get_is_active/1,
 
+      set_rank/2,
       set_weapon_ids/2,
       set_armor_id/2,
       set_statistics/2,
@@ -58,6 +59,7 @@
       set_current_health/2,
       set_is_active/2,
 
+      get_rank_field/0,
       get_statistics_field/0,
       get_weapons_field/0,
       get_location_field/0,
@@ -108,8 +110,8 @@ find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
 -spec get_id (type()) -> id().
 get_id (Char) -> Char#character.id.
 
--spec get_owner_id (type()) -> bm_player:id().
-get_owner_id (Char) -> Char#character.owner_id.
+-spec get_player_index (type()) -> non_neg_integer().
+get_player_index (Char) -> Char#character.player_ix.
 
 -spec get_name (type()) -> binary().
 get_name (Char) -> Char#character.name.
@@ -152,6 +154,13 @@ get_is_active (Char) ->
       and Char#character.is_active
       and get_is_alive(Char)
    ).
+
+-spec set_rank (rank(), type()) -> type().
+set_rank (Rank, Char) ->
+   Char#character
+   {
+      rank = Rank
+   }.
 
 -spec set_location
    (
@@ -209,13 +218,13 @@ set_statistics (Stats, Char) ->
 -spec random
    (
       non_neg_integer(),
-      bm_player:id(),
+      non_neg_integer(),
       non_neg_integer(),
       non_neg_integer(),
       list({non_neg_integer(), non_neg_integer()})
    )
    -> type().
-random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
+random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    Location =
       find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations),
    WeaponIDs = {sh_weapon:random_id(), sh_weapon:random_id()},
@@ -228,7 +237,7 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    #character
    {
       id = ID,
-      owner_id = OwnerID,
+      player_ix = PlayerIX,
       name = list_to_binary("Char" ++ IDAsListString),
       rank =
          if
@@ -246,6 +255,8 @@ random (ID, OwnerID, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       is_active = false
    }.
 
+-spec get_rank_field() -> non_neg_integer().
+get_rank_field () -> #character.rank.
 -spec get_statistics_field() -> non_neg_integer().
 get_statistics_field () -> #character.statistics.
 -spec get_weapons_field() -> non_neg_integer().

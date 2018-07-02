@@ -73,10 +73,14 @@ assert_user_is_current_player (Data, Request) ->
    ) -> 'ok'.
 assert_user_owns_played_character (Data, Request) ->
    PlayerID = bm_character_turn_request:get_player_id(Request),
+   Battle = bm_character_turn_data:get_battle(Data),
+   Players = bm_battle:get_players(Battle),
    Character = bm_character_turn_data:get_character(Data),
-   CharacterOwnerID = bm_character:get_owner_id(Character),
+   CharacterPlayerIX = bm_character:get_player_index(Character),
+   CharacterPlayer = array:get(CharacterPlayerIX, Players),
+   CharacterPlayerID = bm_player:get_id(CharacterPlayer),
 
-   true = (PlayerID == CharacterOwnerID),
+   true = (PlayerID == CharacterPlayerID),
 
    ok.
 

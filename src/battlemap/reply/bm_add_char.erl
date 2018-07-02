@@ -44,13 +44,13 @@ attributes_as_json (Attributes) ->
    (
       non_neg_integer(),
       bm_character:type(),
-      bm_player:id()
+      non_neg_integer()
    )
    -> {list(any())}.
-generate (IX, Character, PlayerID) ->
+generate (IX, Character, PlayerIX) ->
    Attributes = bm_character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = bm_character:get_weapon_ids(Character),
-   OwnerID = bm_character:get_owner_id(Character),
+   CharacterPlayerIX = bm_character:get_player_index(Character),
    Location = bm_character:get_location(Character),
 
    {
@@ -66,13 +66,12 @@ generate (IX, Character, PlayerID) ->
             bm_character:get_current_health(Character)
          },
          {<<"lc">>, bm_location:encode(Location)},
-         {<<"pla">>, OwnerID},
+         {<<"pla">>, CharacterPlayerIX},
          {
             <<"ena">>,
             (
                bm_character:get_is_active(Character)
-               and
-               (OwnerID == PlayerID)
+               and (CharacterPlayerIX == PlayerIX)
             )
          },
          {<<"att">>, attributes_as_json(Attributes)},

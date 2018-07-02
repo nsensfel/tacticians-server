@@ -60,14 +60,14 @@ reset_next_player_timeline (Battle) ->
 -spec activate_next_players_characters (bm_battle:type(), bm_player:type())
    -> {bm_battle:type(), list(sh_db_query:op())}.
 activate_next_players_characters (Battle, NextPlayer) ->
-   NextPlayerID = bm_player:get_id(NextPlayer),
+   NextPlayerIX = bm_player:get_index(NextPlayer),
    Characters = bm_battle:get_characters(Battle),
 
    {UpdatedCharacters, ModifiedIXs} =
       sh_array_util:mapiff
       (
          fun (Character) ->
-            (bm_character:get_owner_id(Character) == NextPlayerID)
+            (bm_character:get_player_index(Character) == NextPlayerIX)
          end,
          fun (Character) ->
             bm_character:set_is_active(true, Character)

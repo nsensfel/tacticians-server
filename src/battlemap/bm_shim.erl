@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate_random_battle/0 ]).
+-export([generate_random_battle/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +37,7 @@ generate_random_characters
    Result;
 generate_random_characters
 (
-   MaxPlayerID,
+   MaxPlayerIX,
    0,
    CharactersPerPlayer,
    TotalCharacterCount,
@@ -47,7 +47,7 @@ generate_random_characters
 ) ->
    generate_random_characters
    (
-      (MaxPlayerID - 1),
+      (MaxPlayerIX - 1),
       CharactersPerPlayer,
       CharactersPerPlayer,
       TotalCharacterCount,
@@ -57,7 +57,7 @@ generate_random_characters
    );
 generate_random_characters
 (
-   MaxPlayerID,
+   MaxPlayerIX,
    PlayerCharacterCount,
    CharactersPerPlayer,
    TotalCharacterCount,
@@ -69,20 +69,20 @@ generate_random_characters
       bm_character:random
       (
          TotalCharacterCount,
-         list_to_binary(integer_to_list(MaxPlayerID)),
+         MaxPlayerIX,
          bm_battlemap:get_width(Battlemap),
          bm_battlemap:get_height(Battlemap),
          ForbiddenLocations
       ),
    Character =
-      case MaxPlayerID of
+      case MaxPlayerIX of
          0 -> bm_character:set_is_active(true, NewCharacter);
          _ -> NewCharacter
       end,
 
    generate_random_characters
    (
-      MaxPlayerID,
+      MaxPlayerIX,
       (PlayerCharacterCount - 1),
       CharactersPerPlayer,
       (TotalCharacterCount + 1),
