@@ -206,9 +206,15 @@ apply_to_healths
 )
 when
 (
-   (Attack#attack.order == first)
-   or (Attack#attack.order == second)
-   or ((Attack#attack.order == counter) and Attack#attack.is_parry)
+   (
+      (not Attack#attack.is_parry)
+      and ((Attack#attack.order == first) or (Attack#attack.order == second))
+   )
+   or
+   (
+      Attack#attack.is_parry
+      and (Attack#attack.order == counter)
+   )
 ) ->
    Damage = Attack#attack.damage,
 
@@ -225,10 +231,13 @@ apply_to_healths
 )
 when
 (
-   (Attack#attack.order == counter)
+   (
+      (not Attack#attack.is_parry)
+      and (Attack#attack.order == counter)
+   )
    or
    (
-      (Attack#attack.is_parry)
+      Attack#attack.is_parry
       and ((Attack#attack.order == first) or (Attack#attack.order == second))
    )
 ) ->
