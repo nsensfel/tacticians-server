@@ -278,6 +278,8 @@ handle_attack (BattleAction, Update) ->
    TargetIX = bm_battle_action:get_target_ix(BattleAction),
    TargetCharacter = bm_battle:get_character(TargetIX, Battle),
 
+   true = bm_character:get_is_alive(TargetCharacter),
+
    AttackSequence = get_attack_sequence(Character, TargetCharacter),
 
    {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =

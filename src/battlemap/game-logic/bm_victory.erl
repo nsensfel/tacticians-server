@@ -29,7 +29,7 @@ mark_players_characters_as_defeated (PlayerIX, Characters) ->
          (bm_character:get_player_index(Character) == PlayerIX)
       end,
       fun (Character) ->
-         bm_character:set_rank(defeated, Character)
+         bm_character:set_is_defeated(true, Character)
       end,
       Characters
    ).
@@ -50,8 +50,8 @@ add_db_query_to_mark_character_as_defeated (IX, Update) ->
          [
             sh_db_query:set_field
             (
-               bm_character:get_rank_field(),
-               defeated
+               bm_character:get_is_defeated_field(),
+               true
             )
          ]
       ),
@@ -175,7 +175,5 @@ handle_character_lost_health (CharIX, _Health, Update) ->
          case StillHasAliveChar of
             true -> Update;
             _ -> handle_player_defeat(CharacterPlayerIX, Update)
-         end;
-
-      defeated -> Update
+         end
    end.

@@ -4,7 +4,7 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type id() :: non_neg_integer().
--type rank() :: ('optional' | 'target' | 'commander' | 'defeated').
+-type rank() :: ('optional' | 'target' | 'commander').
 
 -record
 (
@@ -22,7 +22,8 @@
       armor_id :: sh_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
-      is_active :: boolean()
+      is_active :: boolean(),
+      is_defeated :: boolean()
    }
 ).
 
@@ -50,6 +51,7 @@
       get_current_health/1,
       get_is_alive/1,
       get_is_active/1,
+      get_is_defeated/1,
 
       set_rank/2,
       set_weapon_ids/2,
@@ -58,13 +60,15 @@
       set_location/2,
       set_current_health/2,
       set_is_active/2,
+      set_is_defeated/2,
 
       get_rank_field/0,
       get_statistics_field/0,
       get_weapons_field/0,
       get_location_field/0,
       get_current_health_field/0,
-      get_is_active_field/0
+      get_is_active_field/0,
+      get_is_defeated_field/0
    ]
 ).
 
@@ -145,15 +149,21 @@ get_current_health (Char) -> Char#character.current_health.
 
 -spec get_is_alive (type()) -> boolean().
 get_is_alive (Char) ->
-   (Char#character.current_health > 0).
+   (
+      (not Char#character.is_defeated)
+      and (Char#character.current_health > 0)
+   ).
 
 -spec get_is_active (type()) -> boolean().
 get_is_active (Char) ->
    (
-      (Char#character.rank /= defeated)
+      (not Char#character.is_defeated)
       and Char#character.is_active
       and get_is_alive(Char)
    ).
+
+-spec get_is_defeated (type()) -> boolean().
+get_is_defeated (Char) -> Char#character.is_defeated.
 
 -spec set_rank (rank(), type()) -> type().
 set_rank (Rank, Char) ->
@@ -186,6 +196,13 @@ set_is_active (Active, Char) ->
    Char#character
    {
       is_active = Active
+   }.
+
+-spec set_is_defeated (boolean(), type()) -> type().
+set_is_defeated (Defeated, Char) ->
+   Char#character
+   {
+      is_defeated = Defeated
    }.
 
 -spec set_armor_id (sh_armor:id(), type()) -> type().
@@ -242,6 +259,7 @@ random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       rank =
          if
             ((ID rem 8) == 0) -> commander;
+            ((ID rem 3) == 0) -> target;
             true -> optional
          end,
       icon = IDAsBinaryString,
@@ -252,7 +270,8 @@ random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       statistics = Statistics,
       location = Location,
       current_health = sh_statistics:get_health(Statistics),
-      is_active = false
+      is_active = false,
+      is_defeated = false
    }.
 
 -spec get_rank_field() -> non_neg_integer().
@@ -267,3 +286,5 @@ get_location_field () -> #character.location.
 get_current_health_field () -> #character.current_health.
 -spec get_is_active_field() -> non_neg_integer().
 get_is_active_field () -> #character.is_active.
+-spec get_is_defeated_field() -> non_neg_integer().
+get_is_defeated_field () -> #character.is_defeated.

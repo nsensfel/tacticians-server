@@ -17,8 +17,7 @@ rank_to_string (Rank) ->
    case Rank of
       optional -> <<"o">>;
       target -> <<"t">>;
-      commander -> <<"c">>;
-      defeated -> <<"d">>
+      commander -> <<"c">>
    end.
 
 -spec attributes_as_json
@@ -75,6 +74,7 @@ generate (IX, Character, PlayerIX) ->
                and (CharacterPlayerIX == PlayerIX)
             )
          },
+         {<<"dea">>, bm_character:get_is_defeated(Character)},
          {<<"att">>, attributes_as_json(Attributes)},
          {<<"awp">>, ActiveWeapon},
          {<<"swp">>, SecondaryWeapon},
