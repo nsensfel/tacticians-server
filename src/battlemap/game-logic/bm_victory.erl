@@ -112,18 +112,13 @@ handle_player_defeat (PlayerIX, Update) ->
    S3Update.
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec handle_character_lost_health
+-spec actually_handle_character_lost_health
    (
       non_neg_integer(),
-      integer(),
       bm_character_turn_update:type()
    )
    -> bm_character_turn_update:type().
-handle_character_lost_health (_, Health, Update) when (Health > 0) -> Update;
-handle_character_lost_health (CharIX, _Health, Update) ->
+actually_handle_character_lost_health (CharIX, Update) ->
    Data = bm_character_turn_update:get_data(Update),
    Battle = bm_character_turn_data:get_battle(Data),
    Character = bm_battle:get_character(CharIX, Battle),
@@ -143,8 +138,6 @@ handle_character_lost_health (CharIX, _Health, Update) ->
                      and bm_character:get_is_alive(Char)
                   )
                end,
-               %% FIXME: Potential issue if it's the controlled player and Data
-               %% is dirty.
                Characters
             ),
 
@@ -167,8 +160,6 @@ handle_character_lost_health (CharIX, _Health, Update) ->
                      and (bm_character:get_rank(Char) == target)
                   )
                end,
-               %% FIXME: Potential issue if it's the controlled player and Data
-               %% is dirty.
                Characters
             ),
 
@@ -177,3 +168,27 @@ handle_character_lost_health (CharIX, _Health, Update) ->
             _ -> handle_player_defeat(CharacterPlayerIX, Update)
          end
    end.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec handle_character_lost_health
+   (
+      non_neg_integer(),
+      integer(),
+      bm_character_turn_update:type()
+   )
+   -> bm_character_turn_update:type().
+handle_character_lost_health (_, Health, Update) when (Health > 0) -> Update;
+handle_character_lost_health (CharIX, _Health, Update) ->
+   Data = bm_character_turn_update:get_data(Update),
+   S1Data = bm_character_turn_data:clean_battle(Data),
+   S1Update = bm_character_turn_update:set_data(S1Data, Update),
+
+   S2Update = actually_handle_character_lost_health(CharIX, S1Update),
+
+   S2Data = bm_character_turn_update:get_data(S2Update),
+   S3Data = bm_character_turn_data:refresh_character(S2Data),
+   S3Update = bm_character_turn_update:set_data(S3Data, S2Update),
+
+   S3Update.

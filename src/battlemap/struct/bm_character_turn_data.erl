@@ -39,7 +39,8 @@
 -export
 (
    [
-      clean_battle/1
+      clean_battle/1,
+      refresh_character/1
    ]
 ).
 
@@ -100,3 +101,15 @@ clean_battle (Data) ->
          )
    }.
 
+-spec refresh_character (type()) -> type().
+refresh_character (Data) ->
+   Data#type
+   {
+      dirty = false,
+      character =
+         bm_battle:get_character
+         (
+            Data#type.character_ix,
+            Data#type.battle
+         )
+   }.
