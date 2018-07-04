@@ -49,6 +49,7 @@ attributes_as_json (Attributes) ->
    -> {list(any())}.
 generate (IX, Character, PlayerIX) ->
    Attributes = bm_character:get_attributes(Character),
+   Statistics = bm_character:get_statistics(Character),
    {ActiveWeapon, SecondaryWeapon} = bm_character:get_weapon_ids(Character),
    CharacterPlayerIX = bm_character:get_player_index(Character),
    Location = bm_character:get_location(Character),
@@ -78,6 +79,8 @@ generate (IX, Character, PlayerIX) ->
          {<<"att">>, attributes_as_json(Attributes)},
          {<<"awp">>, ActiveWeapon},
          {<<"swp">>, SecondaryWeapon},
-         {<<"ar">>, bm_character:get_armor_id(Character)}
+         {<<"ar">>, bm_character:get_armor_id(Character)},
+         {<<"mvt">>, sh_statistics:get_movement_points(Statistics)},
+         {<<"mhp">>, sh_statistics:get_health(Statistics)}
       ]
    }.
