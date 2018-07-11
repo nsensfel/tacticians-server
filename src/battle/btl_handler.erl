@@ -18,10 +18,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start (pid()) -> 'ok'.
 start (TimedCachesManagerPid) ->
-   case sh_database:fetch(battle_db, <<"0">>) of
+   case shr_database:fetch(battle_db, <<"0">>) of
       {ok, _} -> ok;
       not_found ->
-         sh_database:insert
+         shr_database:insert
          (
             battle_db,
             <<"0">>,
@@ -29,5 +29,5 @@ start (TimedCachesManagerPid) ->
             btl_shim:generate_random_battle()
          )
    end,
-   sh_timed_caches_manager:new_cache(TimedCachesManagerPid, battle_db, none),
+   shr_timed_caches_manager:new_cache(TimedCachesManagerPid, battle_db, none),
    ok.

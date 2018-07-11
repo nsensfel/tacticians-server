@@ -40,7 +40,7 @@
 (
    [
       clean_battle/1,
-      refresh_character/1
+      refreshr_character/1
    ]
 ).
 
@@ -101,8 +101,8 @@ clean_battle (Data) ->
          )
    }.
 
--spec refresh_character (type()) -> type().
-refresh_character (Data) ->
+-spec refreshr_character (type()) -> type().
+refreshr_character (Data) ->
    Data#type
    {
       dirty = false,

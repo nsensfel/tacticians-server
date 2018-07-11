@@ -1,4 +1,4 @@
--module(sh_timed_cache).
+-module(shr_timed_cache).
 -behavior(gen_server).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,7 +38,7 @@
 -spec add_to_cache (atom(), any(), any()) -> any().
 add_to_cache (DB, Owner, ObjectID) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
-   {ok, Data} = sh_database:fetch(DB, ObjectID),
+   {ok, Data} = shr_database:fetch(DB, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
 
@@ -54,17 +54,17 @@ add_update_to_cache (DB, Owner, ObjectID, Data) ->
 %%%% 'gen_server' functions
 init ({DB, ObjectID}) ->
    io:format("~nCache entry added: ~p.~n", [{DB, ObjectID}]),
-   {ok, {DB, ObjectID}, sh_timed_caches_manager:get_timeout()}.
+   {ok, {DB, ObjectID}, shr_timed_caches_manager:get_timeout()}.
 
 handle_call (invalidate, _, State) ->
    {stop, normal, State};
 handle_call (ping, _, State) ->
-   {noreply, State, sh_timed_caches_manager:get_timeout()}.
+   {noreply, State, shr_timed_caches_manager:get_timeout()}.
 
 handle_cast (invalidate, State) ->
    {stop, normal, State};
 handle_cast (ping, State) ->
-   {noreply, State, sh_timed_caches_manager:get_timeout()}.
+   {noreply, State, shr_timed_caches_manager:get_timeout()}.
 
 terminate (_, {DB, ObjectID}) ->
    io:format
@@ -83,7 +83,7 @@ format_status (_, [_, State]) ->
 handle_info(timeout, State) ->
    {stop, normal, State};
 handle_info(_, {DB, ObjectID}) ->
-   {noreply, {DB, ObjectID}, sh_timed_caches_manager:get_timeout()}.
+   {noreply, {DB, ObjectID}, shr_timed_caches_manager:get_timeout()}.
 
 %%%% Interface Functions
 -spec fetch (atom(), any(), any()) -> any().

@@ -18,6 +18,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start (any()) -> 'ok'.
 start (_YawsParams) ->
-   {ok, TimedCachesManagerPid} = sh_timed_caches_manager:start(),
+   {ok, TimedCachesManagerPid} = shr_timed_caches_manager:start(),
    ok = btl_handler:start(TimedCachesManagerPid),
    ok.

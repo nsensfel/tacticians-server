@@ -17,7 +17,7 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec set_player_turn_to_next (btl_battle:type())
-   -> {btl_battle:type(), sh_db_query:op()}.
+   -> {btl_battle:type(), shr_db_query:op()}.
 set_player_turn_to_next (Battle) ->
    Players = btl_battle:get_players(Battle),
    CurrentPlayerTurn = btl_battle:get_current_player_turn(Battle),
@@ -27,7 +27,7 @@ set_player_turn_to_next (Battle) ->
    UpdatedBattle = btl_battle:set_current_player_turn(NextPlayerTurn, Battle),
 
    DBQuery =
-      sh_db_query:set_field
+      shr_db_query:set_field
       (
          btl_battle:get_current_player_turn_field(),
          NextPlayerTurn
@@ -36,7 +36,7 @@ set_player_turn_to_next (Battle) ->
    {UpdatedBattle, DBQuery}.
 
 -spec reset_next_player_timeline (btl_battle:type())
-   -> {btl_battle:type(), btl_player:type(), sh_db_query:op()}.
+   -> {btl_battle:type(), btl_player:type(), shr_db_query:op()}.
 reset_next_player_timeline (Battle) ->
    NextPlayerTurn = btl_battle:get_current_player_turn(Battle),
    NextPlayerIX = btl_player_turn:get_player_ix(NextPlayerTurn),
@@ -47,24 +47,24 @@ reset_next_player_timeline (Battle) ->
       btl_battle:set_player(NextPlayerIX, UpdatedNextPlayer, Battle),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_players_field(),
          NextPlayerIX,
-         [ sh_db_query:set_field(btl_player:get_timeline_field(), []) ]
+         [ shr_db_query:set_field(btl_player:get_timeline_field(), []) ]
       ),
 
    {UpdatedBattle, UpdatedNextPlayer, DBQuery}.
 
 
 -spec activate_next_players_characters (btl_battle:type(), btl_player:type())
-   -> {btl_battle:type(), list(sh_db_query:op())}.
+   -> {btl_battle:type(), list(shr_db_query:op())}.
 activate_next_players_characters (Battle, NextPlayer) ->
    NextPlayerIX = btl_player:get_index(NextPlayer),
    Characters = btl_battle:get_characters(Battle),
 
    {UpdatedCharacters, ModifiedIXs} =
-      sh_array_util:mapiff
+      shr_array_util:mapiff
       (
          fun (Character) ->
             (btl_character:get_player_index(Character) == NextPlayerIX)
@@ -79,12 +79,12 @@ activate_next_players_characters (Battle, NextPlayer) ->
       lists:map
       (
          fun (IX) ->
-            sh_db_query:update_indexed
+            shr_db_query:update_indexed
             (
                btl_battle:get_characters_field(),
                IX,
                [
-                  sh_db_query:set_field
+                  shr_db_query:set_field
                   (
                      btl_character:get_is_active_field(),
                      true
@@ -143,7 +143,7 @@ requires_update (Update) ->
    Battle = btl_character_turn_data:get_battle(Data),
    Characters = btl_battle:get_characters(Battle),
 
-   sh_array_util:none(fun btl_character:get_is_active/1, Characters).
+   shr_array_util:none(fun btl_character:get_is_active/1, Characters).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,4 +1,4 @@
--module(sh_attributes).
+-module(shr_attributes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,10 +126,10 @@ set_unsafe_strength (Val, Att) -> set_strength(make_safe(Val), Att).
 random () ->
    #attributes
    {
-      constitution = sh_roll:percentage(),
-      dexterity = sh_roll:percentage(),
-      intelligence = sh_roll:percentage(),
-      mind = sh_roll:percentage(),
-      speed = sh_roll:percentage(),
-      strength = sh_roll:percentage()
+      constitution = shr_roll:percentage(),
+      dexterity = shr_roll:percentage(),
+      intelligence = shr_roll:percentage(),
+      mind = shr_roll:percentage(),
+      speed = shr_roll:percentage(),
+      strength = shr_roll:percentage()
    }.

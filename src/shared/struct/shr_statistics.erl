@@ -1,4 +1,4 @@
--module(sh_statistics).
+-module(shr_statistics).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -143,28 +143,28 @@ get_damages (Stats) ->
 
 -spec new
    (
-      sh_attributes:type(),
-      {sh_weapon:id(), sh_weapon:id()},
-      sh_armor:id()
+      shr_attributes:type(),
+      {shr_weapon:id(), shr_weapon:id()},
+      shr_armor:id()
    )
    -> type().
 new (BaseAttributes, WeaponIDs, ArmorID) ->
    {ActiveWeaponID, _} = WeaponIDs,
-   ActiveWeapon = sh_weapon:from_id(ActiveWeaponID),
-   {MinDamage, MaxDamage} = sh_weapon:get_damages(ActiveWeapon),
-   Armor = sh_armor:from_id(ArmorID),
+   ActiveWeapon = shr_weapon:from_id(ActiveWeaponID),
+   {MinDamage, MaxDamage} = shr_weapon:get_damages(ActiveWeapon),
+   Armor = shr_armor:from_id(ArmorID),
    Attributes =
-      sh_armor:apply_to_attributes
+      shr_armor:apply_to_attributes
       (
          Armor,
-         sh_weapon:apply_to_attributes(ActiveWeapon, BaseAttributes)
+         shr_weapon:apply_to_attributes(ActiveWeapon, BaseAttributes)
       ),
-   Constitution = sh_attributes:get_constitution(Attributes),
-   Dexterity = sh_attributes:get_dexterity(Attributes),
-   Intelligence = sh_attributes:get_intelligence(Attributes),
-   Mind = sh_attributes:get_mind(Attributes),
-   Speed = sh_attributes:get_speed(Attributes),
-   Strength = sh_attributes:get_strength(Attributes),
+   Constitution = shr_attributes:get_constitution(Attributes),
+   Dexterity = shr_attributes:get_dexterity(Attributes),
+   Intelligence = shr_attributes:get_intelligence(Attributes),
+   Mind = shr_attributes:get_mind(Attributes),
+   Speed = shr_attributes:get_speed(Attributes),
+   Strength = shr_attributes:get_strength(Attributes),
    DamageBaseModifier = damage_base_modifier(Strength),
 
    #statistics

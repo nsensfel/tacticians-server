@@ -53,7 +53,7 @@ fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
 
-   Battle = sh_timed_cache:fetch(battle_db, PlayerID, BattleID),
+   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
 
    #query_state
    {
@@ -67,7 +67,7 @@ generate_reply (QueryState, Input) ->
    Players = btl_battle:get_players(Battle),
 
    PlayerIX =
-      sh_array_util:first
+      shr_array_util:first
       (
          fun (Player) ->
             (btl_player:get_id(Player) == PlayerID)
@@ -101,7 +101,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (WeaponID) ->
-            btl_add_weapon:generate(sh_weapon:from_id(WeaponID))
+            btl_add_weapon:generate(shr_weapon:from_id(WeaponID))
          end,
          btl_battle:get_used_weapon_ids(Battle)
       ),
@@ -110,7 +110,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (ArmorID) ->
-            btl_add_armor:generate(sh_armor:from_id(ArmorID))
+            btl_add_armor:generate(shr_armor:from_id(ArmorID))
          end,
          btl_battle:get_used_armor_ids(Battle)
       ),

@@ -23,7 +23,7 @@
       array:array(btl_character:type())
    ) -> {array:array(btl_character:type()), list(non_neg_integer())}.
 mark_players_characters_as_defeated (PlayerIX, Characters) ->
-   sh_array_util:mapiff
+   shr_array_util:mapiff
    (
       fun (Character) ->
          (btl_character:get_player_index(Character) == PlayerIX)
@@ -43,12 +43,12 @@ mark_players_characters_as_defeated (PlayerIX, Characters) ->
 add_db_query_to_mark_character_as_defeated (IX, Update) ->
    btl_character_turn_update:add_to_db
    (
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          IX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_is_defeated_field(),
                true
@@ -88,12 +88,12 @@ handle_player_defeat (PlayerIX, Update) ->
    S2Update = btl_character_turn_update:set_data(UpdatedData, S1Update),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_players_field(),
          PlayerIX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_player:get_is_active_field(),
                false
@@ -129,7 +129,7 @@ actually_handle_character_lost_health (CharIX, Update) ->
       optional ->
          %% Let's not assume there is a commander
          StillHasAliveChar =
-            sh_array_util:any_indexed
+            shr_array_util:any_indexed
             (
                fun (IX, Char) ->
                   (
@@ -150,7 +150,7 @@ actually_handle_character_lost_health (CharIX, Update) ->
 
       target ->
          StillHasAliveChar =
-            sh_array_util:any_indexed
+            shr_array_util:any_indexed
             (
                fun (IX, Char) ->
                   (
@@ -188,7 +188,7 @@ handle_character_lost_health (CharIX, _Health, Update) ->
    S2Update = actually_handle_character_lost_health(CharIX, S1Update),
 
    S2Data = btl_character_turn_update:get_data(S2Update),
-   S3Data = btl_character_turn_data:refresh_character(S2Data),
+   S3Data = btl_character_turn_data:refreshr_character(S2Data),
    S3Update = btl_character_turn_update:set_data(S3Data, S2Update),
 
    S3Update.

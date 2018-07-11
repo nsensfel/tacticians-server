@@ -12,7 +12,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec encode_category (sh_armor:category()) -> binary().
+-spec encode_category (shr_armor:category()) -> binary().
 encode_category (kinetic) -> <<"k">>;
 encode_category (leather) -> <<"l">>;
 encode_category (chain) -> <<"c">>;
@@ -21,14 +21,14 @@ encode_category (plate) -> <<"p">>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (sh_armor:type()) -> {list(any())}.
+-spec generate (shr_armor:type()) -> {list(any())}.
 generate (Armor) ->
    {
       [
          {<<"msg">>, <<"add_armor">>},
-         {<<"id">>, sh_armor:get_id(Armor)},
-         {<<"nam">>, sh_armor:get_name(Armor)},
-         {<<"ct">>, encode_category(sh_armor:get_category(Armor))},
-         {<<"cf">>, sh_armor:get_coefficient(Armor)}
+         {<<"id">>, shr_armor:get_id(Armor)},
+         {<<"nam">>, shr_armor:get_name(Armor)},
+         {<<"ct">>, encode_category(shr_armor:get_category(Armor))},
+         {<<"cf">>, shr_armor:get_coefficient(Armor)}
       ]
    }.

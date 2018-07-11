@@ -22,18 +22,18 @@ rank_to_string (Rank) ->
 
 -spec attributes_as_json
    (
-      sh_attributes:type()
+      shr_attributes:type()
    ) ->
    {list({binary(), non_neg_integer()})}.
 attributes_as_json (Attributes) ->
    {
       [
-         {<<"con">>, sh_attributes:get_constitution(Attributes)},
-         {<<"dex">>, sh_attributes:get_dexterity(Attributes)},
-         {<<"int">>, sh_attributes:get_intelligence(Attributes)},
-         {<<"min">>, sh_attributes:get_mind(Attributes)},
-         {<<"spe">>, sh_attributes:get_speed(Attributes)},
-         {<<"str">>, sh_attributes:get_strength(Attributes)}
+         {<<"con">>, shr_attributes:get_constitution(Attributes)},
+         {<<"dex">>, shr_attributes:get_dexterity(Attributes)},
+         {<<"int">>, shr_attributes:get_intelligence(Attributes)},
+         {<<"min">>, shr_attributes:get_mind(Attributes)},
+         {<<"spe">>, shr_attributes:get_speed(Attributes)},
+         {<<"str">>, shr_attributes:get_strength(Attributes)}
       ]
    }.
 

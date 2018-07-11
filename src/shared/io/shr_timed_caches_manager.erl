@@ -1,4 +1,4 @@
--module(sh_timed_caches_manager).
+-module(shr_timed_caches_manager).
 -behavior(gen_server).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

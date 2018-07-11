@@ -10,8 +10,8 @@
    battle,
    {
       id :: id(),
-      used_armor_ids :: list(sh_armor:id()),
-      used_weapon_ids :: list(sh_weapon:id()),
+      used_armor_ids :: list(shr_armor:id()),
+      used_weapon_ids :: list(shr_weapon:id()),
       used_tile_ids :: list(btl_tile:id()),
       battlemap :: btl_battlemap:type(),
       characters :: array:array(btl_character:type()),
@@ -86,10 +86,10 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
 -spec get_id (type()) -> id().
 get_id (Battle) -> Battle#battle.id.
 
--spec get_used_weapon_ids (type()) -> list(sh_weapon:id()).
+-spec get_used_weapon_ids (type()) -> list(shr_weapon:id()).
 get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
 
--spec get_used_armor_ids (type()) -> list(sh_armor:id()).
+-spec get_used_armor_ids (type()) -> list(shr_armor:id()).
 get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
 
 -spec get_used_tile_ids (type()) -> list(btl_tile:id()).
@@ -187,8 +187,8 @@ set_current_player_turn (PlayerTurn, Battle) ->
       list(btl_player:type()),
       btl_battlemap:type(),
       list(btl_character:type()),
-      list(sh_weapon:id()),
-      list(sh_armor:id()),
+      list(shr_weapon:id()),
+      list(shr_armor:id()),
       list(btl_tile:id())
    )
    -> type().

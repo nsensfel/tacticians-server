@@ -1,4 +1,4 @@
--module(sh_weapon).
+-module(shr_weapon).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,7 +124,7 @@ get_ranges (Wp) ->
 get_damages (Wp) ->
    Coef = Wp#weapon.coef,
    {Min, Max} = damages_of_type(Wp#weapon.range_type, Wp#weapon.damage_mod),
-   {sh_math_util:ceil(Min * Coef), sh_math_util:ceil(Max * Coef)}.
+   {shr_math_util:ceil(Min * Coef), shr_math_util:ceil(Max * Coef)}.
 
 -spec can_parry (type()) -> boolean().
 can_parry (Wp) -> (Wp#weapon.range_type == melee).
@@ -382,23 +382,23 @@ from_id (24) ->
    }.
 
 -spec random_id () -> id().
-random_id () -> sh_roll:between(0, 24).
+random_id () -> shr_roll:between(0, 24).
 
 -spec apply_to_attributes
    (
       type(),
-      sh_attributes:type()
+      shr_attributes:type()
    )
-   -> sh_attributes:type().
+   -> shr_attributes:type().
 apply_to_attributes (Weapon, Attributes) ->
-   Dexterity = sh_attributes:get_dexterity(Attributes),
-   Speed = sh_attributes:get_speed(Attributes),
+   Dexterity = shr_attributes:get_dexterity(Attributes),
+   Speed = shr_attributes:get_speed(Attributes),
    RangeModifier = Weapon#weapon.range_mod,
    DamageModifier = Weapon#weapon.damage_mod,
 
    Impact = (20.0 * Weapon#weapon.coef),
-   FullImpact = sh_math_util:ceil(Impact),
-   QuarterImpact = sh_math_util:ceil(Impact / 4.0),
+   FullImpact = shr_math_util:ceil(Impact),
+   QuarterImpact = shr_math_util:ceil(Impact / 4.0),
 
    ResultingDexterity =
       case RangeModifier of
@@ -411,8 +411,8 @@ apply_to_attributes (Weapon, Attributes) ->
          light -> (Speed - QuarterImpact)
       end,
 
-   S0Attributes = sh_attributes:set_unsafe_speed(ResultingSpeed, Attributes),
+   S0Attributes = shr_attributes:set_unsafe_speed(ResultingSpeed, Attributes),
    S1Attributes =
-      sh_attributes:set_unsafe_dexterity(ResultingDexterity, S0Attributes),
+      shr_attributes:set_unsafe_dexterity(ResultingDexterity, S0Attributes),
 
    S1Attributes.

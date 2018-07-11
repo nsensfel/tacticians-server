@@ -9,7 +9,7 @@
    {
       data :: btl_character_turn_data:type(),
       timeline :: list(any()),
-      db :: list(sh_db_query:op())
+      db :: list(shr_db_query:op())
    }
 ).
 
@@ -57,7 +57,7 @@ get_data (Update) -> Update#type.data.
 -spec get_timeline (type()) -> list(any()).
 get_timeline (Update) -> Update#type.timeline.
 
--spec get_db (type()) -> list(sh_db_query:op()).
+-spec get_db (type()) -> list(shr_db_query:op()).
 get_db (Update) -> Update#type.db.
 
 -spec set_data (btl_character_turn_data:type(), type()) -> type().
@@ -67,7 +67,7 @@ set_data (Data, Update) ->
 -spec add_to_timeline
    (
       btl_turn_result:type(),
-      sh_db_query:op(),
+      shr_db_query:op(),
       type()
    ) -> type().
 add_to_timeline (Item, DBUpdate, Update) ->
@@ -80,6 +80,6 @@ add_to_timeline (Item, DBUpdate, Update) ->
       }
    ).
 
--spec add_to_db (sh_db_query:op(), type()) -> type().
+-spec add_to_db (shr_db_query:op(), type()) -> type().
 add_to_db (Item, Update) ->
    Update#type{ db = [Item|Update#type.db] }.

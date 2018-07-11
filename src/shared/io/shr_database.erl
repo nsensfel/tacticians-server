@@ -1,4 +1,4 @@
--module(sh_database).
+-module(shr_database).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,12 +34,12 @@ do_remote_operation (Op, Params) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec insert (atom(), any(), sh_db_user:permission(), any()) -> 'ok'.
+-spec insert (atom(), any(), shr_db_user:permission(), any()) -> 'ok'.
 insert (DB, ObjectID, Permission, Value) ->
    {atomic, _} = do_remote_operation(insert, [DB, ObjectID, Permission, Value]),
    io:format
    (
-      "~nsh_database:insert(~p) -> ok.~n",
+      "~nshr_database:insert(~p) -> ok.~n",
       [{DB, ObjectID, Permission, Value}]
    ),
 
@@ -48,11 +48,11 @@ insert (DB, ObjectID, Permission, Value) ->
 -spec fetch (atom(), any()) -> ({'ok', any()} | 'not_found').
 fetch (DB, ObjectID) ->
    {atomic, Reply} = do_remote_operation(read, [DB, ObjectID]),
-   io:format("~nsh_database:fetch(~p) -> ~p.~n", [{DB, ObjectID}, Reply]),
+   io:format("~nshr_database:fetch(~p) -> ~p.~n", [{DB, ObjectID}, Reply]),
    Reply.
 
--spec commit (sh_db_query:type()) -> 'ok'.
+-spec commit (shr_db_query:type()) -> 'ok'.
 commit (Query) ->
    {atomic, ok} = do_remote_operation(query, [Query]),
-   io:format("~nsh_database:commit(~p) -> ok.~n", [Query]),
+   io:format("~nshr_database:commit(~p) -> ok.~n", [Query]),
    ok.

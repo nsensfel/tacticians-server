@@ -33,7 +33,7 @@ handle_switch_weapon (Update) ->
 
    UpdatedWeaponIDs = {SecondaryWeaponID, PrimaryWeaponID},
    UpdatedCharacterStatistics =
-      sh_statistics:new(CharacterAttributes, UpdatedWeaponIDs, ArmorID),
+      shr_statistics:new(CharacterAttributes, UpdatedWeaponIDs, ArmorID),
    UpdatedCharacter =
       btl_character:set_statistics
       (
@@ -44,17 +44,17 @@ handle_switch_weapon (Update) ->
    TimelineItem = btl_turn_result:new_character_switched_weapons(CharacterIX),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          CharacterIX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_weapons_field(),
                UpdatedWeaponIDs
             ),
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_statistics_field(),
                UpdatedCharacterStatistics
@@ -117,7 +117,7 @@ assert_character_can_move (Data, Cost) ->
    Character = btl_character_turn_data:get_character(Data),
    CharacterStatistics = btl_character:get_statistics(Character),
    CharacterMovementPoints =
-      sh_statistics:get_movement_points(CharacterStatistics),
+      shr_statistics:get_movement_points(CharacterStatistics),
 
    true = (Cost =< CharacterMovementPoints),
 
@@ -143,12 +143,12 @@ commit_move (Update, Path, NewLocation) ->
       btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          CharacterIX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_location_field(),
                NewLocation
@@ -258,8 +258,8 @@ get_attack_sequence (Character, TargetCharacter) ->
    {AttackingWeaponID, _} = btl_character:get_weapon_ids(Character),
    {DefendingWeaponID, _} = btl_character:get_weapon_ids(TargetCharacter),
 
-   AttackingWeapon = sh_weapon:from_id(AttackingWeaponID),
-   DefendingWeapon = sh_weapon:from_id(DefendingWeaponID),
+   AttackingWeapon = shr_weapon:from_id(AttackingWeaponID),
+   DefendingWeapon = shr_weapon:from_id(DefendingWeaponID),
 
    btl_attack:get_sequence(Range, AttackingWeapon, DefendingWeapon).
 
@@ -312,12 +312,12 @@ handle_attack (BattleAction, Update) ->
       ),
 
    DBQuery0 =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          TargetIX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_current_health_field(),
                RemainingDefenderHealth
@@ -326,12 +326,12 @@ handle_attack (BattleAction, Update) ->
       ),
 
    DBQuery1 =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          CharacterIX,
          [
-            sh_db_query:set_field
+            shr_db_query:set_field
             (
                btl_character:get_current_health_field(),
                RemainingAttackerHealth

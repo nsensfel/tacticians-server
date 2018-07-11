@@ -132,8 +132,8 @@ demo_map () ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_random_battle () -> btl_battle:type().
 generate_random_battle () ->
-   %BattlemapWidth = 32, % sh_roll:between(16, 32),
-   %BattlemapHeight = 32, %sh_roll:between(16, 32),
+   %BattlemapWidth = 32, % shr_roll:between(16, 32),
+   %BattlemapHeight = 32, %shr_roll:between(16, 32),
    %Battlemap = btl_battlemap:random(0, BattlemapWidth, BattlemapHeight),
    Battlemap = btl_battlemap:from_list(0, 32, 32, demo_map()),
    Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),

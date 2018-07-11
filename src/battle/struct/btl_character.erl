@@ -16,10 +16,10 @@
       rank :: rank(),
       icon :: binary(),
       portrait :: binary(),
-      attributes :: sh_attributes:type(),
-      statistics :: sh_statistics:type(),
-      weapon_ids :: {sh_weapon:id(), sh_weapon:id()},
-      armor_id :: sh_armor:id(),
+      attributes :: shr_attributes:type(),
+      statistics :: shr_statistics:type(),
+      weapon_ids :: {shr_weapon:id(), shr_weapon:id()},
+      armor_id :: shr_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
       is_active :: boolean(),
@@ -90,8 +90,8 @@
    )
    -> {non_neg_integer(), non_neg_integer()}.
 find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
-   X = sh_roll:between(0, (BattlemapWidth - 1)),
-   Y = sh_roll:between(0, (BattlemapHeight - 1)),
+   X = shr_roll:between(0, (BattlemapWidth - 1)),
+   Y = shr_roll:between(0, (BattlemapHeight - 1)),
 
    IsForbidden = lists:member({X, Y}, ForbiddenLocations),
 
@@ -129,16 +129,16 @@ get_icon (Char) -> Char#character.icon.
 -spec get_portrait (type()) -> binary().
 get_portrait (Char) -> Char#character.portrait.
 
--spec get_attributes (type()) -> sh_attributes:type().
+-spec get_attributes (type()) -> shr_attributes:type().
 get_attributes (Char) -> Char#character.attributes.
 
--spec get_armor_id (type()) -> sh_armor:id().
+-spec get_armor_id (type()) -> shr_armor:id().
 get_armor_id (Char) -> Char#character.armor_id.
 
--spec get_weapon_ids (type()) -> {sh_weapon:id(), sh_weapon:id()}.
+-spec get_weapon_ids (type()) -> {shr_weapon:id(), shr_weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
 
--spec get_statistics (type()) -> sh_statistics:type().
+-spec get_statistics (type()) -> shr_statistics:type().
 get_statistics (Char) -> Char#character.statistics.
 
 -spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
@@ -205,14 +205,14 @@ set_is_defeated (Defeated, Char) ->
       is_defeated = Defeated
    }.
 
--spec set_armor_id (sh_armor:id(), type()) -> type().
+-spec set_armor_id (shr_armor:id(), type()) -> type().
 set_armor_id (ArmorID, Char) ->
    Char#character
    {
       armor_id = ArmorID
    }.
 
--spec set_weapon_ids ({sh_weapon:id(), sh_weapon:id()}, type()) -> type().
+-spec set_weapon_ids ({shr_weapon:id(), shr_weapon:id()}, type()) -> type().
 set_weapon_ids (WeaponIDs, Char) ->
    Char#character
    {
@@ -221,7 +221,7 @@ set_weapon_ids (WeaponIDs, Char) ->
 
 -spec set_statistics
    (
-      sh_statistics:type(),
+      shr_statistics:type(),
       type()
    )
    -> type().
@@ -244,10 +244,10 @@ set_statistics (Stats, Char) ->
 random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
    Location =
       find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations),
-   WeaponIDs = {sh_weapon:random_id(), sh_weapon:random_id()},
-   ArmorID = sh_armor:random_id(),
-   Attributes = sh_attributes:random(),
-   Statistics = sh_statistics:new(Attributes, WeaponIDs, ArmorID),
+   WeaponIDs = {shr_weapon:random_id(), shr_weapon:random_id()},
+   ArmorID = shr_armor:random_id(),
+   Attributes = shr_attributes:random(),
+   Statistics = shr_statistics:new(Attributes, WeaponIDs, ArmorID),
    IDAsListString = integer_to_list(ID),
    IDAsBinaryString = list_to_binary(IDAsListString),
 
@@ -269,7 +269,7 @@ random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       armor_id = ArmorID,
       statistics = Statistics,
       location = Location,
-      current_health = sh_statistics:get_health(Statistics),
+      current_health = shr_statistics:get_health(Statistics),
       is_active = false,
       is_defeated = false
    }.

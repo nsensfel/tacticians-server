@@ -1,4 +1,4 @@
--module(sh_db_item).
+-module(shr_db_item).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -8,7 +8,7 @@
    db_item,
    {
       id :: any(),
-      perm :: sh_db_user:permission(),
+      perm :: shr_db_user:permission(),
       val :: any()
    }
 ).
@@ -47,7 +47,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (any(), sh_db_user:permission(), any()) -> type().
+-spec new (any(), shr_db_user:permission(), any()) -> type().
 new (ID, Permission, Value) ->
    #db_item
    {
@@ -59,13 +59,13 @@ new (ID, Permission, Value) ->
 -spec get_id (type()) -> any().
 get_id (#db_item { id = Result }) -> Result.
 
--spec get_permission (type()) -> sh_db_user:permission().
+-spec get_permission (type()) -> shr_db_user:permission().
 get_permission (#db_item { perm = Result }) -> Result.
 
 -spec get_value (type()) -> any().
 get_value (#db_item { val = Result }) -> Result.
 
--spec set_permission (sh_db_user:permission(), type()) -> type().
+-spec set_permission (shr_db_user:permission(), type()) -> type().
 set_permission (Perm, Item) -> Item#db_item{ perm = Perm }.
 
 -spec set_value (any(), type()) -> type().

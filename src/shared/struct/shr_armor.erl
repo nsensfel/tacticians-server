@@ -1,4 +1,4 @@
--module(sh_armor).
+-module(shr_armor).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -106,61 +106,61 @@ from_id (4) ->
    }.
 
 -spec random_id () -> id().
-random_id () -> sh_roll:between(0, 4).
+random_id () -> shr_roll:between(0, 4).
 
 -spec apply_to_attributes
    (
       type(),
-      sh_attributes:type()
+      shr_attributes:type()
    )
-   -> sh_attributes:type().
+   -> shr_attributes:type().
 apply_to_attributes (Ar, Att) ->
-   Constitution = sh_attributes:get_constitution(Att),
-   Dexterity = sh_attributes:get_dexterity(Att),
-   Speed = sh_attributes:get_speed(Att),
-   Strength = sh_attributes:get_strength(Att),
-   Mind = sh_attributes:get_mind(Att),
-   Impact = sh_math_util:ceil(20.0 * Ar#armor.coef),
-   HalfImpact = sh_math_util:ceil(10.0 * Ar#armor.coef),
+   Constitution = shr_attributes:get_constitution(Att),
+   Dexterity = shr_attributes:get_dexterity(Att),
+   Speed = shr_attributes:get_speed(Att),
+   Strength = shr_attributes:get_strength(Att),
+   Mind = shr_attributes:get_mind(Att),
+   Impact = shr_math_util:ceil(20.0 * Ar#armor.coef),
+   HalfImpact = shr_math_util:ceil(10.0 * Ar#armor.coef),
    Category = Ar#armor.category,
 
    case Category of
-      kinetic -> sh_attributes:set_unsafe_mind((Mind - Impact), Att);
+      kinetic -> shr_attributes:set_unsafe_mind((Mind - Impact), Att);
       leather ->
-         sh_attributes:set_unsafe_constitution
+         shr_attributes:set_unsafe_constitution
          (
             (Constitution - HalfImpact),
-            sh_attributes:set_unsafe_dexterity((Dexterity - HalfImpact), Att)
+            shr_attributes:set_unsafe_dexterity((Dexterity - HalfImpact), Att)
          );
 
       chain ->
-         sh_attributes:set_unsafe_constitution
+         shr_attributes:set_unsafe_constitution
          (
             (Constitution - HalfImpact),
-            sh_attributes:set_unsafe_dexterity
+            shr_attributes:set_unsafe_dexterity
             (
                (Dexterity - HalfImpact),
-               sh_attributes:set_unsafe_speed((Speed - Impact), Att)
+               shr_attributes:set_unsafe_speed((Speed - Impact), Att)
             )
          );
 
       plate ->
-         sh_attributes:set_unsafe_constitution
+         shr_attributes:set_unsafe_constitution
          (
             (Constitution - HalfImpact),
-            sh_attributes:set_unsafe_dexterity
+            shr_attributes:set_unsafe_dexterity
             (
                (Dexterity - HalfImpact),
-               sh_attributes:set_unsafe_speed
+               shr_attributes:set_unsafe_speed
                (
                   (Speed - Impact),
-                  sh_attributes:set_unsafe_strength((Strength - Impact), Att)
+                  shr_attributes:set_unsafe_strength((Strength - Impact), Att)
                )
             )
          )
    end.
 
--spec get_resistance_to (sh_weapon:damage_type(), type()) -> non_neg_integer().
+-spec get_resistance_to (shr_weapon:damage_type(), type()) -> non_neg_integer().
 get_resistance_to (DamageType, Armor) ->
    ArmorCategory = Armor#armor.category,
    BaseResistance =
@@ -182,4 +182,4 @@ get_resistance_to (DamageType, Armor) ->
    ArmorCoefficient = Armor#armor.coef,
    ActualResistance = (ArmorCoefficient * BaseResistance),
 
-   sh_math_util:ceil(ActualResistance).
+   shr_math_util:ceil(ActualResistance).

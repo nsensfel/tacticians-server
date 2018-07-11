@@ -1,4 +1,4 @@
--module(sh_db_query).
+-module(shr_db_query).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +36,7 @@
 (
    set_perm,
    {
-      perm :: sh_db_user:permission()
+      perm :: shr_db_user:permission()
    }
 ).
 
@@ -54,7 +54,7 @@
    {
       db :: atom(),
       id :: any(),
-      user :: sh_db_user:user(),
+      user :: shr_db_user:user(),
       ops :: list(db_query_master_op())
    }
 ).
@@ -92,7 +92,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_user (db_query()) -> sh_db_user:user().
+-spec get_user (db_query()) -> shr_db_user:user().
 get_user (#db_query{ user = Result }) -> Result.
 
 -spec apply_update_indexed (#update_indexed{}, any()) -> any().
@@ -142,27 +142,27 @@ apply_op_to (Op, Elem) when is_record(Op, update_indexed) ->
 -spec apply_master_op_to
    (
       db_query_master_op(),
-      sh_db_item:type()
+      shr_db_item:type()
    )
-   -> sh_db_item:type().
+   -> shr_db_item:type().
 apply_master_op_to (MOp, Elem) when is_record(MOp, set_perm) ->
    NewPerm = MOp#set_perm.perm,
 
-   sh_db_item:set_permission(NewPerm, Elem);
+   shr_db_item:set_permission(NewPerm, Elem);
 apply_master_op_to (MOp, Elem) when is_record(MOp, set_val) ->
    NewVal = MOp#set_val.val,
 
-   sh_db_item:set_value(NewVal, Elem);
+   shr_db_item:set_value(NewVal, Elem);
 apply_master_op_to (MOp, Elem) ->
-   OldValue = sh_db_item:get_value(Elem),
+   OldValue = shr_db_item:get_value(Elem),
    NewValue = apply_op_to(MOp, OldValue),
 
-   sh_db_item:set_value(NewValue, Elem).
+   shr_db_item:set_value(NewValue, Elem).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (atom(), any(), sh_db_user:user(), list(op())) -> type().
+-spec new (atom(), any(), shr_db_user:user(), list(op())) -> type().
 new (DBName, ObjectID, User, Ops) ->
    #db_query
    {
@@ -199,14 +199,14 @@ get_entry_id (#db_query{ id = Result }) -> Result.
 -spec apply_to
    (
       db_query(),
-      sh_db_item:type()
+      shr_db_item:type()
    )
-   -> ({'ok', sh_db_item:type()} | 'error').
+   -> ({'ok', shr_db_item:type()} | 'error').
 apply_to (DBQuery, DBItem) ->
    true =
-      sh_db_user:can_access
+      shr_db_user:can_access
       (
-         sh_db_item:get_permission(DBItem),
+         shr_db_item:get_permission(DBItem),
          get_user(DBQuery)
       ),
    MOps = DBQuery#db_query.ops,

@@ -45,7 +45,7 @@ fetch_data (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    BattleID = btl_character_turn_request:get_battle_id(Request),
    CharacterIX = btl_character_turn_request:get_character_ix(Request),
-   Battle = sh_timed_cache:fetch(battle_db, PlayerID, BattleID),
+   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
 
    btl_character_turn_data:new(Battle, CharacterIX).
 
@@ -119,11 +119,11 @@ finalize_character (Update) ->
    FinalizedData = btl_character_turn_data:clean_battle(UpdatedData),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_characters_field(),
          btl_character_turn_data:get_character_ix(Data),
-         [ sh_db_query:set_field(btl_character:get_is_active_field(), false) ]
+         [ shr_db_query:set_field(btl_character:get_is_active_field(), false) ]
       ),
 
    S0Update = btl_character_turn_update:set_data(FinalizedData, Update),
@@ -164,12 +164,12 @@ update_timeline (Update) ->
    UpdatedData = btl_character_turn_data:set_battle(UpdatedBattle, Data),
 
    DBQuery =
-      sh_db_query:update_indexed
+      shr_db_query:update_indexed
       (
          btl_battle:get_players_field(),
          PlayerIX,
          [
-            sh_db_query:add_to_field
+            shr_db_query:add_to_field
             (
                btl_player:get_timeline_field(),
                NewTimelineElements,
@@ -207,9 +207,9 @@ send_to_database (Update, Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    BattleID = btl_character_turn_request:get_battle_id(Request),
    Ops = btl_character_turn_update:get_db(Update),
-   Query = sh_db_query:new(battle_db, BattleID, {user, PlayerID}, Ops),
+   Query = shr_db_query:new(battle_db, BattleID, {user, PlayerID}, Ops),
 
-   sh_database:commit(Query),
+   shr_database:commit(Query),
 
    ok.
 
@@ -225,7 +225,7 @@ send_to_cache (Update, Request) ->
    Data = btl_character_turn_update:get_data(Update),
    Battle = btl_character_turn_data:get_battle(Data),
 
-   sh_timed_cache:update(battle_db, PlayerID, BattleID, Battle),
+   shr_timed_cache:update(battle_db, PlayerID, BattleID, Battle),
 
    ok.
 
