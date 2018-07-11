@@ -8,7 +8,8 @@
    db_item,
    {
       id :: any(),
-      perm :: shr_db_user:permission(),
+      read_perm :: shr_db_user:permission(),
+      write_perm :: shr_db_user:permission(),
       val :: any()
    }
 ).
@@ -25,13 +26,15 @@
 -export
 (
    [
-      new/3,
+      new/4,
 
       get_id/1,
-      get_permission/1,
+      get_read_permission/1,
+      get_write_permission/1,
       get_value/1,
 
-      set_permission/2,
+      set_read_permission/2,
+      set_write_permission/2,
       set_value/2,
 
       get_id_field/0,
@@ -47,26 +50,39 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (any(), shr_db_user:permission(), any()) -> type().
-new (ID, Permission, Value) ->
+-spec new
+   (
+      any(),
+      shr_db_user:permission(),
+      shr_db_user:permission(),
+      any()
+   ) -> type().
+new (ID, ReadPermission, WritePermission, Value) ->
    #db_item
    {
       id = ID,
-      perm = Permission,
+      read_perm = ReadPermission,
+      write_perm = WritePermission,
       val = Value
    }.
 
 -spec get_id (type()) -> any().
 get_id (#db_item { id = Result }) -> Result.
 
--spec get_permission (type()) -> shr_db_user:permission().
-get_permission (#db_item { perm = Result }) -> Result.
+-spec get_read_permission (type()) -> shr_db_user:permission().
+get_read_permission (#db_item { read_perm = Result }) -> Result.
+
+-spec get_write_permission (type()) -> shr_db_user:permission().
+get_write_permission (#db_item { write_perm = Result }) -> Result.
 
 -spec get_value (type()) -> any().
 get_value (#db_item { val = Result }) -> Result.
 
--spec set_permission (shr_db_user:permission(), type()) -> type().
-set_permission (Perm, Item) -> Item#db_item{ perm = Perm }.
+-spec set_read_permission (shr_db_user:permission(), type()) -> type().
+set_read_permission (Perm, Item) -> Item#db_item{ read_perm = Perm }.
+
+-spec set_write_permission (shr_db_user:permission(), type()) -> type().
+set_write_permission (Perm, Item) -> Item#db_item{ write_perm = Perm }.
 
 -spec set_value (any(), type()) -> type().
 set_value (Value, Item) -> Item#db_item{ val = Value }.

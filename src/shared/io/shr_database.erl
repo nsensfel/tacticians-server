@@ -10,8 +10,8 @@
 -export
 (
    [
-      insert/4,
-      fetch/2,
+      insert/5,
+      fetch/3,
       commit/1
    ]
 ).
@@ -34,21 +34,41 @@ do_remote_operation (Op, Params) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec insert (atom(), any(), shr_db_user:permission(), any()) -> 'ok'.
-insert (DB, ObjectID, Permission, Value) ->
-   {atomic, _} = do_remote_operation(insert, [DB, ObjectID, Permission, Value]),
+-spec insert
+   (
+      atom(),
+      any(),
+      shr_db_user:permission(),
+      shr_db_user:permission(),
+      any()
+   )
+   -> 'ok'.
+insert (DB, ObjectID, ReadPerm, WritePerm, Value) ->
+   {atomic, _} =
+      do_remote_operation(insert, [DB, ObjectID, ReadPerm, WritePerm, Value]),
+
    io:format
    (
       "~nshr_database:insert(~p) -> ok.~n",
-      [{DB, ObjectID, Permission, Value}]
+      [{DB, ObjectID, ReadPerm, WritePerm, Value}]
    ),
 
    ok.
 
--spec fetch (atom(), any()) -> ({'ok', any()} | 'not_found').
-fetch (DB, ObjectID) ->
-   {atomic, Reply} = do_remote_operation(read, [DB, ObjectID]),
-   io:format("~nshr_database:fetch(~p) -> ~p.~n", [{DB, ObjectID}, Reply]),
+-spec fetch
+   (
+      atom(),
+      any(),
+      shr_db_user:user()
+   )
+   -> ({'ok', any()} | 'not_found').
+fetch (DB, ObjectID, Cred) ->
+   {atomic, Reply} = do_remote_operation(read, [DB, ObjectID, Cred]),
+   io:format
+   (
+      "~nshr_database:fetch(~p) -> ~p.~n",
+      [{DB, ObjectID, Cred}, Reply]
+   ),
    Reply.
 
 -spec commit (shr_db_query:type()) -> 'ok'.

@@ -18,13 +18,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start (pid()) -> 'ok'.
 start (TimedCachesManagerPid) ->
-   case shr_database:fetch(battle_db, <<"0">>) of
+   case shr_database:fetch(battle_db, <<"0">>, admin) of
       {ok, _} -> ok;
       not_found ->
          shr_database:insert
          (
             battle_db,
             <<"0">>,
+            any,
             any,
             btl_shim:generate_random_battle()
          )

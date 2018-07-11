@@ -34,7 +34,15 @@
 
 -record
 (
-   set_perm,
+   set_read_perm,
+   {
+      perm :: shr_db_user:permission()
+   }
+).
+
+-record
+(
+   set_write_perm,
    {
       perm :: shr_db_user:permission()
    }
@@ -60,7 +68,9 @@
 ).
 
 -type db_query_op() :: (#set_field{} | #add_to_field{} | #update_indexed{}).
--type db_query_master_op() :: (db_query_op() | #set_perm{} | #set_val{}).
+-type db_query_master_op() ::
+   (db_query_op() | #set_read_perm{} | #set_write_perm{} | #set_val{}).
+
 -type db_query() :: #db_query{}.
 
 -opaque op() :: db_query_op().
@@ -145,10 +155,14 @@ apply_op_to (Op, Elem) when is_record(Op, update_indexed) ->
       shr_db_item:type()
    )
    -> shr_db_item:type().
-apply_master_op_to (MOp, Elem) when is_record(MOp, set_perm) ->
-   NewPerm = MOp#set_perm.perm,
+apply_master_op_to (MOp, Elem) when is_record(MOp, set_read_perm) ->
+   NewPerm = MOp#set_read_perm.perm,
 
-   shr_db_item:set_permission(NewPerm, Elem);
+   shr_db_item:set_read_permission(NewPerm, Elem);
+apply_master_op_to (MOp, Elem) when is_record(MOp, set_write_perm) ->
+   NewPerm = MOp#set_write_perm.perm,
+
+   shr_db_item:set_write_permission(NewPerm, Elem);
 apply_master_op_to (MOp, Elem) when is_record(MOp, set_val) ->
    NewVal = MOp#set_val.val,
 
@@ -206,7 +220,7 @@ apply_to (DBQuery, DBItem) ->
    true =
       shr_db_user:can_access
       (
-         shr_db_item:get_permission(DBItem),
+         shr_db_item:get_write_permission(DBItem),
          get_user(DBQuery)
       ),
    MOps = DBQuery#db_query.ops,
