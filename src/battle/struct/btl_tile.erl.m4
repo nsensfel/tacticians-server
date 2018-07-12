@@ -62,47 +62,14 @@ class_id_to_type_id (ClassID) ->
    end.
 
 -spec from_id (id()) -> type().
-from_id (0) ->
-   #tile
-   {
-      id = 0,
-      name = <<"[Grassland] Grass">>,
-      cost = 6,
-      class_range_min = 0,
-      class_range_max = 0
-   };
-from_id (1) ->
-   #tile
-   {
-      id = 1,
-      name = <<"[Grassland] Mushroom Infestation">>,
-      cost = 12,
-      class_range_min = 1,
-      class_range_max = 1
-   };
-from_id (2) ->
-   #tile
-   {
-      id = 2,
-      name = <<"[Grassland] Tree Remains">>,
-      cost = 24,
-      class_range_min = 2,
-      class_range_max = 2
-   };
-from_id (3) ->
-   #tile
-   {
-      id = 3,
-      name = <<"[Grassland] Clear Water">>,
-      cost = 201,
-      class_range_min = 3,
-      class_range_max = 17
-   };
+m4_include(__MAKEFILE_DATA_DIR/tile/global.m4.conf)m4_dnl
+__TILE_CLASS_USE_ERLANG_STYLE
+m4_include(__MAKEFILE_DATA_DIR/tile/grassland.m4d)m4_dnl
 from_id(_) ->
    from_id(0).
 
 -spec cost_when_oob () -> non_neg_integer().
-cost_when_oob () -> 255.
+cost_when_oob () -> __TILE_COST_WHEN_OOB.
 
 -spec get_id (type()) -> non_neg_integer().
 get_id (Tile) -> Tile#tile.id.

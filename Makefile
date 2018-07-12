@@ -10,6 +10,7 @@ BIN_DIR ?= ${CURDIR}/ebin
 INCLUDE_DIR ?= ${CURDIR}/include
 WWW_DIR ?= ${CURDIR}/www
 LOG_DIR ?= ${CURDIR}/log
+DATA_DIR ?= ${CURDIR}/data
 
 ## Local only?
 #ERL_NAME_VS_SNAME ?= -name
@@ -72,6 +73,7 @@ M4_EXEC = $(M4) $(M4_OPTS)
 ################################################################################
 
 MAKEFILE_TO_M4 = \
+	--define=__MAKEFILE_DATA_DIR=$(DATA_DIR) \
 	--define=__MAKEFILE_BIN_DIR=$(BIN_DIR) \
 	--define=__MAKEFILE_LOG_DIR=$(LOG_DIR) \
 	--define=__MAKEFILE_WWW_DIR=$(WWW_DIR) \
@@ -124,8 +126,8 @@ debug_run:
 		--src --plt $(DIALYZER_PLT_FILE)
 endif
 
-$(PREPROCESSED_FILES): %: $(PREPROCESSOR_CONFIG_FILES) %.m4
-	$(M4_EXEC) -P $(MAKEFILE_TO_M4) $^> $@
+$(PREPROCESSED_FILES): %: %.m4 .PHONY
+	$(M4_EXEC) -P $(MAKEFILE_TO_M4) $(PREPROCESSOR_CONFIG_FILES) $< > $@
 
 $(OPTIONAL_DIRS): %:
 	mkdir -p $@
@@ -133,3 +135,6 @@ $(OPTIONAL_DIRS): %:
 .SECONDEXPANSION:
 $(ERL_BIN_FILES): $(BIN_DIR)/%.beam: $$(shell find $(SRC_DIR) -name "%.erl")
 	$(ERLC_EXEC) -o $(BIN_DIR) $<
+
+.PHONY:
+
