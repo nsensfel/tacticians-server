@@ -25,7 +25,9 @@ wait_for_stop () ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start () -> 'ok'.
 start () ->
-   DB = db_model:new(battle_db, "/tmp/battle_db.mnesia", []),
-   db_model:start(DB),
+   Mnesia = db_model:new("/tmp/to_db_node.mnesia", []),
+   db_model:start(Mnesia),
+   db_model:add_db(battle_db, Mnesia),
+   db_model:add_db(map_db, Mnesia),
    wait_for_stop(),
    ok.

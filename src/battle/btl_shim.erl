@@ -30,7 +30,7 @@ generate_random_characters
    0,
    _CharactersPerPlayer,
    _TotalCharacterCount,
-   _Battlemap,
+   _Map,
    _ForbiddenLocations,
    Result
 ) ->
@@ -41,7 +41,7 @@ generate_random_characters
    0,
    CharactersPerPlayer,
    TotalCharacterCount,
-   Battlemap,
+   Map,
    ForbiddenLocations,
    Result
 ) ->
@@ -51,7 +51,7 @@ generate_random_characters
       CharactersPerPlayer,
       CharactersPerPlayer,
       TotalCharacterCount,
-      Battlemap,
+      Map,
       ForbiddenLocations,
       Result
    );
@@ -61,7 +61,7 @@ generate_random_characters
    PlayerCharacterCount,
    CharactersPerPlayer,
    TotalCharacterCount,
-   Battlemap,
+   Map,
    ForbiddenLocations,
    Result
 ) ->
@@ -70,8 +70,8 @@ generate_random_characters
       (
          TotalCharacterCount,
          MaxPlayerIX,
-         btl_map:get_width(Battlemap),
-         btl_map:get_height(Battlemap),
+         btl_map:get_width(Map),
+         btl_map:get_height(Map),
          ForbiddenLocations
       ),
    Character =
@@ -86,7 +86,7 @@ generate_random_characters
       (PlayerCharacterCount - 1),
       CharactersPerPlayer,
       (TotalCharacterCount + 1),
-      Battlemap,
+      Map,
       [btl_character:get_location(Character)|ForbiddenLocations],
       [Character|Result]
    ).
@@ -132,11 +132,11 @@ demo_map () ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_random_battle () -> btl_battle:type().
 generate_random_battle () ->
-   %BattlemapWidth = 32, % shr_roll:between(16, 32),
-   %BattlemapHeight = 32, %shr_roll:between(16, 32),
-   %Battlemap = btl_map:random(0, BattlemapWidth, BattlemapHeight),
-   Battlemap = btl_map:from_list(0, 32, 32, demo_map()),
-   Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
+   %MapWidth = 32, % shr_roll:between(16, 32),
+   %MapHeight = 32, %shr_roll:between(16, 32),
+   %Map = btl_map:random(0, MapWidth, MapHeight),
+   Map = btl_map:from_list(0, 32, 32, demo_map()),
+   Characters = generate_random_characters(1, 8, 8, 0, Map, [], []),
    PlayersAsList = [btl_player:new(0, 8, <<"0">>), btl_player:new(1, 0, <<"1">>)],
 
    {UsedWeaponIDs, UsedArmorIDs} =
@@ -165,7 +165,7 @@ generate_random_battle () ->
             )
          end,
          sets:new(),
-         btl_map:get_tile_class_ids(Battlemap)
+         btl_map:get_tile_class_ids(Map)
       ),
 
    Battle =
@@ -173,7 +173,7 @@ generate_random_battle () ->
       (
          <<"0">>,
          PlayersAsList,
-         Battlemap,
+         Map,
          Characters,
          sets:to_list(UsedWeaponIDs),
          sets:to_list(UsedArmorIDs),

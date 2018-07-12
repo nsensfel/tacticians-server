@@ -79,7 +79,7 @@ get_path_cost_and_destination (Data, Path) ->
    Character = btl_character_turn_data:get_character(Data),
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
    Battle = btl_character_turn_data:get_battle(Data),
-   Battlemap = btl_battle:get_map(Battle),
+   Map = btl_battle:get_map(Battle),
 
    ForbiddenLocations =
       array:foldl
@@ -99,7 +99,7 @@ get_path_cost_and_destination (Data, Path) ->
    {NewLocation, Cost} =
       btl_movement:cross
       (
-         Battlemap,
+         Map,
          ForbiddenLocations,
          Path,
          btl_character:get_location(Character)

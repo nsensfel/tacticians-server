@@ -54,6 +54,6 @@ demo_map () ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_random_map () -> map_map:type().
 generate_random_map () ->
-   Map = map_map:from_list(<<"0">>, <<"0">>, 32, 32, demo_map()),
+   Map = map_map:from_list(0, <<"0">>, 32, 32, demo_map()),
 
    Map.

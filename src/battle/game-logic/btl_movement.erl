@@ -26,11 +26,11 @@
       btl_location:type()
    )
    -> {btl_location:type(), non_neg_integer()}.
-cross (_Battlemap, _ForbiddenLocations, [], Cost, Location) ->
+cross (_Map, _ForbiddenLocations, [], Cost, Location) ->
    {Location, Cost};
-cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
+cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
    NextLocation = btl_location:apply_direction(Step, Location),
-   NextTileClassID = btl_map:get_tile_class_id(NextLocation, Battlemap),
+   NextTileClassID = btl_map:get_tile_class_id(NextLocation, Map),
    NextTileID = btl_tile:class_id_to_type_id(NextTileClassID),
    NextTile = btl_tile:from_id(NextTileID),
    NextCost = (Cost + btl_tile:get_cost(NextTile)),
@@ -46,7 +46,7 @@ cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
 
    IsForbidden = false,
 
-   cross(Battlemap, ForbiddenLocations, NextSteps, NextCost, NextLocation).
+   cross(Map, ForbiddenLocations, NextSteps, NextCost, NextLocation).
 
 -spec cross
    (
@@ -56,5 +56,5 @@ cross (Battlemap, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
       btl_location:type()
    )
    -> {btl_location:type(), non_neg_integer()}.
-cross (Battlemap, ForbiddenLocations, Path, Location) ->
-   cross(Battlemap, ForbiddenLocations, Path, 0, Location).
+cross (Map, ForbiddenLocations, Path, Location) ->
+   cross(Map, ForbiddenLocations, Path, 0, Location).

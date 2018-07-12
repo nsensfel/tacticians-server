@@ -13,7 +13,7 @@
       owner :: binary(),
       width :: integer(),
       height :: integer(),
-      tile_class_ids :: array:array(btl_tile:class_id())
+      tile_class_ids :: array:array(map_tile:class_id())
    }
 ).
 
@@ -50,7 +50,7 @@
 -spec location_to_array_index
    (
       non_neg_integer(),
-      btl_location:type()
+      map_location:type()
    )
    -> ('error' | non_neg_integer()).
 location_to_array_index (ArrayWidth, {X, Y}) ->
@@ -68,16 +68,19 @@ location_to_array_index (ArrayWidth, {X, Y}) ->
 -spec get_id (type()) -> id().
 get_id (Map) -> Map#map.id.
 
+-spec get_owner (type()) -> binary().
+get_owner (Map) -> Map#map.owner.
+
 -spec get_width (type()) -> integer().
 get_width (Map) -> Map#map.width.
 
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_class_ids (type()) -> array:array(btl_tile:class_id()).
+-spec get_tile_class_ids (type()) -> array:array(map_tile:class_id()).
 get_tile_class_ids (Map) -> Map#map.tile_class_ids.
 
--spec get_tile_class_id (btl_location:type(), type()) -> btl_tile:class_id().
+-spec get_tile_class_id (map_location:type(), type()) -> map_tile:class_id().
 get_tile_class_id (Location, Map) ->
    TileIX = location_to_array_index(Map#map.width, Location),
    array:get(TileIX, Map#map.tile_class_ids).
@@ -92,7 +95,7 @@ get_tile_class_id (Location, Map) ->
    )
    -> type().
 from_list (ID, Owner, Width, Height, List) ->
-   TileClassIDs = lists:map(fun btl_tile:class_id_from_int/1, List),
+   TileClassIDs = lists:map(fun map_tile:class_id_from_int/1, List),
 
    #map
    {

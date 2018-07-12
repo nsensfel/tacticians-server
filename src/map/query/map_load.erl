@@ -65,7 +65,7 @@ generate_reply (QueryState) ->
    Map = QueryState#query_state.map,
 
    SetMap = map_set_map:generate(Map),
-   Output = jiffy:encode(SetMap),
+   Output = jiffy:encode([SetMap]),
 
    Output.
 

@@ -64,21 +64,21 @@ location_to_array_index (ArrayWidth, {X, Y}) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_id (type()) -> id().
-get_id (Battlemap) -> Battlemap#map.id.
+get_id (Map) -> Map#map.id.
 
 -spec get_width (type()) -> integer().
-get_width (Battlemap) -> Battlemap#map.width.
+get_width (Map) -> Map#map.width.
 
 -spec get_height (type()) -> integer().
-get_height (Battlemap) -> Battlemap#map.height.
+get_height (Map) -> Map#map.height.
 
 -spec get_tile_class_ids (type()) -> array:array(btl_tile:class_id()).
-get_tile_class_ids (Battlemap) -> Battlemap#map.tile_class_ids.
+get_tile_class_ids (Map) -> Map#map.tile_class_ids.
 
 -spec get_tile_class_id (btl_location:type(), type()) -> btl_tile:class_id().
-get_tile_class_id (Location, Battlemap) ->
-   TileIX = location_to_array_index(Battlemap#map.width, Location),
-   array:get(TileIX, Battlemap#map.tile_class_ids).
+get_tile_class_id (Location, Map) ->
+   TileIX = location_to_array_index(Map#map.width, Location),
+   array:get(TileIX, Map#map.tile_class_ids).
 
 -spec from_list
    (

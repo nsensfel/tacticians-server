@@ -1,4 +1,4 @@
--module(btl_add_tile).
+-module(map_add_tile).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,15 +16,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (btl_tile:type()) -> {list(any())}.
+-spec generate (map_tile:type()) -> {list(any())}.
 generate (Tile) ->
    {
       [
          {<<"msg">>, <<"add_tile">>},
-         {<<"id">>, btl_tile:get_id(Tile)},
-         {<<"nam">>, btl_tile:get_name(Tile)},
-         {<<"ct">>, btl_tile:get_cost(Tile)},
-         {<<"rmi">>, btl_tile:get_range_minimum(Tile)},
-         {<<"rma">>, btl_tile:get_range_maximum(Tile)}
+         {<<"id">>, map_tile:get_id(Tile)},
+         {<<"nam">>, map_tile:get_name(Tile)},
+         {<<"ct">>, map_tile:get_cost(Tile)},
+         {<<"rmi">>, map_tile:get_range_minimum(Tile)},
+         {<<"rma">>, map_tile:get_range_maximum(Tile)}
       ]
    }.

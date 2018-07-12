@@ -8,7 +8,6 @@
 (
    db_model,
    {
-      name :: atom(),
       store_file :: string(),
       neighbors :: list(node())
    }
@@ -24,7 +23,8 @@
 -export
 (
    [
-      new/3,
+      new/2,
+      add_db/2,
       start/1
    ]
 ).
@@ -36,27 +36,34 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (atom(), string(), list(node())) -> type().
-new (DBName, StorageFile, Neighbors) ->
+-spec new (string(), list(node())) -> type().
+new (StorageFile, Neighbors) ->
    #db_model
    {
-      name = DBName,
       store_file = StorageFile,
       neighbors = Neighbors
    }.
 
 -spec start(type()) -> 'ok'.
 start (Model) ->
-   DBName = Model#db_model.name,
    StorageFile = Model#db_model.store_file,
    Neighbors = Model#db_model.neighbors,
 
    ok = application:set_env(mnesia, dir, StorageFile),
+
    case mnesia:create_schema([node()|Neighbors]) of
       {error, {Name, {already_exists, Name}}} -> ok;
       ok -> ok
    end,
+
    ok = mnesia:start(),
+
+   ok.
+
+-spec add_db (atom(), type()) -> 'ok'.
+add_db (DBName, Model) ->
+   Neighbors = Model#db_model.neighbors,
+
    mnesia:create_table
    (
       DBName,

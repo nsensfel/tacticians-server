@@ -128,10 +128,10 @@ get_encoded_last_turns_effects (Battle) ->
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
 
 -spec set_map (btl_map:type(), type()) -> type().
-set_map (Battlemap, Battle) ->
+set_map (Map, Battle) ->
    Battle#battle
    {
-      map = Battlemap
+      map = Map
    }.
 
 -spec set_characters (array:array(btl_character:type()), type()) -> type().
@@ -192,14 +192,14 @@ set_current_player_turn (PlayerTurn, Battle) ->
       list(btl_tile:id())
    )
    -> type().
-new (ID, PlayersAsList, Battlemap, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
+new (ID, PlayersAsList, Map, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
    #battle
    {
       id = ID,
       used_weapon_ids = UWIDs,
       used_armor_ids = UAIDs,
       used_tile_ids = UTIDs,
-      map = Battlemap,
+      map = Map,
       characters = array:from_list(CharactersAsList),
       players = array:from_list(PlayersAsList),
       current_player_turn = btl_player_turn:new(0, 0)

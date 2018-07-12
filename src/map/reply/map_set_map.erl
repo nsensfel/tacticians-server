@@ -1,4 +1,4 @@
--module(btl_set_map).
+-module(map_set_map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,16 +16,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (btl_battlemap:type()) -> {list(any())}.
-generate (Battlemap) ->
+-spec generate (map_map:type()) -> {list(any())}.
+generate (Map) ->
    {
       [
          {<<"msg">>, <<"set_map">>},
-         {<<"w">>, btl_battlemap:get_width(Battlemap)},
-         {<<"h">>, btl_battlemap:get_height(Battlemap)},
+         {<<"w">>, map_map:get_width(Map)},
+         {<<"h">>, map_map:get_height(Map)},
          {
             <<"t">>,
-            array:sparse_to_list(btl_battlemap:get_tile_class_ids(Battlemap))
+            array:sparse_to_list(map_map:get_tile_class_ids(Map))
          }
       ]
    }.

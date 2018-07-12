@@ -89,9 +89,9 @@
       list({non_neg_integer(), non_neg_integer()})
    )
    -> {non_neg_integer(), non_neg_integer()}.
-find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
-   X = shr_roll:between(0, (BattlemapWidth - 1)),
-   Y = shr_roll:between(0, (BattlemapHeight - 1)),
+find_random_location (MapWidth, MapHeight, ForbiddenLocations) ->
+   X = shr_roll:between(0, (MapWidth - 1)),
+   Y = shr_roll:between(0, (MapHeight - 1)),
 
    IsForbidden = lists:member({X, Y}, ForbiddenLocations),
 
@@ -99,8 +99,8 @@ find_random_location (BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
       true ->
          find_random_location
          (
-            BattlemapWidth,
-            BattlemapHeight,
+            MapWidth,
+            MapHeight,
             ForbiddenLocations
          );
 
@@ -241,9 +241,9 @@ set_statistics (Stats, Char) ->
       list({non_neg_integer(), non_neg_integer()})
    )
    -> type().
-random (ID, PlayerIX, BattlemapWidth, BattlemapHeight, ForbiddenLocations) ->
+random (ID, PlayerIX, MapWidth, MapHeight, ForbiddenLocations) ->
    Location =
-      find_random_location(BattlemapWidth, BattlemapHeight, ForbiddenLocations),
+      find_random_location(MapWidth, MapHeight, ForbiddenLocations),
    WeaponIDs = {shr_weapon:random_id(), shr_weapon:random_id()},
    ArmorID = shr_armor:random_id(),
    Attributes = shr_attributes:random(),
