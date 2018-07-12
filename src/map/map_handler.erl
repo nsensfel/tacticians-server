@@ -1,4 +1,4 @@
--module(qry_handler).
+-module(map_handler).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,9 +16,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec start (any()) -> 'ok'.
-start (_YawsParams) ->
-   {ok, TimedCachesManagerPid} = shr_timed_caches_manager:start(),
-   ok = btl_handler:start(TimedCachesManagerPid),
-   ok = map_handler:start(TimedCachesManagerPid),
+-spec start (pid()) -> 'ok'.
+start (TimedCachesManagerPid) ->
+   case shr_database:fetch(map_db, <<"0">>, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert
+         (
+            map_db,
+            <<"0">>,
+            any,
+            any,
+            map_shim:generate_random_map()
+         )
+   end,
+   shr_timed_caches_manager:new_cache(TimedCachesManagerPid, map_db, none),
    ok.

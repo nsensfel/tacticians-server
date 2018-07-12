@@ -1,4 +1,4 @@
--module(qry_handler).
+-module(btl_security).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([start/1]).
+-export
+(
+   [
+      assert_identity/2,
+      lock_queries/1,
+      unlock_queries/1
+   ]
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,9 +23,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec start (any()) -> 'ok'.
-start (_YawsParams) ->
-   {ok, TimedCachesManagerPid} = shr_timed_caches_manager:start(),
-   ok = btl_handler:start(TimedCachesManagerPid),
-   ok = map_handler:start(TimedCachesManagerPid),
-   ok.
+-spec assert_identity (any(), any()) -> 'unimplemented'.
+assert_identity (_PlayerID, _SessionToken) -> unimplemented.
+
+-spec lock_queries (any()) -> 'unimplemented'.
+lock_queries (_PlayerID) -> unimplemented.
+
+-spec unlock_queries (any()) -> 'unimplemented'.
+unlock_queries (_PlayerID) -> unimplemented.

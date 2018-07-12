@@ -1,4 +1,4 @@
--module(qry_handler).
+-module(btl_set_map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([start/1]).
+-export([generate/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,9 +16,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec start (any()) -> 'ok'.
-start (_YawsParams) ->
-   {ok, TimedCachesManagerPid} = shr_timed_caches_manager:start(),
-   ok = btl_handler:start(TimedCachesManagerPid),
-   ok = map_handler:start(TimedCachesManagerPid),
-   ok.
+-spec generate (btl_battlemap:type()) -> {list(any())}.
+generate (Battlemap) ->
+   {
+      [
+         {<<"msg">>, <<"set_map">>},
+         {<<"w">>, btl_battlemap:get_width(Battlemap)},
+         {<<"h">>, btl_battlemap:get_height(Battlemap)},
+         {
+            <<"t">>,
+            array:sparse_to_list(btl_battlemap:get_tile_class_ids(Battlemap))
+         }
+      ]
+   }.
