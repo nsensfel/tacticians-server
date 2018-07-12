@@ -19,7 +19,7 @@
       non_neg_integer(),
       non_neg_integer(),
       non_neg_integer(),
-      btl_battlemap:type(),
+      btl_map:type(),
       list(btl_location:type()),
       list(btl_character:type())
    )
@@ -70,8 +70,8 @@ generate_random_characters
       (
          TotalCharacterCount,
          MaxPlayerIX,
-         btl_battlemap:get_width(Battlemap),
-         btl_battlemap:get_height(Battlemap),
+         btl_map:get_width(Battlemap),
+         btl_map:get_height(Battlemap),
          ForbiddenLocations
       ),
    Character =
@@ -134,8 +134,8 @@ demo_map () ->
 generate_random_battle () ->
    %BattlemapWidth = 32, % shr_roll:between(16, 32),
    %BattlemapHeight = 32, %shr_roll:between(16, 32),
-   %Battlemap = btl_battlemap:random(0, BattlemapWidth, BattlemapHeight),
-   Battlemap = btl_battlemap:from_list(0, 32, 32, demo_map()),
+   %Battlemap = btl_map:random(0, BattlemapWidth, BattlemapHeight),
+   Battlemap = btl_map:from_list(0, 32, 32, demo_map()),
    Characters = generate_random_characters(1, 8, 8, 0, Battlemap, [], []),
    PlayersAsList = [btl_player:new(0, 8, <<"0">>), btl_player:new(1, 0, <<"1">>)],
 
@@ -165,7 +165,7 @@ generate_random_battle () ->
             )
          end,
          sets:new(),
-         btl_battlemap:get_tile_class_ids(Battlemap)
+         btl_map:get_tile_class_ids(Battlemap)
       ),
 
    Battle =

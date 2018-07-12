@@ -30,8 +30,8 @@ authenticate_user (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    SessionToken = btl_character_turn_request:get_session_token(Request),
 
-   btl_security:assert_identity(PlayerID, SessionToken),
-   btl_security:lock_queries(PlayerID),
+   shr_security:assert_identity(PlayerID, SessionToken),
+   shr_security:lock_queries(PlayerID),
 
    ok.
 
@@ -246,7 +246,7 @@ commit_update (Update, Request) ->
 disconnect_user (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
 
-   btl_security:unlock_queries(PlayerID),
+   shr_security:unlock_queries(PlayerID),
 
    ok.
 

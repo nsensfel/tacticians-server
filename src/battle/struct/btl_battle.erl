@@ -13,7 +13,7 @@
       used_armor_ids :: list(shr_armor:id()),
       used_weapon_ids :: list(shr_weapon:id()),
       used_tile_ids :: list(btl_tile:id()),
-      battlemap :: btl_battlemap:type(),
+      map :: btl_map:type(),
       characters :: array:array(btl_character:type()),
       players :: array:array(btl_player:type()),
       current_player_turn :: btl_player_turn:type()
@@ -35,7 +35,7 @@
       get_used_weapon_ids/1,
       get_used_armor_ids/1,
       get_used_tile_ids/1,
-      get_battlemap/1,
+      get_map/1,
       get_characters/1,
       get_character/2,
       get_players/1,
@@ -43,7 +43,7 @@
       get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
 
-      set_battlemap/2,
+      set_map/2,
       set_characters/2,
       set_character/3,
       set_players/2,
@@ -95,8 +95,8 @@ get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
 -spec get_used_tile_ids (type()) -> list(btl_tile:id()).
 get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 
--spec get_battlemap (type()) -> btl_battlemap:type().
-get_battlemap (Battle) -> Battle#battle.battlemap.
+-spec get_map (type()) -> btl_map:type().
+get_map (Battle) -> Battle#battle.map.
 
 -spec get_characters (type()) -> array:array(btl_character:type()).
 get_characters (Battle) -> Battle#battle.characters.
@@ -127,11 +127,11 @@ get_encoded_last_turns_effects (Battle) ->
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
 
--spec set_battlemap (btl_battlemap:type(), type()) -> type().
-set_battlemap (Battlemap, Battle) ->
+-spec set_map (btl_map:type(), type()) -> type().
+set_map (Battlemap, Battle) ->
    Battle#battle
    {
-      battlemap = Battlemap
+      map = Battlemap
    }.
 
 -spec set_characters (array:array(btl_character:type()), type()) -> type().
@@ -185,7 +185,7 @@ set_current_player_turn (PlayerTurn, Battle) ->
    (
       id(),
       list(btl_player:type()),
-      btl_battlemap:type(),
+      btl_map:type(),
       list(btl_character:type()),
       list(shr_weapon:id()),
       list(shr_armor:id()),
@@ -199,7 +199,7 @@ new (ID, PlayersAsList, Battlemap, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
       used_weapon_ids = UWIDs,
       used_armor_ids = UAIDs,
       used_tile_ids = UTIDs,
-      battlemap = Battlemap,
+      map = Battlemap,
       characters = array:from_list(CharactersAsList),
       players = array:from_list(PlayersAsList),
       current_player_turn = btl_player_turn:new(0, 0)

@@ -16,16 +16,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (btl_battlemap:type()) -> {list(any())}.
+-spec generate (btl_map:type()) -> {list(any())}.
 generate (Battlemap) ->
    {
       [
          {<<"msg">>, <<"set_map">>},
-         {<<"w">>, btl_battlemap:get_width(Battlemap)},
-         {<<"h">>, btl_battlemap:get_height(Battlemap)},
+         {<<"w">>, btl_map:get_width(Battlemap)},
+         {<<"h">>, btl_map:get_height(Battlemap)},
          {
             <<"t">>,
-            array:sparse_to_list(btl_battlemap:get_tile_class_ids(Battlemap))
+            array:sparse_to_list(btl_map:get_tile_class_ids(Battlemap))
          }
       ]
    }.

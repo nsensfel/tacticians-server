@@ -79,7 +79,7 @@ get_path_cost_and_destination (Data, Path) ->
    Character = btl_character_turn_data:get_character(Data),
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
    Battle = btl_character_turn_data:get_battle(Data),
-   Battlemap = btl_battle:get_battlemap(Battle),
+   Battlemap = btl_battle:get_map(Battle),
 
    ForbiddenLocations =
       array:foldl
