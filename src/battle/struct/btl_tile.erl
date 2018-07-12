@@ -62,6 +62,7 @@ class_id_to_type_id (ClassID) ->
    end.
 
 -spec from_id (id()) -> type().
+
 from_id (0) ->
    #tile
    {
