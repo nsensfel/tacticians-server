@@ -10,7 +10,7 @@ BIN_DIR ?= ${CURDIR}/ebin
 INCLUDE_DIR ?= ${CURDIR}/include
 WWW_DIR ?= ${CURDIR}/www
 LOG_DIR ?= ${CURDIR}/log
-DATA_DIR ?= ${CURDIR}/data
+DATA_DIR ?= /my/src/tacticians-data/
 
 ## Local only?
 #ERL_NAME_VS_SNAME ?= -name

@@ -55,10 +55,10 @@
 -spec class_id_to_type_id (class_id()) -> id().
 class_id_to_type_id (ClassID) ->
    case ClassID of
-      0 -> 0;
-      1 -> 1;
-      2 -> 2;
-      N when ((N >= 3) and (N =< 17)) -> 3
+m4_include(__MAKEFILE_DATA_DIR/tile/global.m4.conf)m4_dnl
+__TILE_CLASS_USE_ERLANG_SELECT_STYLE
+m4_include(__MAKEFILE_DATA_DIR/tile/grassland.m4d)m4_dnl
+      _ -> 0
    end.
 
 -spec from_id (id()) -> type().

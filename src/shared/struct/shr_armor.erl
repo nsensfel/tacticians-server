@@ -69,41 +69,49 @@ get_coefficient (Ar) -> Ar#armor.coef.
 get_category (Ar) -> Ar#armor.category.
 
 -spec from_id (id()) -> type().
+
 from_id (0) ->
-   #armor{
+   #armor
+   {
       id = 0,
       name = <<"None">>,
       category = leather,
       coef = 0.0
    };
 from_id (1) ->
-   #armor{
+   #armor
+   {
       id = 1,
       name = <<"Last Meal's Pelts">>,
       category = leather,
       coef = 0.5
    };
 from_id (2) ->
-   #armor{
+   #armor
+   {
       id = 2,
       name = <<"Bits of Wall">>,
       category = plate,
       coef = 0.5
    };
 from_id (3) ->
-   #armor{
+   #armor
+   {
       id = 3,
       name = <<"Garden Fence">>,
       category = chain,
       coef = 0.5
    };
 from_id (4) ->
-   #armor{
+   #armor
+   {
       id = 4,
       name = <<"Morrigan's Pity">>,
       category = kinetic,
       coef = 0.5
-   }.
+   };
+from_id(_) ->
+   from_id(0).
 
 -spec random_id () -> id().
 random_id () -> shr_roll:between(0, 4).

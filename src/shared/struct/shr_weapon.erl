@@ -130,8 +130,10 @@ get_damages (Wp) ->
 can_parry (Wp) -> (Wp#weapon.range_type == melee).
 
 -spec from_id (id()) -> type().
+
 from_id (0) ->
-   #weapon{
+   #weapon
+   {
       id = 0,
       name = <<"None">>,
       range_type = melee,
@@ -141,7 +143,8 @@ from_id (0) ->
       coef = 0.3
    };
 from_id (1) ->
-   #weapon{
+   #weapon
+   {
       id = 1,
       name = <<"Dagger">>,
       range_type = melee,
@@ -151,7 +154,8 @@ from_id (1) ->
       coef = 1.0
    };
 from_id (2) ->
-   #weapon{
+   #weapon
+   {
       id = 2,
       name = <<"Sword">>,
       range_type = melee,
@@ -161,7 +165,8 @@ from_id (2) ->
       coef = 1.0
    };
 from_id (3) ->
-   #weapon{
+   #weapon
+   {
       id = 3,
       name = <<"Claymore">>,
       range_type = melee,
@@ -171,7 +176,8 @@ from_id (3) ->
       coef = 1.0
    };
 from_id (4) ->
-   #weapon{
+   #weapon
+   {
       id = 4,
       name = <<"Bardiche">>,
       range_type = melee,
@@ -181,7 +187,8 @@ from_id (4) ->
       coef = 1.0
    };
 from_id (5) ->
-   #weapon{
+   #weapon
+   {
       id = 5,
       name = <<"Stiletto">>,
       range_type = melee,
@@ -191,7 +198,8 @@ from_id (5) ->
       coef = 1.0
    };
 from_id (6) ->
-   #weapon{
+   #weapon
+   {
       id = 6,
       name = <<"Pickaxe">>,
       range_type = melee,
@@ -201,7 +209,8 @@ from_id (6) ->
       coef = 1.0
    };
 from_id (7) ->
-   #weapon{
+   #weapon
+   {
       id = 7,
       name = <<"Rapier">>,
       range_type = melee,
@@ -211,7 +220,8 @@ from_id (7) ->
       coef = 1.0
    };
 from_id (8) ->
-   #weapon{
+   #weapon
+   {
       id = 8,
       name = <<"Pike">>,
       range_type = melee,
@@ -221,7 +231,8 @@ from_id (8) ->
       coef = 1.0
    };
 from_id (9) ->
-   #weapon{
+   #weapon
+   {
       id = 9,
       name = <<"Club">>,
       range_type = melee,
@@ -231,7 +242,8 @@ from_id (9) ->
       coef = 1.0
    };
 from_id (10) ->
-   #weapon{
+   #weapon
+   {
       id = 10,
       name = <<"Mace">>,
       range_type = melee,
@@ -241,7 +253,8 @@ from_id (10) ->
       coef = 1.0
    };
 from_id (11) ->
-   #weapon{
+   #weapon
+   {
       id = 11,
       name = <<"Staff">>,
       range_type = melee,
@@ -251,7 +264,8 @@ from_id (11) ->
       coef = 1.0
    };
 from_id (12) ->
-   #weapon{
+   #weapon
+   {
       id = 12,
       name = <<"War Hammer">>,
       range_type = melee,
@@ -261,7 +275,8 @@ from_id (12) ->
       coef = 1.0
    };
 from_id (13) ->
-   #weapon{
+   #weapon
+   {
       id = 13,
       name = <<"Short Bow (Broadhead)">>,
       range_type = ranged,
@@ -271,7 +286,8 @@ from_id (13) ->
       coef = 1.0
    };
 from_id (14) ->
-   #weapon{
+   #weapon
+   {
       id = 14,
       name = <<"Short Bow (Blunt)">>,
       range_type = ranged,
@@ -281,7 +297,8 @@ from_id (14) ->
       coef = 1.0
    };
 from_id (15) ->
-   #weapon{
+   #weapon
+   {
       id = 15,
       name = <<"Short Bow (Bodkin Point)">>,
       range_type = ranged,
@@ -291,7 +308,8 @@ from_id (15) ->
       coef = 1.0
    };
 from_id (16) ->
-   #weapon{
+   #weapon
+   {
       id = 16,
       name = <<"Long Bow (Broadhead)">>,
       range_type = ranged,
@@ -301,7 +319,8 @@ from_id (16) ->
       coef = 1.0
    };
 from_id (17) ->
-   #weapon{
+   #weapon
+   {
       id = 17,
       name = <<"Long Bow (Blunt)">>,
       range_type = ranged,
@@ -311,7 +330,8 @@ from_id (17) ->
       coef = 1.0
    };
 from_id (18) ->
-   #weapon{
+   #weapon
+   {
       id = 18,
       name = <<"Long Bow (Bodkin Point)">>,
       range_type = ranged,
@@ -321,7 +341,8 @@ from_id (18) ->
       coef = 1.0
    };
 from_id (19) ->
-   #weapon{
+   #weapon
+   {
       id = 19,
       name = <<"Crossbow (Broadhead)">>,
       range_type = ranged,
@@ -331,7 +352,8 @@ from_id (19) ->
       coef = 1.0
    };
 from_id (20) ->
-   #weapon{
+   #weapon
+   {
       id = 20,
       name = <<"Crossbow (Blunt)">>,
       range_type = ranged,
@@ -341,7 +363,8 @@ from_id (20) ->
       coef = 1.0
    };
 from_id (21) ->
-   #weapon{
+   #weapon
+   {
       id = 21,
       name = <<"Crossbow (Bodkin Point)">>,
       range_type = ranged,
@@ -351,7 +374,8 @@ from_id (21) ->
       coef = 1.0
    };
 from_id (22) ->
-   #weapon{
+   #weapon
+   {
       id = 22,
       name = <<"Arbalest (Broadhead)">>,
       range_type = ranged,
@@ -361,7 +385,8 @@ from_id (22) ->
       coef = 1.0
    };
 from_id (23) ->
-   #weapon{
+   #weapon
+   {
       id = 23,
       name = <<"Arbalest (Blunt)">>,
       range_type = ranged,
@@ -371,7 +396,8 @@ from_id (23) ->
       coef = 1.0
    };
 from_id (24) ->
-   #weapon{
+   #weapon
+   {
       id = 24,
       name = <<"Arbalest (Bodkin Point)">>,
       range_type = ranged,
@@ -379,7 +405,10 @@ from_id (24) ->
       damage_type = pierce,
       damage_mod = heavy,
       coef = 1.0
-   }.
+   };
+from_id (_) ->
+   from_id(0).
+
 
 -spec random_id () -> id().
 random_id () -> shr_roll:between(0, 24).

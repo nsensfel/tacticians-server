@@ -1,5 +1,0 @@
-__TILE_CATEGORY(`Grassland')m4_dnl
-__TILE_CLASS(0, `Grass', 6, 0, 0)
-__TILE_CLASS(1, `Mushroom Infestation', 12, 1, 1)
-__TILE_CLASS(2, `Tree Remains', 24, 2, 2)
-__TILE_CLASS(3, `Clear Water', __TILE_COST_WHEN_OCCUPIED, 3, 17)

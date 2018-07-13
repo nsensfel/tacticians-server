@@ -55,10 +55,12 @@
 -spec class_id_to_type_id (class_id()) -> id().
 class_id_to_type_id (ClassID) ->
    case ClassID of
-      0 -> 0;
-      1 -> 1;
-      2 -> 2;
-      N when ((N >= 3) and (N =< 17)) -> 3
+
+      N when ((N >= 0) and (N =< 0)) -> 0;
+      N when ((N >= 1) and (N =< 1)) -> 1;
+      N when ((N >= 2) and (N =< 2)) -> 2;
+      N when ((N >= 3) and (N =< 17)) -> 3;
+      _ -> 0
    end.
 
 -spec from_id (id()) -> type().
