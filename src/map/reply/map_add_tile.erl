@@ -21,10 +21,8 @@ generate (Tile) ->
    {
       [
          {<<"msg">>, <<"add_tile">>},
-         {<<"id">>, map_tile:get_id(Tile)},
+         {<<"id">>, map_tile:get_class_id(Tile)},
          {<<"nam">>, map_tile:get_name(Tile)},
-         {<<"ct">>, map_tile:get_cost(Tile)},
-         {<<"rmi">>, map_tile:get_range_minimum(Tile)},
-         {<<"rma">>, map_tile:get_range_maximum(Tile)}
+         {<<"ct">>, map_tile:get_cost(Tile)}
       ]
    }.

@@ -158,15 +158,15 @@ generate_random_battle () ->
    UsedTileIDs =
       array:sparse_foldl
       (
-         fun (_IX, TileID, CurrentTileIDs) ->
+         fun (_IX, TileInstance, CurrentTileIDs) ->
             sets:add_element
             (
-               btl_tile:extract_main_class_id(TileID),
+               btl_tile:extract_main_class_id(TileInstance),
                CurrentTileIDs
             )
          end,
          sets:new(),
-         btl_map:get_tile_ids(Map)
+         btl_map:get_tile_instances(Map)
       ),
 
    Battle =

@@ -14,11 +14,14 @@
 ).
 
 -opaque class_id() :: non_neg_integer().
--opaque id() :: {class_id(), class_id(), non_neg_integer()}.
+-opaque instance() :: (
+   {class_id(), class_id(), non_neg_integer()}
+   | non_neg_integer()
+).
 
 -opaque type() :: #tile{}.
 
--export_type([type/0, class_id/0, id/0]).
+-export_type([type/0, class_id/0, instance/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,8 +39,8 @@
 -export
 (
    [
-      id_to_int_list/1,
-      id_from_ints/1
+      instance_to_int_list/1,
+      instance_from_ints/1
    ]
 ).
 
@@ -58,14 +61,23 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec extract_main_class_id (id()) -> class_id().
-extract_main_class_id ({M, _, _}) -> M.
+-spec extract_main_class_id (instance()) -> class_id().
+extract_main_class_id (M) when is_integer(M) ->
+   M;
+extract_main_class_id ({M, _, _}) ->
+   M.
 
--spec extract_border_class_id (id()) -> class_id().
-extract_border_class_id ({_, B, _}) -> B.
+-spec extract_border_class_id (instance()) -> class_id().
+extract_border_class_id (M) when is_integer(M) ->
+   M;
+extract_border_class_id ({_, B, _}) ->
+   B.
 
--spec extract_variant_ix (id()) -> class_id().
-extract_variant_ix ({_, _, V}) -> V.
+-spec extract_variant_ix (instance()) -> non_neg_integer().
+extract_variant_ix (M) when is_integer(M) ->
+   0;
+extract_variant_ix ({_, _, V}) ->
+   V.
 
 -spec from_class_id (class_id()) -> type().
 
@@ -112,11 +124,16 @@ get_cost (Tile) -> Tile#tile.cost.
 -spec get_name (type()) -> binary().
 get_name (Tile) -> Tile#tile.name.
 
--spec id_from_ints
+-spec instance_from_ints
    (
       {non_neg_integer(), non_neg_integer(), non_neg_integer()}
-   ) -> id().
-id_from_ints ({M, B, V}) -> {M, B, V}.
+   ) -> instance().
+instance_from_ints ({M, B, V}) ->
+   case (M == B) of
+      true -> M;
+      _ -> {M, B, V}
+   end.
 
--spec id_to_int_list (id()) -> list(non_neg_integer()).
-id_to_int_list ({M, B, V}) -> [M, B, V].
+-spec instance_to_int_list (instance()) -> list(non_neg_integer()).
+instance_to_int_list (M) when is_integer(M) -> [M];
+instance_to_int_list ({M, B, V}) -> [M, B, V].

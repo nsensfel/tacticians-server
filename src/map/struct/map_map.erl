@@ -13,7 +13,7 @@
       owner :: binary(),
       width :: integer(),
       height :: integer(),
-      tile_class_ids :: array:array(map_tile:class_id())
+      tile_instances :: array:array(map_tile:instance())
    }
 ).
 
@@ -32,8 +32,8 @@
       get_owner/1,
       get_width/1,
       get_height/1,
-      get_tile_class_ids/1,
-      get_tile_class_id/2
+      get_tile_instances/1,
+      get_tile_instance/2
    ]
 ).
 
@@ -77,13 +77,13 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_class_ids (type()) -> array:array(map_tile:class_id()).
-get_tile_class_ids (Map) -> Map#map.tile_class_ids.
+-spec get_tile_instances (type()) -> array:array(map_tile:instance()).
+get_tile_instances (Map) -> Map#map.tile_instances.
 
--spec get_tile_class_id (map_location:type(), type()) -> map_tile:class_id().
-get_tile_class_id (Location, Map) ->
+-spec get_tile_instance (map_location:type(), type()) -> map_tile:instance().
+get_tile_instance (Location, Map) ->
    TileIX = location_to_array_index(Map#map.width, Location),
-   array:get(TileIX, Map#map.tile_class_ids).
+   array:get(TileIX, Map#map.tile_instances).
 
 -spec from_list
    (
@@ -91,11 +91,11 @@ get_tile_class_id (Location, Map) ->
       binary(),
       non_neg_integer(),
       non_neg_integer(),
-      list(non_neg_integer())
+      list({non_neg_integer(), non_neg_integer(), non_neg_integer()})
    )
    -> type().
 from_list (ID, Owner, Width, Height, List) ->
-   TileClassIDs = lists:map(fun map_tile:class_id_from_int/1, List),
+   TileInstances = lists:map(fun map_tile:instance_from_ints/1, List),
 
    #map
    {
@@ -103,5 +103,5 @@ from_list (ID, Owner, Width, Height, List) ->
       owner = Owner,
       width = Width,
       height = Height,
-      tile_class_ids = array:from_list(TileClassIDs)
+      tile_instances = array:from_list(TileInstances)
    }.

@@ -25,7 +25,11 @@ generate (Map) ->
          {<<"h">>, map_map:get_height(Map)},
          {
             <<"t">>,
-            array:sparse_to_list(map_map:get_tile_class_ids(Map))
+            lists:map
+            (
+               fun map_tile:instance_to_int_list/1,
+               array:sparse_to_list(map_map:get_tile_instances(Map))
+            )
          }
       ]
    }.
