@@ -7,16 +7,15 @@
 (
    tile,
    {
-      id :: id(),
+      id :: class_id(),
       name :: binary(),
-      cost :: non_neg_integer(),
-      class_range_min :: non_neg_integer(),
-      class_range_max :: non_neg_integer()
+      cost :: non_neg_integer()
    }
 ).
 
--opaque id() :: non_neg_integer().
 -opaque class_id() :: non_neg_integer().
+-opaque id() :: {class_id(), class_id(), non_neg_integer()}.
+
 -opaque type() :: #tile{}.
 
 -export_type([type/0, class_id/0, id/0]).
@@ -26,12 +25,10 @@
 -export
 (
    [
-      get_id/1,
+      get_class_id/1,
       get_name/1,
       get_cost/1,
-      get_range_minimum/1,
-      get_range_maximum/1,
-      from_id/1,
+      from_class_id/1,
       cost_when_oob/0
    ]
 ).
@@ -39,8 +36,17 @@
 -export
 (
    [
-      class_id_to_type_id/1,
-      class_id_from_int/1
+      id_to_int_list/1,
+      id_from_ints/1
+   ]
+).
+
+-export
+(
+   [
+      extract_main_class_id/1,
+      extract_border_class_id/1,
+      extract_variant_ix/1
    ]
 ).
 
@@ -52,63 +58,53 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec class_id_to_type_id (class_id()) -> id().
-class_id_to_type_id (ClassID) ->
-   case ClassID of
+-spec extract_main_class_id (id()) -> class_id().
+extract_main_class_id ({M, _, _}) -> M.
 
-      N when ((N >= 0) and (N =< 0)) -> 0;
-      N when ((N >= 1) and (N =< 1)) -> 1;
-      N when ((N >= 2) and (N =< 2)) -> 2;
-      N when ((N >= 3) and (N =< 17)) -> 3;
-      _ -> 0
-   end.
+-spec extract_border_class_id (id()) -> class_id().
+extract_border_class_id ({_, B, _}) -> B.
 
--spec from_id (id()) -> type().
+-spec extract_variant_ix (id()) -> class_id().
+extract_variant_ix ({_, _, V}) -> V.
 
-from_id (0) ->
+-spec from_class_id (class_id()) -> type().
+
+from_class_id (0) ->
    #tile
    {
       id = 0,
       name = <<"[Grassland] Grass">>,
-      cost = 6,
-      class_range_min = 0,
-      class_range_max = 0
+      cost = 6
    };
-from_id (1) ->
+from_class_id (1) ->
    #tile
    {
       id = 1,
       name = <<"[Grassland] Mushroom Infestation">>,
-      cost = 12,
-      class_range_min = 1,
-      class_range_max = 1
+      cost = 12
    };
-from_id (2) ->
+from_class_id (2) ->
    #tile
    {
       id = 2,
       name = <<"[Grassland] Tree Remains">>,
-      cost = 24,
-      class_range_min = 2,
-      class_range_max = 2
+      cost = 24
    };
-from_id (3) ->
+from_class_id (3) ->
    #tile
    {
       id = 3,
       name = <<"[Grassland] Clear Water">>,
-      cost = 201,
-      class_range_min = 3,
-      class_range_max = 17
+      cost = 201
    };
-from_id(_) ->
-   from_id(0).
+from_class_id(_) ->
+   from_class_id(0).
 
 -spec cost_when_oob () -> non_neg_integer().
 cost_when_oob () -> 255.
 
--spec get_id (type()) -> non_neg_integer().
-get_id (Tile) -> Tile#tile.id.
+-spec get_class_id (type()) -> non_neg_integer().
+get_class_id (Tile) -> Tile#tile.id.
 
 -spec get_cost (type()) -> non_neg_integer().
 get_cost (Tile) -> Tile#tile.cost.
@@ -116,11 +112,11 @@ get_cost (Tile) -> Tile#tile.cost.
 -spec get_name (type()) -> binary().
 get_name (Tile) -> Tile#tile.name.
 
--spec get_range_minimum (type()) -> non_neg_integer().
-get_range_minimum (Tile) -> Tile#tile.class_range_min.
+-spec id_from_ints
+   (
+      {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+   ) -> id().
+id_from_ints ({M, B, V}) -> {M, B, V}.
 
--spec get_range_maximum (type()) -> non_neg_integer().
-get_range_maximum (Tile) -> Tile#tile.class_range_max.
-
--spec class_id_from_int (non_neg_integer()) -> id().
-class_id_from_int (I) -> I.
+-spec id_to_int_list (id()) -> list(non_neg_integer()).
+id_to_int_list ({M, B, V}) -> [M, B, V].

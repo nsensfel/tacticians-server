@@ -118,8 +118,8 @@ generate_reply (QueryState, Input) ->
    AddTileList =
       lists:map
       (
-         fun (TileID) ->
-            btl_add_tile:generate(btl_tile:from_id(TileID))
+         fun (TileClassID) ->
+            btl_add_tile:generate(btl_tile:from_class_id(TileClassID))
          end,
          btl_battle:get_used_tile_ids(Battle)
       ),

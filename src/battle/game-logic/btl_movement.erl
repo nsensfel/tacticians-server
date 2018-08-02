@@ -30,9 +30,9 @@ cross (_Map, _ForbiddenLocations, [], Cost, Location) ->
    {Location, Cost};
 cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
    NextLocation = btl_location:apply_direction(Step, Location),
-   NextTileClassID = btl_map:get_tile_class_id(NextLocation, Map),
-   NextTileID = btl_tile:class_id_to_type_id(NextTileClassID),
-   NextTile = btl_tile:from_id(NextTileID),
+   NextTileID = btl_map:get_tile_id(NextLocation, Map),
+   NextTileClassID = btl_tile:extract_main_class_id(NextTileID),
+   NextTile = btl_tile:from_class_id(NextTileClassID),
    NextCost = (Cost + btl_tile:get_cost(NextTile)),
    IsForbidden =
       lists:foldl
