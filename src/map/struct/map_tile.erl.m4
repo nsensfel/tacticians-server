@@ -9,7 +9,9 @@
    {
       id :: class_id(),
       name :: binary(),
-      cost :: non_neg_integer()
+      cost :: non_neg_integer(),
+      family :: non_neg_integer(),
+      depth :: non_neg_integer()
    }
 ).
 
@@ -82,7 +84,10 @@ extract_variant_ix ({_, _, V}) ->
 -spec from_class_id (class_id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/tile/global.m4.conf)m4_dnl
 __TILE_CLASS_USE_ERLANG_STYLE
+m4_include(__MAKEFILE_DATA_DIR/tile/error.m4d)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/tile/grassland.m4d)m4_dnl
+m4_include(__MAKEFILE_DATA_DIR/tile/mud.m4d)m4_dnl
+m4_include(__MAKEFILE_DATA_DIR/tile/water.m4d)m4_dnl
 from_class_id(_) ->
    from_class_id(0).
 
