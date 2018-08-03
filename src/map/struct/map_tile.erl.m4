@@ -16,14 +16,12 @@
 ).
 
 -opaque class_id() :: non_neg_integer().
--opaque instance() :: (
-   {class_id(), class_id(), non_neg_integer()}
-   | non_neg_integer()
-).
+-opaque instance() :: list(non_neg_integer()).
+-opaque border() :: list(non_neg_integer()).
 
 -opaque type() :: #tile{}.
 
--export_type([type/0, class_id/0, instance/0]).
+-export_type([type/0, class_id/0, instance/0, border/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,8 +48,16 @@
 (
    [
       extract_main_class_id/1,
-      extract_border_class_id/1,
-      extract_variant_ix/1
+      extract_variant_ix/1,
+      extract_borders/1
+   ]
+).
+
+-export
+(
+   [
+      extract_border_main_class_id/1,
+      extract_border_variant_ix/1
    ]
 ).
 
@@ -64,22 +70,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 -spec extract_main_class_id (instance()) -> class_id().
-extract_main_class_id (M) when is_integer(M) ->
-   M;
-extract_main_class_id ({M, _, _}) ->
-   M.
+extract_main_class_id (I) -> lists:nth(1, I).
 
--spec extract_border_class_id (instance()) -> class_id().
-extract_border_class_id (M) when is_integer(M) ->
-   M;
-extract_border_class_id ({_, B, _}) ->
-   B.
+-spec extract_borders (instance()) -> list(border()).
+extract_borders (I) ->
+   [_|[_|Result]] = I,
+   Result.
 
 -spec extract_variant_ix (instance()) -> non_neg_integer().
-extract_variant_ix (M) when is_integer(M) ->
-   0;
-extract_variant_ix ({_, _, V}) ->
-   V.
+extract_variant_ix (I) -> lists:nth(2, I).
+
+-spec extract_border_main_class_id (border()) -> class_id().
+extract_border_main_class_id (B) -> lists:nth(1, B).
+
+-spec extract_border_variant_ix (border()) -> non_neg_integer().
+extract_border_variant_ix (B) -> lists:nth(2, B).
 
 -spec from_class_id (class_id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/tile/global.m4.conf)m4_dnl
@@ -103,16 +108,14 @@ get_cost (Tile) -> Tile#tile.cost.
 -spec get_name (type()) -> binary().
 get_name (Tile) -> Tile#tile.name.
 
--spec instance_from_ints
-   (
-      {non_neg_integer(), non_neg_integer(), non_neg_integer()}
-   ) -> instance().
-instance_from_ints ({M, B, V}) ->
-   case (M == B) of
-      true -> M;
-      _ -> {M, B, V}
+-spec instance_from_ints (list(non_neg_integer())) -> instance().
+instance_from_ints (L) ->
+   LLength = length(L),
+
+   case (((LLength rem 2) == 0) and (LLength /= 0)) of
+      true -> L;
+      _ -> [0, 0]
    end.
 
 -spec instance_to_int_list (instance()) -> list(non_neg_integer()).
-instance_to_int_list (M) when is_integer(M) -> [M];
-instance_to_int_list ({M, B, V}) -> [M, B, V].
+instance_to_int_list (I) -> I.

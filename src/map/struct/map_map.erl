@@ -91,7 +91,7 @@ get_tile_instance (Location, Map) ->
       binary(),
       non_neg_integer(),
       non_neg_integer(),
-      list({non_neg_integer(), non_neg_integer(), non_neg_integer()})
+      list(list(non_neg_integer()))
    )
    -> type().
 from_list (ID, Owner, Width, Height, List) ->
