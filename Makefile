@@ -114,7 +114,7 @@ debug_rebuild:
 
 ifeq ($(wildcard $(DIALYZER_PLT_FILE)),)
 debug_run:
-	$(DIALYZER_EXEC) --build_plt --apps erts kernel stdlib jiffy mnesia \
+	$(DIALYZER_EXEC) --build_plt --apps erts kernel stdlib crypto jiffy mnesia \
 		--output_plt $(DIALYZER_PLT_FILE)
 	$(MAKE) debug_rebuild
 	$(DIALYZER_EXEC) --add_to_plt --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)

@@ -110,6 +110,6 @@ keepalive_timeout = 30000
   listen = 0.0.0.0
   docroot = __MAKEFILE_WWW_DIR
   auth_log = true
-  appmods = btl_character_turn btl_load map_load map_update
+  appmods = btl_character_turn btl_load map_load map_update plr_sign_in plr_sign_up
   start_mod = qry_handler
 </server>
