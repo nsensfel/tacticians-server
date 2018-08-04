@@ -40,7 +40,17 @@
 -export
 (
    [
-      from_list/5
+      get_width_field/0,
+      get_height_field/0,
+      get_tile_instances_field/0
+   ]
+).
+
+-export
+(
+   [
+      from_list/5,
+      update_from_list/4
    ]
 ).
 
@@ -85,6 +95,15 @@ get_tile_instance (Location, Map) ->
    TileIX = location_to_array_index(Map#map.width, Location),
    array:get(TileIX, Map#map.tile_instances).
 
+-spec get_width_field () -> non_neg_integer().
+get_width_field () -> #map.width.
+
+-spec get_height_field () -> non_neg_integer().
+get_height_field () -> #map.height.
+
+-spec get_tile_instances_field () -> non_neg_integer().
+get_tile_instances_field () -> #map.tile_instances.
+
 -spec from_list
    (
       non_neg_integer(),
@@ -101,6 +120,24 @@ from_list (ID, Owner, Width, Height, List) ->
    {
       id = list_to_binary(integer_to_list(ID)),
       owner = Owner,
+      width = Width,
+      height = Height,
+      tile_instances = array:from_list(TileInstances)
+   }.
+
+-spec update_from_list
+   (
+      type(),
+      non_neg_integer(),
+      non_neg_integer(),
+      list(list(non_neg_integer()))
+   )
+   -> type().
+update_from_list (Map, Width, Height, List) ->
+   TileInstances = lists:map(fun map_tile:instance_from_ints/1, List),
+
+   Map#map
+   {
       width = Width,
       height = Height,
       tile_instances = array:from_list(TileInstances)
