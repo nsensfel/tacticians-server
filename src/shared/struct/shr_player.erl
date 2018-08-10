@@ -48,6 +48,7 @@
       get_maps/1,
       get_characters/1,
 
+      set_id/2,
       set_username/2,
       set_password/2,
       new_token/1,
@@ -137,6 +138,9 @@ get_maps (Player) -> Player#player.maps.
 
 -spec get_characters (type()) -> list(binary()).
 get_characters (Player) -> Player#player.characters.
+
+-spec set_id (binary(), type()) -> type().
+set_id (Val, Player) -> Player#player{ id = Val }.
 
 -spec set_username (binary(), type()) -> type().
 set_username (Val, Player) -> Player#player{ username = Val }.

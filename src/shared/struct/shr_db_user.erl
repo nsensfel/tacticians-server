@@ -4,8 +4,8 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type db_named_user() :: {'user', any()}.
--type db_user() :: (db_named_user() | 'admin' | 'any').
--type db_permission() :: (list(db_named_user()) | 'any').
+-type db_user() :: (db_named_user() | 'admin' | 'any' | 'janitor').
+-type db_permission() :: (list(db_named_user()) | 'any' | 'janitor').
 
 
 -type user() :: db_user().
@@ -27,5 +27,9 @@
 -spec can_access (permission(), user()) -> boolean().
 can_access (_, admin) -> true;
 can_access (any, _) -> true;
-can_access (List, {'user', User}) ->
-   lists:member(User, List).
+can_access (janitor, janitor) -> true;
+can_access (List, {user, User}) ->
+   lists:member({user, User}, List);
+can_access (janitor, janitor) -> true;
+can_access (List, janitor) ->
+   lists:member(janitor, List).

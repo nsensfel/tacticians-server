@@ -73,8 +73,8 @@
 
 -type db_query() :: #db_query{}.
 
--opaque op() :: db_query_op().
--opaque type() :: db_query().
+-type op() :: db_query_master_op().
+-type type() :: db_query().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,7 +87,10 @@
       new/4,
       set_field/2,
       add_to_field/3,
-      update_indexed/3
+      update_indexed/3,
+      set_value/1,
+      set_read_permission/1,
+      set_write_permission/1
    ]
 ).
 -export
@@ -190,6 +193,15 @@ new (DBName, ObjectID, User, Ops) ->
 set_field (Field, Value) ->
    #set_field { field = Field, value = Value }.
 
+-spec set_value (any()) -> op().
+set_value (Value) -> #set_val { val= Value }.
+
+-spec set_read_permission (shr_db_user:permission()) -> op().
+set_read_permission (Perm) -> #set_read_perm { perm = Perm }.
+
+-spec set_write_permission (shr_db_user:permission()) -> op().
+set_write_permission (Perm) -> #set_write_perm { perm = Perm }.
+
 -spec add_to_field (non_neg_integer(), list(any()), boolean()) -> op().
 add_to_field (Field, Values, IsPrefix) ->
    #add_to_field { field = Field, values = Values, head = IsPrefix}.
@@ -217,12 +229,13 @@ get_entry_id (#db_query{ id = Result }) -> Result.
    )
    -> ({'ok', shr_db_item:type()} | 'error').
 apply_to (DBQuery, DBItem) ->
-   true =
-      shr_db_user:can_access
-      (
-         shr_db_item:get_write_permission(DBItem),
-         get_user(DBQuery)
-      ),
+   ObjectWPerm = shr_db_item:get_write_permission(DBItem),
+   User = get_user(DBQuery),
+
+   io:format("~p accessing obj with ~p perm.~n", [User, ObjectWPerm]),
+
+   true = shr_db_user:can_access (ObjectWPerm, User),
+
    MOps = DBQuery#db_query.ops,
    {ok, lists:foldl(fun apply_master_op_to/2, DBItem, MOps)}.
 

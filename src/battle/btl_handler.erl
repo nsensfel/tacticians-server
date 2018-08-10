@@ -21,7 +21,7 @@ start (TimedCachesManagerPid) ->
    case shr_database:fetch(battle_db, <<"0">>, admin) of
       {ok, _} -> ok;
       not_found ->
-         shr_database:insert
+         shr_database:insert_at
          (
             battle_db,
             <<"0">>,

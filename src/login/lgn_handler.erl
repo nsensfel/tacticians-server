@@ -17,7 +17,7 @@ ensure_player_exists (ID, Username, Password, Email) ->
    case shr_database:fetch(player_db, ID, admin) of
       {ok, _} -> ok;
       not_found ->
-         shr_database:insert
+         shr_database:insert_at
          (
             player_db,
             ID,
@@ -27,13 +27,26 @@ ensure_player_exists (ID, Username, Password, Email) ->
          )
    end,
 
-   case shr_database:fetch(login_db, ID, admin) of
+   case shr_database:fetch(login_db, Username, admin) of
       {ok, _} -> ok;
       not_found ->
-         shr_database:insert
+         shr_database:insert_at
          (
             login_db,
             Username,
+            any,
+            any,
+            ID
+         )
+   end,
+
+   case shr_database:fetch(login_db, Email, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert_at
+         (
+            login_db,
+            Email,
             any,
             any,
             ID
