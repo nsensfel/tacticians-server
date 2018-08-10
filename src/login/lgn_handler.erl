@@ -1,4 +1,4 @@
--module(plr_handler).
+-module(lgn_handler).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,8 +12,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec ensure_player_exists (binary()) -> 'ok'.
-ensure_player_exists (ID) ->
+-spec ensure_player_exists (binary(), binary(), binary(), binary()) -> 'ok'.
+ensure_player_exists (ID, Username, Password, Email) ->
    case shr_database:fetch(player_db, ID, admin) of
       {ok, _} -> ok;
       not_found ->
@@ -23,7 +23,20 @@ ensure_player_exists (ID) ->
             ID,
             any,
             any,
-            plr_shim:generate_random_player(ID)
+            lgn_shim:generate_random_player(ID, Username, Password, Email)
+         )
+   end,
+
+   case shr_database:fetch(login_db, ID, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert
+         (
+            login_db,
+            Username,
+            any,
+            any,
+            ID
          )
    end,
 
@@ -34,7 +47,20 @@ ensure_player_exists (ID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start (pid()) -> 'ok'.
 start (TimedCachesManagerPid) ->
-   ensure_player_exists(<<"0">>),
-   ensure_player_exists(<<"1">>),
+   ensure_player_exists
+   (
+      <<"0">>,
+      <<"Player1">>,
+      <<"Kalimer0">>,
+      <<"P1@Tacticians.Online">>
+   ),
+   ensure_player_exists
+   (
+      <<"1">>,
+      <<"Player2">>,
+      <<"Kalimer1">>,
+      <<"P2@Tacticians.Online">>
+   ),
+   shr_timed_caches_manager:new_cache(TimedCachesManagerPid, login_db, none),
    shr_timed_caches_manager:new_cache(TimedCachesManagerPid, player_db, none),
    ok.

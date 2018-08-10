@@ -49,7 +49,7 @@ parse_input (Req) ->
 
    true = (MapWidth > 0),
    true = (MapHeight > 0),
-   true = (length(MapContent) == MapWidth * MapHeight),
+   true = (length(MapContent) == (MapWidth * MapHeight)),
    true =
       lists:all
       (

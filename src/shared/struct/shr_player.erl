@@ -31,7 +31,7 @@
 -export
 (
    [
-      new/3
+      new/4
    ]
 ).
 
@@ -92,8 +92,8 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (binary(), binary(), binary()) -> type().
-new (ID, Username, Password) ->
+-spec new (binary(), binary(), binary(), binary()) -> type().
+new (ID, Username, Password, Email) ->
    Result =
       #player
       {
@@ -101,7 +101,7 @@ new (ID, Username, Password) ->
          username = Username,
          password = {<<"">>, <<"">>},
          token = <<"">>,
-         email = <<"">>,
+         email = Email,
          last_active = 0,
          maps = [],
          characters = []
@@ -152,7 +152,11 @@ set_password (Val, Player) ->
    }.
 
 -spec new_token (type()) -> type().
-new_token (Player) -> Player#player{ token = crypto:strong_rand_bytes(512) }.
+new_token (Player) ->
+   Player#player
+   {
+      token = base64:encode(crypto:strong_rand_bytes(512))
+   }.
 
 -spec set_email (binary(), type()) -> type().
 set_email (Val, Player) -> Player#player{ email = Val }.

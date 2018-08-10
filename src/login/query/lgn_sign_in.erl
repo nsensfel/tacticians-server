@@ -1,4 +1,4 @@
--module(plr_sign_in).
+-module(lgn_sign_in).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,6 +18,7 @@
 (
    query_state,
    {
+      player_id :: binary(),
       player :: shr_player:type()
    }
 ).
@@ -47,12 +48,16 @@ parse_input (Req) ->
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
-   PlayerID = Input#input.username,
+   Username = Input#input.username,
 
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   % Having this be cached my be both useless and a security issue.
+   PlayerID = shr_timed_cache:fetch(login_db, any, Username),
+
+   Player = shr_timed_cache:fetch(player_db, PlayerID, PlayerID),
 
    #query_state
    {
+      player_id = PlayerID,
       player = Player
    }.
 
@@ -71,9 +76,9 @@ update_data (QueryState, Input) ->
       player = S1Player
    }.
 
--spec commit_update (query_state(), input()) -> 'ok'.
-commit_update (QueryState, Input) ->
-   PlayerID = Input#input.username,
+-spec commit_update (query_state()) -> 'ok'.
+commit_update (QueryState) ->
+   PlayerID = QueryState#query_state.player_id,
    UpdatedPlayer = QueryState#query_state.player,
    NewToken = shr_player:get_token(UpdatedPlayer),
    NewActiveTime = shr_player:get_last_active(UpdatedPlayer),
@@ -107,7 +112,7 @@ commit_update (QueryState, Input) ->
 generate_reply (QueryState) ->
    Player = QueryState#query_state.player,
 
-   SetSession = plr_set_session:generate(Player),
+   SetSession = lgn_set_session:generate(Player),
    Output = jiffy:encode([SetSession]),
 
    Output.
@@ -117,7 +122,7 @@ handle (Req) ->
    Input = parse_input(Req),
    QueryState = fetch_data(Input),
    Update = update_data(QueryState, Input),
-   commit_update(Update, Input),
+   commit_update(Update),
    generate_reply(QueryState).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -25,9 +25,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec assert_identity (any(), any()) -> 'ok'.
 assert_identity (PlayerID, SessionToken) ->
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   %Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
-   true = (shr_player:get_token(Player) == SessionToken),
+   %true = (shr_player:get_token(Player) == SessionToken),
 
    ok.
 
