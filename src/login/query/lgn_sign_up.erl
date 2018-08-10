@@ -54,11 +54,14 @@ register_user (Input) ->
    Password = Input#input.password,
    Email = Input#input.email,
 
-   shr_janitor:new(login_db, Username),
-   shr_janitor:new(login_db, Email),
+   UsernameLC = string:lowercase(Username),
+   EmailLC = string:lowercase(Email),
 
-   ok = shr_database:reserve(login_db, Username, janitor),
-   ok = shr_database:reserve(login_db, Email, janitor),
+   shr_janitor:new(login_db, UsernameLC),
+   shr_janitor:new(login_db, EmailLC),
+
+   ok = shr_database:reserve(login_db, UsernameLC, janitor),
+   ok = shr_database:reserve(login_db, EmailLC, janitor),
 
    Player = shr_player:new(<<"">>, Username, Password, Email),
 
@@ -83,13 +86,13 @@ register_user (Input) ->
    ok =
       shr_database:commit
       (
-         shr_db_query:new(login_db, Username, janitor, LoginUpdateQueryOps)
+         shr_db_query:new(login_db, UsernameLC, janitor, LoginUpdateQueryOps)
       ),
 
    ok =
       shr_database:commit
       (
-         shr_db_query:new(login_db, Email, janitor, LoginUpdateQueryOps)
+         shr_db_query:new(login_db, EmailLC, janitor, LoginUpdateQueryOps)
       ),
 
    ok =

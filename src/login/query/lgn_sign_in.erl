@@ -42,7 +42,7 @@ parse_input (Req) ->
 
    #input
    {
-      username = Username,
+      username = string:lowercase(Username),
       password = Password
    }.
 

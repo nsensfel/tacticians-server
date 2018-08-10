@@ -27,30 +27,17 @@ ensure_player_exists (ID, Username, Password, Email) ->
          )
    end,
 
-   case shr_database:fetch(login_db, Username, admin) of
+   UsernameLC = string:lowercase(Username),
+   EmailLC = string:lowercase(Email),
+
+   case shr_database:fetch(login_db, UsernameLC, admin) of
       {ok, _} -> ok;
-      not_found ->
-         shr_database:insert_at
-         (
-            login_db,
-            Username,
-            any,
-            any,
-            ID
-         )
+      not_found -> shr_database:insert_at(login_db, UsernameLC, any, any, ID)
    end,
 
-   case shr_database:fetch(login_db, Email, admin) of
+   case shr_database:fetch(login_db, EmailLC, admin) of
       {ok, _} -> ok;
-      not_found ->
-         shr_database:insert_at
-         (
-            login_db,
-            Email,
-            any,
-            any,
-            ID
-         )
+      not_found -> shr_database:insert_at(login_db, EmailLC, any, any, ID)
    end,
 
    ok.
