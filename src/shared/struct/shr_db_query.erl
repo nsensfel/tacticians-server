@@ -67,9 +67,10 @@
    }
 ).
 
--type db_query_op() :: (#set_field{} | #add_to_field{} | #update_indexed{}).
+-type db_query_op() ::
+   (#set_field{} | #add_to_field{} | #update_indexed{} | #set_val{}).
 -type db_query_master_op() ::
-   (db_query_op() | #set_read_perm{} | #set_write_perm{} | #set_val{}).
+   (db_query_op() | #set_read_perm{} | #set_write_perm{}).
 
 -type db_query() :: #db_query{}.
 

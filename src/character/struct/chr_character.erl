@@ -52,13 +52,65 @@
 -export
 (
    [
+      decode/1,
       random/0
+   ]
+).
+
+-export
+(
+   [
+      validate/2
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec validate_name (binary()) -> ok.
+validate_name (_Name) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_portrait (shr_inventory:type(), binary()) -> ok.
+validate_portrait (_Inventory, _Portrait) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_weapons
+   (
+      shr_inventory:type(),
+      {shr_weapon:id(), shr_weapon:id()}
+   )
+   -> ok.
+validate_weapons (_Inventory, {_ActiveWeapon, _SecondaryWeapon}) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_armor (shr_inventory:type(), shr_armor:id()) -> ok.
+validate_armor (_Inventory, _Armor) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_glyphs (shr_inventory:type(), array:array(shr_glyph:id())) -> ok.
+validate_glyphs (_Inventory, _Glyphs) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_glyph_board (shr_inventory:type(), shr_glyph_board:id()) -> ok.
+validate_glyph_board (_Inventory, _GlyphBoard) ->
+   % TODO: unimplemented
+   ok.
+
+-spec validate_glyphs_on_board
+   (
+      array:array(shr_glyph:id()),
+      shr_glyph_board:id()
+   )
+   -> ok.
+validate_glyphs_on_board (_Glyphs, _GlyphBoard) ->
+   % TODO: unimplemented
+   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -149,3 +201,38 @@ get_weapon_ids_field () -> #character.weapon_ids.
 get_glyph_ids_field () -> #character.glyph_ids.
 -spec get_glyph_board_id_field () -> non_neg_integer().
 get_glyph_board_id_field () -> #character.glyph_board_id.
+
+-spec decode (map()) -> type().
+decode (JSONReqMap) ->
+   Name = maps:get(<<"nam">>, JSONReqMap),
+   Portrait = maps:get(<<"prt">>, JSONReqMap),
+   ActiveWeapon = maps:get(<<"awp">>, JSONReqMap),
+   SecondaryWeapon = maps:get(<<"swp">>, JSONReqMap),
+   Armor = maps:get(<<"ar">>, JSONReqMap),
+   GlyphsList = maps:get(<<"gls">>, JSONReqMap),
+   GlyphBoard = maps:get(<<"gb">>, JSONReqMap),
+
+   #character
+   {
+      name = Name,
+      portrait = Portrait,
+      weapon_ids = {ActiveWeapon, SecondaryWeapon},
+      armor_id = Armor,
+      glyph_ids = array:from_list(GlyphsList),
+      glyph_board_id = GlyphBoard
+   }.
+
+-spec validate (shr_inventory:type(), type()) -> ok.
+validate (Inventory, Character) ->
+   Glyphs = Character#character.glyph_ids,
+   GlyphBoard = Character#character.glyph_board_id,
+
+   validate_name(Character#character.name),
+   validate_portrait(Inventory, Character#character.portrait),
+   validate_weapons(Inventory, Character#character.weapon_ids),
+   validate_armor(Inventory, Character#character.armor_id),
+   validate_glyphs(Inventory, Glyphs),
+   validate_glyph_board(Inventory, GlyphBoard),
+   validate_glyphs_on_board(Glyphs, GlyphBoard),
+
+   ok.
