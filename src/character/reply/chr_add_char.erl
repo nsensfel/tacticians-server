@@ -1,4 +1,4 @@
--module(shr_security).
+-module(chr_add_char).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,14 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export
-(
-   [
-      assert_identity/2,
-      lock_queries/1,
-      unlock_queries/1
-   ]
-).
+-export([generate/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,14 +16,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec assert_identity (binary(), shr_player:type()) -> 'ok'.
-assert_identity (SessionToken, Player) ->
-   true = (shr_player:get_token(Player) == SessionToken),
+-spec generate
+   (
+      non_neg_integer(),
+      chr_character:type()
+   )
+   -> {list(any())}.
+generate (IX, Character) ->
+   {ActiveWeapon, SecondaryWeapon} = chr_character:get_weapon_ids(Character),
 
-   ok.
-
--spec lock_queries (any()) -> 'unimplemented'.
-lock_queries (_PlayerID) -> unimplemented.
-
--spec unlock_queries (any()) -> 'unimplemented'.
-unlock_queries (_PlayerID) -> unimplemented.
+   {
+      [
+         {<<"msg">>, <<"add_char">>},
+         {<<"ix">>, IX},
+         {<<"nam">>, chr_character:get_name(Character)},
+         {<<"awp">>, ActiveWeapon},
+         {<<"swp">>, SecondaryWeapon},
+         {<<"ar">>, chr_character:get_armor_id(Character)},
+         {<<"gls">>, array:to_list(chr_character:get_glyph_ids(Character))},
+         {<<"gb">>, chr_character:get_glyph_board_id(Character)}
+      ]
+   }.

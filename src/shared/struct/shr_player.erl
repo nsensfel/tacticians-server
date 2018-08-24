@@ -17,7 +17,8 @@
       email :: binary(),
       last_active :: integer(),
       maps :: list(binary()),
-      characters :: list(binary())
+      roster_id :: binary(),
+      inventory_id :: binary()
    }
 ).
 
@@ -46,7 +47,8 @@
       get_email/1,
       get_last_active/1,
       get_maps/1,
-      get_characters/1,
+      get_inventory_id/1,
+      get_roster_id/1,
 
       set_id/2,
       set_username/2,
@@ -55,7 +57,8 @@
       set_email/2,
       refresh_active/1,
       set_maps/2,
-      set_characters/2
+      set_inventory_id/2,
+      set_roster_id/2
    ]
 ).
 
@@ -69,7 +72,8 @@
       get_email_field/0,
       get_last_active_field/0,
       get_maps_field/0,
-      get_characters_field/0
+      get_inventory_id_field/0,
+      get_roster_id_field/0
    ]
 ).
 
@@ -85,6 +89,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec secure_value (binary(), binary()) -> binary().
 secure_value (Salt, Val) ->
+   % TODO: Maybe it would be a good idea to include the user's IP in there as
+   % well. This would ensure that sessions alway use the same server (and thus,
+   % the same caches), and make timed cache exploits easier to prevent.
    SaltedVal = erlang:iolist_to_binary([Salt, Val]),
    HashedSaltedVal = crypto:hash(sha384, SaltedVal),
 
@@ -105,7 +112,8 @@ new (ID, Username, Password, Email) ->
          email = Email,
          last_active = 0,
          maps = [],
-         characters = []
+         inventory_id = <<"0">>,
+         roster_id = <<"0">>
       },
 
    S0Result = set_password(Password, Result),
@@ -136,8 +144,11 @@ get_last_active (Player) -> Player#player.last_active.
 -spec get_maps (type()) -> list(binary()).
 get_maps (Player) -> Player#player.maps.
 
--spec get_characters (type()) -> list(binary()).
-get_characters (Player) -> Player#player.characters.
+-spec get_roster_id (type()) -> binary().
+get_roster_id (Player) -> Player#player.roster_id.
+
+-spec get_inventory_id (type()) -> binary().
+get_inventory_id (Player) -> Player#player.inventory_id.
 
 -spec set_id (binary(), type()) -> type().
 set_id (Val, Player) -> Player#player{ id = Val }.
@@ -175,8 +186,11 @@ refresh_active (Player) ->
 -spec set_maps (list(binary()), type()) -> type().
 set_maps (Maps, Player) -> Player#player{ maps = Maps }.
 
--spec set_characters (list(binary()), type()) -> type().
-set_characters (Characters, Player) -> Player#player{ characters = Characters }.
+-spec set_roster_id (binary(), type()) -> type().
+set_roster_id (RosterID, Player) -> Player#player{ roster_id = RosterID }.
+
+-spec set_inventory_id (binary(), type()) -> type().
+set_inventory_id (InvID, Player) -> Player#player{ inventory_id = InvID }.
 
 -spec get_id_field () -> non_neg_integer().
 get_id_field () -> #player.id.
@@ -199,8 +213,11 @@ get_last_active_field () -> #player.last_active.
 -spec get_maps_field () -> non_neg_integer().
 get_maps_field () -> #player.maps.
 
--spec get_characters_field () -> non_neg_integer().
-get_characters_field () -> #player.characters.
+-spec get_roster_id_field () -> non_neg_integer().
+get_roster_id_field () -> #player.roster_id.
+
+-spec get_inventory_id_field () -> non_neg_integer().
+get_inventory_id_field () -> #player.inventory_id.
 
 -spec password_is (binary(), type()) -> boolean().
 password_is (Val, Player) ->

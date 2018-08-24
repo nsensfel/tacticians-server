@@ -1,4 +1,4 @@
--module(shr_security).
+-module(chr_shim).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,14 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export
-(
-   [
-      assert_identity/2,
-      lock_queries/1,
-      unlock_queries/1
-   ]
-).
+-export([generate_random_character_roster/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,14 +16,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec assert_identity (binary(), shr_player:type()) -> 'ok'.
-assert_identity (SessionToken, Player) ->
-   true = (shr_player:get_token(Player) == SessionToken),
+-spec generate_random_character_roster () -> chr_roster:type().
+generate_random_character_roster () ->
+   Result = chr_roster:new(<<"0">>, <<"0">>),
 
-   ok.
+   %% TODO: unimplemented.
 
--spec lock_queries (any()) -> 'unimplemented'.
-lock_queries (_PlayerID) -> unimplemented.
-
--spec unlock_queries (any()) -> 'unimplemented'.
-unlock_queries (_PlayerID) -> unimplemented.
+   Result.

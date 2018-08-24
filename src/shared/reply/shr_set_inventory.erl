@@ -1,4 +1,4 @@
--module(shr_security).
+-module(shr_set_inventory).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,30 +7,26 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export
-(
-   [
-      assert_identity/2,
-      lock_queries/1,
-      unlock_queries/1
-   ]
-).
+-export([generate/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec encode_set (sets:set(binary())) -> list(binary()).
+encode_set (Set) -> sets:to_list(Set).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec assert_identity (binary(), shr_player:type()) -> 'ok'.
-assert_identity (SessionToken, Player) ->
-   true = (shr_player:get_token(Player) == SessionToken),
-
-   ok.
-
--spec lock_queries (any()) -> 'unimplemented'.
-lock_queries (_PlayerID) -> unimplemented.
-
--spec unlock_queries (any()) -> 'unimplemented'.
-unlock_queries (_PlayerID) -> unimplemented.
+-spec generate (shr_inventory:type()) -> {list(any())}.
+generate (Inventory) ->
+   {
+      [
+         {<<"msg">>, <<"set_inventory">>},
+         {<<"pts">>, encode_set(shr_inventory:get_portrait_ids(Inventory))},
+         {<<"gls">>, encode_set(shr_inventory:get_glyph_ids(Inventory))},
+         {<<"gbs">>, encode_set(shr_inventory:get_glyph_board_ids(Inventory))},
+         {<<"wps">>, encode_set(shr_inventory:get_weapon_ids(Inventory))},
+         {<<"ars">>, encode_set(shr_inventory:get_armor_ids(Inventory))}
+      ]
+   }.

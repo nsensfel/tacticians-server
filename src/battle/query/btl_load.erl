@@ -48,6 +48,17 @@ parse_input (Req) ->
       battle_id = BattleID
    }.
 
+-spec authenticate_user (input()) -> 'ok'.
+authenticate_user (Input) ->
+   PlayerID = Input#input.player_id,
+   SessionToken = Input#input.session_token,
+
+   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+
+   shr_security:assert_identity(SessionToken, Player),
+
+   ok.
+
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
    PlayerID = Input#input.player_id,
@@ -59,6 +70,7 @@ fetch_data (Input) ->
    {
       battle = Battle
    }.
+
 
 -spec generate_reply(query_state(), input()) -> binary().
 generate_reply (QueryState, Input) ->
@@ -138,11 +150,7 @@ generate_reply (QueryState, Input) ->
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   shr_security:assert_identity
-   (
-      Input#input.player_id,
-      Input#input.session_token
-   ),
+   authenticate_user(Input),
    shr_security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
    shr_security:unlock_queries(Input#input.player_id),

@@ -1,4 +1,4 @@
--module(shr_security).
+-module(chr_handler).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,14 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export
-(
-   [
-      assert_identity/2,
-      lock_queries/1,
-      unlock_queries/1
-   ]
-).
+-export([start/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,14 +16,25 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec assert_identity (binary(), shr_player:type()) -> 'ok'.
-assert_identity (SessionToken, Player) ->
-   true = (shr_player:get_token(Player) == SessionToken),
+-spec start (pid()) -> 'ok'.
+start (TimedCachesManagerPid) ->
+   case shr_database:fetch(char_roster_db, <<"0">>, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert_at
+         (
+            char_roster_db,
+            <<"0">>,
+            any,
+            any,
+            chr_shim:generate_random_character_roster()
+         )
+   end,
+   shr_timed_caches_manager:new_cache
+   (
+      TimedCachesManagerPid,
+      char_roster_db,
+      none
+   ),
 
    ok.
-
--spec lock_queries (any()) -> 'unimplemented'.
-lock_queries (_PlayerID) -> unimplemented.
-
--spec unlock_queries (any()) -> 'unimplemented'.
-unlock_queries (_PlayerID) -> unimplemented.

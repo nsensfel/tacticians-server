@@ -30,7 +30,9 @@ authenticate_user (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    SessionToken = btl_character_turn_request:get_session_token(Request),
 
-   shr_security:assert_identity(PlayerID, SessionToken),
+   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+
+   shr_security:assert_identity(SessionToken, Player),
    shr_security:lock_queries(PlayerID),
 
    ok.

@@ -47,6 +47,7 @@ parse_input (Req) ->
    MapHeight = maps:get(<<"h">>, JSONReqMap),
    MapContent = maps:get(<<"t">>, JSONReqMap),
 
+   %% TODO: those checks should be done while queries are locked.
    true = (MapWidth > 0),
    true = (MapHeight > 0),
    true = (length(MapContent) == (MapWidth * MapHeight)),
@@ -82,6 +83,17 @@ parse_input (Req) ->
       h = MapHeight,
       t = MapContent
    }.
+
+-spec authenticate_user (input()) -> 'ok'.
+authenticate_user (Input) ->
+   PlayerID = Input#input.player_id,
+   SessionToken = Input#input.session_token,
+
+   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+
+   shr_security:assert_identity(SessionToken, Player),
+
+   ok.
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
@@ -152,11 +164,7 @@ generate_reply () ->
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   shr_security:assert_identity
-   (
-      Input#input.player_id,
-      Input#input.session_token
-   ),
+   authenticate_user(Input),
    shr_security:lock_queries(Input#input.player_id),
    QueryState = fetch_data(Input),
    Update = update_data(QueryState, Input),

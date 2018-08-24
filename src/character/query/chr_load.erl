@@ -1,4 +1,4 @@
--module(map_load).
+-module(chr_load).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -10,8 +10,7 @@
    input,
    {
       player_id :: binary(),
-      session_token :: binary(),
-      map_id :: binary()
+      session_token :: binary()
    }
 ).
 
@@ -19,7 +18,9 @@
 (
    query_state,
    {
-      map :: map_map:type()
+      player :: shr_player:type(),
+      inventory :: shr_inventory:type(),
+      roster :: chr_roster:type()
    }
 ).
 
@@ -39,16 +40,14 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
-   MapID = maps:get(<<"mid">>, JSONReqMap),
 
    #input
    {
       player_id = PlayerID,
-      session_token = SessionToken,
-      map_id = MapID
+      session_token = SessionToken
    }.
 
--spec authenticate_user (input()) -> 'ok'.
+-spec authenticate_user (input()) -> {'ok', shr_player:type()}.
 authenticate_user (Input) ->
    PlayerID = Input#input.player_id,
    SessionToken = Input#input.session_token,
@@ -57,35 +56,47 @@ authenticate_user (Input) ->
 
    shr_security:assert_identity(SessionToken, Player),
 
-   ok.
+   {ok, Player}.
 
--spec fetch_data (input()) -> query_state().
-fetch_data (Input) ->
+-spec fetch_data (shr_player:type(), input()) -> query_state().
+fetch_data (Player, Input) ->
    PlayerID = Input#input.player_id,
-   MapID = Input#input.map_id,
+   RosterID = shr_player:get_roster_id(Player),
+   InventoryID = shr_player:get_inventory_id(Player),
 
-   Map = shr_timed_cache:fetch(map_db, PlayerID, MapID),
+   Roster = shr_timed_cache:fetch(char_roster_db, PlayerID, RosterID),
+   Inventory = shr_timed_cache:fetch(char_roster_db, PlayerID, InventoryID),
 
    #query_state
    {
-      map = Map
+      player = Player,
+      roster = Roster,
+      inventory = Inventory
    }.
 
 -spec generate_reply(query_state()) -> binary().
 generate_reply (QueryState) ->
-   Map = QueryState#query_state.map,
+   Roster = QueryState#query_state.roster,
+   Inventory = QueryState#query_state.inventory,
 
-   SetMap = map_set_map:generate(Map),
-   Output = jiffy:encode([SetMap]),
+   RosterCharacters = chr_roster:get_characters(Roster),
+   SetInventory = shr_set_inventory:generate(Inventory),
+   EncodedRoster =
+      array:to_list
+      (
+         array:sparse_map(fun chr_add_char:generate/2, RosterCharacters)
+      ),
+
+   Output = jiffy:encode([SetInventory|EncodedRoster]),
 
    Output.
 
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   authenticate_user(Input),
+   {ok, Player} = authenticate_user(Input),
    shr_security:lock_queries(Input#input.player_id),
-   QueryState = fetch_data(Input),
+   QueryState = fetch_data(Player, Input),
    shr_security:unlock_queries(Input#input.player_id),
    generate_reply(QueryState).
 
