@@ -131,7 +131,6 @@ can_parry (Wp) -> (Wp#weapon.range_type == melee).
 
 -spec from_id (id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/weapon/global.m4.conf)m4_dnl
-__WEAPON_USE_ERLANG_STYLE
 m4_include(__MAKEFILE_DATA_DIR/weapon/basic.m4d)m4_dnl
 from_id (_) ->
    from_id(0).

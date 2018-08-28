@@ -71,13 +71,14 @@ M4_EXEC = $(M4) $(M4_OPTS)
 ################################################################################
 ## PREPROCESSOR-VISIBLE MAKEFILE VARIABLES #####################################
 ################################################################################
-
 MAKEFILE_TO_M4 = \
 	--define=__MAKEFILE_DATA_DIR=$(DATA_DIR) \
 	--define=__MAKEFILE_BIN_DIR=$(BIN_DIR) \
 	--define=__MAKEFILE_LOG_DIR=$(LOG_DIR) \
 	--define=__MAKEFILE_WWW_DIR=$(WWW_DIR) \
-	--define=__MAKEFILE_INCLUDE_DIR=$(INCLUDE_DIR)
+	--define=__MAKEFILE_INCLUDE_DIR=$(INCLUDE_DIR) \
+	--define=__CODE_STYLE=erlang
+
 ################################################################################
 ## TARGET RULES ################################################################
 ################################################################################

@@ -70,7 +70,6 @@ get_category (Ar) -> Ar#armor.category.
 
 -spec from_id (id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/armor/global.m4.conf)m4_dnl
-__ARMOR_USE_ERLANG_STYLE
 m4_include(__MAKEFILE_DATA_DIR/armor/basic.m4d)m4_dnl
 from_id(_) ->
    from_id(0).
