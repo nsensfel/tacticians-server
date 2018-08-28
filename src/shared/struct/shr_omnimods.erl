@@ -63,7 +63,7 @@ cleanup_entry_list (ModList) ->
 
 -spec apply_coefficient_to_mods (float(), mods()) -> mods().
 apply_coefficient_to_mods (Coef, Mods) ->
-   dict:map(fun ({_Name, Val}) -> shr_util:ceil(Coef * Val) end, Mods).
+   dict:map(fun (_Name, Val) -> shr_math_util:ceil(Coef * Val) end, Mods).
 
 -spec merge_mods (mods(), mods()) -> mods().
 merge_mods (ModsA, ModsB) ->
@@ -164,11 +164,18 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
    AttackerOmnimodsAttmods = AttackerOmnimods#omnimods.atkmods,
    DefenderOmnimodsDefmods = DefenderOmnimods#omnimods.defmods,
 
+   BaseDefense =
+      case dict:find(base, DefenderOmnimodsDefmods) of
+         {ok, BaseDefValue} -> BaseDefValue;
+         _ -> 0
+      end,
+
    Result =
       dict:fold
       (
          fun (Name, BaseDmg, CurrentResult) ->
-            ModifiedDmg = shr_math:ceil(BaseDmg * AttackModifier),
+            ModifiedDmg =
+               (shr_math_util:ceil(BaseDmg * AttackModifier) - BaseDefense),
             case dict:find(Name, DefenderOmnimodsDefmods) of
                {ok, Def} when (Def >= ModifiedDmg) -> CurrentResult;
                {ok, Def} -> (CurrentResult + (ModifiedDmg - Def));
