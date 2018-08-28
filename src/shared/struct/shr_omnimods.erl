@@ -164,21 +164,19 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
    AttackerOmnimodsAttmods = AttackerOmnimods#omnimods.atkmods,
    DefenderOmnimodsDefmods = DefenderOmnimods#omnimods.defmods,
 
-   S0Calc =
-      apply_coefficient_to_mods(-1*AttackModifier, AttackerOmnimodsAttmods),
-   S1Calc = merge_mods(DefenderOmnimodsDefmods, S0Calc),
-
    Result =
       dict:fold
       (
-         fun (_Name, Val, CurrResult) ->
-            case (Val > 0) of
-               true -> (CurrResult + Val);
-               _ -> CurrResult
+         fun (Name, BaseDmg, CurrentResult) ->
+            ModifiedDmg = shr_math:ceil(BaseDmg * AttackModifier),
+            case dict:find(Name, DefenderOmnimodsDefmods) of
+               {ok, Def} when (Def >= ModifiedDmg) -> CurrentResult;
+               {ok, Def} -> (CurrentResult + (ModifiedDmg - Def));
+               _ -> (CurrentResult + ModifiedDmg)
             end
          end,
          0,
-         S1Calc
+         AttackerOmnimodsAttmods
       ),
 
    Result.
