@@ -20,23 +20,6 @@ rank_to_string (Rank) ->
       commander -> <<"c">>
    end.
 
--spec attributes_as_json
-   (
-      shr_attributes:type()
-   ) ->
-   {list({binary(), non_neg_integer()})}.
-attributes_as_json (Attributes) ->
-   {
-      [
-         {<<"con">>, shr_attributes:get_constitution(Attributes)},
-         {<<"dex">>, shr_attributes:get_dexterity(Attributes)},
-         {<<"int">>, shr_attributes:get_intelligence(Attributes)},
-         {<<"min">>, shr_attributes:get_mind(Attributes)},
-         {<<"spe">>, shr_attributes:get_speed(Attributes)},
-         {<<"str">>, shr_attributes:get_strength(Attributes)}
-      ]
-   }.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +31,6 @@ attributes_as_json (Attributes) ->
    )
    -> {list(any())}.
 generate (IX, Character, PlayerIX) ->
-   Attributes = btl_character:get_attributes(Character),
    {ActiveWeapon, SecondaryWeapon} = btl_character:get_weapon_ids(Character),
    CharacterPlayerIX = btl_character:get_player_index(Character),
    Location = btl_character:get_location(Character),
@@ -75,9 +57,12 @@ generate (IX, Character, PlayerIX) ->
             )
          },
          {<<"dea">>, btl_character:get_is_defeated(Character)},
-         {<<"att">>, attributes_as_json(Attributes)},
          {<<"awp">>, ActiveWeapon},
          {<<"swp">>, SecondaryWeapon},
-         {<<"ar">>, btl_character:get_armor_id(Character)}
+         {<<"ar">>, btl_character:get_armor_id(Character)},
+         {
+            <<"pomni">>,
+            shr_omnimods:encode(btl_character:get_permanent_omnimods(Character))
+         }
       ]
    }.

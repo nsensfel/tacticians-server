@@ -16,7 +16,7 @@
    }
 ).
 
--opaque class_id() :: non_neg_integer().
+-type class_id() :: non_neg_integer().
 -opaque instance() :: list(non_neg_integer()).
 -opaque border() :: list(non_neg_integer()).
 

@@ -11,11 +11,10 @@
       health :: non_neg_integer(),
       dodges :: non_neg_integer(),
       parries :: non_neg_integer(),
-      damage_min :: non_neg_integer(),
-      damage_max :: non_neg_integer(),
       accuracy :: non_neg_integer(),
       double_hits :: non_neg_integer(),
-      critical_hits :: non_neg_integer()
+      critical_hits :: non_neg_integer(),
+      damage_modifier :: float()
    }
 ).
 
@@ -34,20 +33,19 @@
       get_health/1,
       get_dodges/1,
       get_parries/1,
-      get_damage_min/1,
-      get_damage_max/1,
       get_accuracy/1,
       get_double_hits/1,
       get_critical_hits/1,
+      get_damage_modifier/1,
 
-      get_damages/1
+      apply_mod/3
    ]
 ).
 
 -export
 (
    [
-      new/3
+      new_raw/1
    ]
 ).
 
@@ -94,14 +92,76 @@ sudden_exp_growth (V) -> float_to_int(math:pow(4.0, V / 25.0)).
 -spec damage_base_modifier (non_neg_integer()) -> float().
 damage_base_modifier (Strength) -> ((math:pow(Strength, 1.8) / 2000.0) - 0.75).
 
--spec apply_damage_base_modifier
-   (
-      float(),
-      non_neg_integer()
-   )
-   -> non_neg_integer().
-apply_damage_base_modifier (Modifier, BaseValue) ->
-   max(0, float_to_int(BaseValue + (BaseValue * Modifier))).
+-spec make_movement_points_safe (non_neg_integer()) -> non_neg_integer().
+make_movement_points_safe (Val) -> min_max(0, 200, Val).
+
+-spec make_health_safe (non_neg_integer()) -> non_neg_integer().
+make_health_safe (Val) -> max(1, Val).
+
+-spec make_dodges_safe (non_neg_integer()) -> non_neg_integer().
+make_dodges_safe (Val) -> min_max(0, 100, Val).
+
+-spec make_parries_safe (non_neg_integer()) -> non_neg_integer().
+make_parries_safe (Val) -> min_max(0, 75, Val).
+
+-spec make_accuracy_safe (non_neg_integer()) -> non_neg_integer().
+make_accuracy_safe (Val) -> min_max(0, 100, Val).
+
+-spec make_double_hits_safe (non_neg_integer()) -> non_neg_integer().
+make_double_hits_safe (Val) -> min_max(0, 100, Val).
+
+-spec make_critical_hits_safe (non_neg_integer()) -> non_neg_integer().
+make_critical_hits_safe (Val) -> min_max(0, 100, Val).
+
+-spec mod_movement_points (integer(), type()) -> type().
+mod_movement_points (Mod, Stats) ->
+   Stats#statistics
+   {
+      movement_points =
+         make_movement_points_safe(get_movement_points(Stats) + Mod)
+   }.
+
+-spec mod_health (integer(), type()) -> type().
+mod_health (Mod, Stats) ->
+   Stats#statistics
+   {
+      health = make_health_safe(get_health(Stats) + Mod)
+   }.
+
+-spec mod_dodges (integer(), type()) -> type().
+mod_dodges (Mod, Stats) ->
+   Stats#statistics
+   {
+      dodges = make_dodges_safe(get_dodges(Stats) + Mod)
+   }.
+
+-spec mod_parries (integer(), type()) -> type().
+mod_parries (Mod, Stats) ->
+   Stats#statistics
+   {
+      parries = make_parries_safe(get_parries(Stats) + Mod)
+   }.
+
+-spec mod_accuracy (integer(), type()) -> type().
+mod_accuracy (Mod, Stats) ->
+   Stats#statistics
+   {
+      accuracy = make_accuracy_safe(get_accuracy(Stats) + Mod)
+   }.
+
+-spec mod_double_hits (integer(), type()) -> type().
+mod_double_hits (Mod, Stats) ->
+   Stats#statistics
+   {
+      double_hits = make_double_hits_safe(get_double_hits(Stats) + Mod)
+   }.
+
+-spec mod_critical_hits (integer(), type()) -> type().
+mod_critical_hits (Mod, Stats) ->
+   Stats#statistics
+   {
+      critical_hits = make_critical_hits_safe(get_critical_hits(Stats) + Mod)
+   }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,12 +179,6 @@ get_dodges (Stats) -> Stats#statistics.dodges.
 -spec get_parries (type()) -> non_neg_integer().
 get_parries (Stats) -> Stats#statistics.parries.
 
--spec get_damage_min (type()) -> non_neg_integer().
-get_damage_min (Stats) -> Stats#statistics.damage_min.
-
--spec get_damage_max (type()) -> non_neg_integer().
-get_damage_max (Stats) -> Stats#statistics.damage_max.
-
 -spec get_accuracy (type()) -> non_neg_integer().
 get_accuracy (Stats) -> Stats#statistics.accuracy.
 
@@ -134,38 +188,17 @@ get_double_hits (Stats) -> Stats#statistics.double_hits.
 -spec get_critical_hits (type()) -> non_neg_integer().
 get_critical_hits (Stats) -> Stats#statistics.critical_hits.
 
--spec get_damages (type()) -> {non_neg_integer(), non_neg_integer()}.
-get_damages (Stats) ->
-   {
-      Stats#statistics.damage_min,
-      Stats#statistics.damage_max
-   }.
+-spec get_damage_modifier (type()) -> float().
+get_damage_modifier (Stats) -> Stats#statistics.damage_modifier.
 
--spec new
-   (
-      shr_attributes:type(),
-      {shr_weapon:id(), shr_weapon:id()},
-      shr_armor:id()
-   )
-   -> type().
-new (BaseAttributes, WeaponIDs, ArmorID) ->
-   {ActiveWeaponID, _} = WeaponIDs,
-   ActiveWeapon = shr_weapon:from_id(ActiveWeaponID),
-   {MinDamage, MaxDamage} = shr_weapon:get_damages(ActiveWeapon),
-   Armor = shr_armor:from_id(ArmorID),
-   Attributes =
-      shr_armor:apply_to_attributes
-      (
-         Armor,
-         shr_weapon:apply_to_attributes(ActiveWeapon, BaseAttributes)
-      ),
+-spec new_raw (shr_attributes:type()) -> type().
+new_raw (Attributes) ->
    Constitution = shr_attributes:get_constitution(Attributes),
    Dexterity = shr_attributes:get_dexterity(Attributes),
    Intelligence = shr_attributes:get_intelligence(Attributes),
    Mind = shr_attributes:get_mind(Attributes),
    Speed = shr_attributes:get_speed(Attributes),
    Strength = shr_attributes:get_strength(Attributes),
-   DamageBaseModifier = damage_base_modifier(Strength),
 
    #statistics
    {
@@ -180,21 +213,23 @@ new (BaseAttributes, WeaponIDs, ArmorID) ->
             average([Constitution, Constitution, Constitution, Mind])
          ),
       dodges =
-         min_max(0, 100, sudden_exp_growth(average([Dexterity, Mind, Speed]))),
+         sudden_exp_growth(average([Dexterity, Mind, Speed])),
       parries =
-         min_max
+         sudden_exp_growth
          (
-            0,
-            75,
-            sudden_exp_growth
-            (
-               average([Dexterity, Intelligence, Speed, Strength])
-            )
+            average([Dexterity, Intelligence, Speed, Strength])
          ),
-      damage_min = apply_damage_base_modifier(DamageBaseModifier, MinDamage),
-      damage_max = apply_damage_base_modifier(DamageBaseModifier, MaxDamage),
-      accuracy = min_max(0, 100, sudden_squared_growth(Dexterity)),
-      double_hits =
-         min_max(0, 100, sudden_squared_growth(average([Mind, Speed]))),
-      critical_hits = min_max(0, 100, sudden_squared_growth(Intelligence))
+      accuracy = sudden_squared_growth(Dexterity),
+      double_hits = sudden_squared_growth(average([Mind, Speed])),
+      critical_hits = sudden_squared_growth(Intelligence),
+      damage_modifier = damage_base_modifier(Strength)
    }.
+
+-spec apply_mod (atom(), integer(), type()) -> type().
+apply_mod(mheal, Value, Stats) -> mod_health(Value, Stats);
+apply_mod(mpts, Value, Stats) -> mod_movement_points(Value, Stats);
+apply_mod(dodg, Value, Stats) -> mod_dodges(Value, Stats);
+apply_mod(pary, Value, Stats) -> mod_parries(Value, Stats);
+apply_mod(accu, Value, Stats) -> mod_accuracy(Value, Stats);
+apply_mod(dhit, Value, Stats) -> mod_double_hits(Value, Stats);
+apply_mod(crit, Value, Stats) -> mod_critical_hits(Value, Stats).

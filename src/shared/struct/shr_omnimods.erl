@@ -24,6 +24,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Accessors
 -export
 (
    [
@@ -32,7 +33,7 @@
    ]
 ).
 
-%%%% Accessors
+%%%% Modification
 -export
 (
    [
@@ -41,12 +42,21 @@
    ]
 ).
 
+%%%% Access
 -export
 (
    [
-      apply_to_attributes/3,
-      apply_to_statistics/3,
+      apply_to_attributes/2,
+      apply_to_statistics/2,
       get_attack_damage/3
+   ]
+).
+
+%%%% Export
+-export
+(
+   [
+      encode/1
    ]
 ).
 
@@ -68,6 +78,21 @@ apply_coefficient_to_mods (Coef, Mods) ->
 -spec merge_mods (mods(), mods()) -> mods().
 merge_mods (ModsA, ModsB) ->
    dict:merge(fun (_Name, ValA, ValB) -> (ValA + ValB) end, ModsA, ModsB).
+
+-spec encode_mods (mods()) -> list(any()).
+encode_mods (Mods) ->
+   lists:map
+   (
+      fun ({Name, Value}) ->
+         {
+            [
+               {<<"t">>, Name},
+               {<<"v">>, Value}
+            ]
+         }
+      end,
+      dict:to_list(Mods)
+   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,33 +153,31 @@ apply_coefficient (Coef, Omnimods) ->
       defmods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.defmods)
    }.
 
-%%% Application
+%%% Access
 -spec apply_to_attributes
    (
-      fun((atom(), integer(), shr_attributes:type()) -> shr_attributes:type()),
       type(),
       shr_attributes:type()
    )
    -> shr_attributes:type().
-apply_to_attributes (UpdateFun, Omnimods, Attributes) ->
+apply_to_attributes (Omnimods, Attributes) ->
    dict:fold
    (
-      UpdateFun,
+      fun shr_attributes:apply_mod/3,
       Attributes,
       Omnimods#omnimods.attmods
    ).
 
 -spec apply_to_statistics
    (
-      fun((atom(), integer(), shr_statistics:type()) -> shr_statistics:type()),
       type(),
       shr_statistics:type()
    )
    -> shr_statistics:type().
-apply_to_statistics (UpdateFun, Omnimods, Statistics) ->
+apply_to_statistics (Omnimods, Statistics) ->
    dict:fold
    (
-      UpdateFun,
+      fun shr_statistics:apply_mod/3,
       Statistics,
       Omnimods#omnimods.attmods
    ).
@@ -187,3 +210,15 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
       ),
 
    Result.
+
+%%% Export
+-spec encode (type()) -> {list(any())}.
+encode (Omnimods) ->
+   {
+      [
+         {<<"attm">>, encode_mods(Omnimods#omnimods.attmods)},
+         {<<"stam">>, encode_mods(Omnimods#omnimods.stamods)},
+         {<<"atkm">>, encode_mods(Omnimods#omnimods.atkmods)},
+         {<<"defm">>, encode_mods(Omnimods#omnimods.defmods)}
+      ]
+   }.

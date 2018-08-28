@@ -46,7 +46,9 @@
       set_unsafe_intelligence/2,
       set_unsafe_mind/2,
       set_unsafe_speed/2,
-      set_unsafe_strength/2
+      set_unsafe_strength/2,
+
+      apply_mod/3
    ]
 ).
 
@@ -54,7 +56,7 @@
 -export
 (
    [
-      random/0
+      default/0
    ]
 ).
 
@@ -63,6 +65,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec make_safe (integer()) -> non_neg_integer().
 make_safe (Val) -> max(0, min(100, Val)).
+
+-spec mod_unsafe_constitution (integer(), type()) -> type().
+mod_unsafe_constitution (Val, Att) ->
+   set_constitution(make_safe(get_constitution(Att) + Val), Att).
+
+-spec mod_unsafe_dexterity (integer(), type()) -> type().
+mod_unsafe_dexterity (Val, Att) ->
+   set_dexterity(make_safe(get_dexterity(Att) + Val), Att).
+
+-spec mod_unsafe_intelligence (integer(), type()) -> type().
+mod_unsafe_intelligence (Val, Att) ->
+   set_intelligence(make_safe(get_intelligence(Att) + Val), Att).
+
+-spec mod_unsafe_mind (integer(), type()) -> type().
+mod_unsafe_mind (Val, Att) -> set_mind(make_safe(get_mind(Att) + Val), Att).
+
+-spec mod_unsafe_speed (integer(), type()) -> type().
+mod_unsafe_speed (Val, Att) -> set_speed(make_safe(get_speed(Att) + Val), Att).
+
+-spec mod_unsafe_strength (integer(), type()) -> type().
+mod_unsafe_strength (Val, Att) ->
+   set_strength(make_safe(get_strength(Att) + Val), Att).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -122,14 +146,22 @@ set_unsafe_speed (Val, Att) -> set_speed(make_safe(Val), Att).
 -spec set_unsafe_strength (integer(), type()) -> type().
 set_unsafe_strength (Val, Att) -> set_strength(make_safe(Val), Att).
 
--spec random () -> type().
-random () ->
+-spec default () -> type().
+default () ->
    #attributes
    {
-      constitution = shr_roll:percentage(),
-      dexterity = shr_roll:percentage(),
-      intelligence = shr_roll:percentage(),
-      mind = shr_roll:percentage(),
-      speed = shr_roll:percentage(),
-      strength = shr_roll:percentage()
+      constitution = 50,
+      dexterity = 50,
+      intelligence = 50,
+      mind = 50,
+      speed = 50,
+      strength = 50
    }.
+
+-spec apply_mod (atom(), integer(), type()) -> type().
+apply_mod (con, Value, Att) -> mod_unsafe_constitution(Value, Att);
+apply_mod (dex, Value, Att) -> mod_unsafe_dexterity(Value, Att);
+apply_mod (int, Value, Att) -> mod_unsafe_intelligence(Value, Att);
+apply_mod (min, Value, Att) -> mod_unsafe_mind(Value, Att);
+apply_mod (spe, Value, Att) -> mod_unsafe_speed(Value, Att);
+apply_mod (str, Value, Att) -> mod_unsafe_strength(Value, Att).

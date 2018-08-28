@@ -12,11 +12,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec encode_category (shr_armor:category()) -> binary().
-encode_category (kinetic) -> <<"k">>;
-encode_category (leather) -> <<"l">>;
-encode_category (chain) -> <<"c">>;
-encode_category (plate) -> <<"p">>.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,7 +23,6 @@ generate (Armor) ->
          {<<"msg">>, <<"add_armor">>},
          {<<"id">>, shr_armor:get_id(Armor)},
          {<<"nam">>, shr_armor:get_name(Armor)},
-         {<<"ct">>, encode_category(shr_armor:get_category(Armor))},
-         {<<"cf">>, shr_armor:get_coefficient(Armor)}
+         {<<"omni">>, shr_omnimods:encode(shr_armor:get_omnimods(Armor))}
       ]
    }.

@@ -16,14 +16,13 @@
       rank :: rank(),
       icon :: binary(),
       portrait :: binary(),
-      attributes :: shr_attributes:type(),
-      statistics :: shr_statistics:type(),
       weapon_ids :: {shr_weapon:id(), shr_weapon:id()},
       armor_id :: shr_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
       is_active :: boolean(),
-      is_defeated :: boolean()
+      is_defeated :: boolean(),
+      permanent_omnimods :: shr_omnimods:type()
    }
 ).
 
@@ -43,8 +42,6 @@
       get_rank/1,
       get_icon/1,
       get_portrait/1,
-      get_attributes/1,
-      get_statistics/1,
       get_weapon_ids/1,
       get_armor_id/1,
       get_location/1,
@@ -52,18 +49,17 @@
       get_is_alive/1,
       get_is_active/1,
       get_is_defeated/1,
+      get_permanent_omnimods/1,
 
       set_rank/2,
       set_weapon_ids/2,
       set_armor_id/2,
-      set_statistics/2,
       set_location/2,
       set_current_health/2,
       set_is_active/2,
       set_is_defeated/2,
 
       get_rank_field/0,
-      get_statistics_field/0,
       get_weapons_field/0,
       get_location_field/0,
       get_current_health_field/0,
@@ -84,27 +80,40 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec find_random_location
    (
-      non_neg_integer(),
-      non_neg_integer(),
+      btl_map:type(),
       list({non_neg_integer(), non_neg_integer()})
    )
-   -> {non_neg_integer(), non_neg_integer()}.
-find_random_location (MapWidth, MapHeight, ForbiddenLocations) ->
-   X = shr_roll:between(0, (MapWidth - 1)),
-   Y = shr_roll:between(0, (MapHeight - 1)),
+   -> {{non_neg_integer(), non_neg_integer()}, shr_tile:type()}.
+find_random_location (Map, ForbiddenLocations) ->
+   MapWidth = btl_map:get_width(Map),
+   MapHeight = btl_map:get_height(Map),
 
-   IsForbidden = lists:member({X, Y}, ForbiddenLocations),
+   Candidate =
+      {
+         shr_roll:between(0, (MapWidth - 1)),
+         shr_roll:between(0, (MapHeight - 1))
+      },
+
+   IsForbidden = lists:member(Candidate, ForbiddenLocations),
 
    case IsForbidden of
-      true ->
-         find_random_location
-         (
-            MapWidth,
-            MapHeight,
-            ForbiddenLocations
-         );
+      true -> find_random_location(Map, ForbiddenLocations);
 
-      _ -> {X, Y}
+      _ ->
+         Tile =
+            shr_tile:from_class_id
+            (
+               shr_tile:extract_main_class_id
+               (
+                  btl_map:get_tile_instance(Candidate, Map)
+               )
+            ),
+
+         case (shr_tile:get_cost(Tile) > 200) of
+            true -> find_random_location(Map, ForbiddenLocations);
+
+            false -> {Candidate, Tile}
+         end
    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,23 +138,20 @@ get_icon (Char) -> Char#character.icon.
 -spec get_portrait (type()) -> binary().
 get_portrait (Char) -> Char#character.portrait.
 
--spec get_attributes (type()) -> shr_attributes:type().
-get_attributes (Char) -> Char#character.attributes.
-
 -spec get_armor_id (type()) -> shr_armor:id().
 get_armor_id (Char) -> Char#character.armor_id.
 
 -spec get_weapon_ids (type()) -> {shr_weapon:id(), shr_weapon:id()}.
 get_weapon_ids (Char) -> Char#character.weapon_ids.
 
--spec get_statistics (type()) -> shr_statistics:type().
-get_statistics (Char) -> Char#character.statistics.
-
 -spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
 get_location (Char) -> Char#character.location.
 
 -spec get_current_health (type()) -> integer().
 get_current_health (Char) -> Char#character.current_health.
+
+-spec get_permanent_omnimods (type()) -> shr_omnimods:type().
+get_permanent_omnimods (Char) -> Char#character.permanent_omnimods.
 
 -spec get_is_alive (type()) -> boolean().
 get_is_alive (Char) ->
@@ -219,37 +225,54 @@ set_weapon_ids (WeaponIDs, Char) ->
       weapon_ids = WeaponIDs
    }.
 
--spec set_statistics
-   (
-      shr_statistics:type(),
-      type()
-   )
-   -> type().
-set_statistics (Stats, Char) ->
-   Char#character
-   {
-      statistics = Stats
-   }.
-
 %%%% Utils
 -spec random
    (
       non_neg_integer(),
       non_neg_integer(),
-      non_neg_integer(),
-      non_neg_integer(),
+      shr_omnimods:type(),
+      btl_map:type(),
       list({non_neg_integer(), non_neg_integer()})
    )
    -> type().
-random (ID, PlayerIX, MapWidth, MapHeight, ForbiddenLocations) ->
-   Location =
-      find_random_location(MapWidth, MapHeight, ForbiddenLocations),
-   WeaponIDs = {shr_weapon:random_id(), shr_weapon:random_id()},
+random (ID, PlayerIX, GlyphOmnimods, Map, ForbiddenLocations) ->
+   {Location, CurrentTile} = find_random_location(Map, ForbiddenLocations),
+   ActiveWeaponID = shr_weapon:random_id(),
+   WeaponIDs = {ActiveWeaponID, shr_weapon:random_id()},
    ArmorID = shr_armor:random_id(),
-   Attributes = shr_attributes:random(),
-   Statistics = shr_statistics:new(Attributes, WeaponIDs, ArmorID),
    IDAsListString = integer_to_list(ID),
    IDAsBinaryString = list_to_binary(IDAsListString),
+
+   Armor = shr_armor:from_id(ArmorID),
+   ActiveWeapon = shr_weapon:from_id(ActiveWeaponID),
+
+   PermanentOmnimods =
+      shr_omnimods:merge(shr_armor:get_omnimods(Armor), GlyphOmnimods),
+
+   CurrentOmnimods =
+      shr_omnimods:merge
+      (
+         shr_omnimods:merge
+         (
+            shr_weapon:get_omnimods(ActiveWeapon),
+            shr_tile:get_omnimods(CurrentTile)
+         ),
+         PermanentOmnimods
+      ),
+
+   CurrentAttributes =
+      shr_omnimods:apply_to_attributes
+      (
+         CurrentOmnimods,
+         shr_attributes:default()
+      ),
+
+   CurrentStatistics =
+      shr_omnimods:apply_to_statistics
+      (
+         CurrentOmnimods,
+         shr_statistics:new_raw(CurrentAttributes)
+      ),
 
    #character
    {
@@ -264,20 +287,17 @@ random (ID, PlayerIX, MapWidth, MapHeight, ForbiddenLocations) ->
          end,
       icon = IDAsBinaryString,
       portrait = IDAsBinaryString,
-      attributes = Attributes,
       weapon_ids = WeaponIDs,
       armor_id = ArmorID,
-      statistics = Statistics,
       location = Location,
-      current_health = shr_statistics:get_health(Statistics),
+      current_health = shr_statistics:get_health(CurrentStatistics),
       is_active = false,
-      is_defeated = false
+      is_defeated = false,
+      permanent_omnimods = PermanentOmnimods
    }.
 
 -spec get_rank_field() -> non_neg_integer().
 get_rank_field () -> #character.rank.
--spec get_statistics_field() -> non_neg_integer().
-get_statistics_field () -> #character.statistics.
 -spec get_weapons_field() -> non_neg_integer().
 get_weapons_field () -> #character.weapon_ids.
 -spec get_location_field() -> non_neg_integer().
