@@ -12,7 +12,7 @@
       id :: id(),
       width :: integer(),
       height :: integer(),
-      tile_ids :: array:array(btl_tile:instance())
+      tile_ids :: array:array(shr_tile:instance())
    }
 ).
 
@@ -72,10 +72,10 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_instances (type()) -> array:array(btl_tile:instance()).
+-spec get_tile_instances (type()) -> array:array(shr_tile:instance()).
 get_tile_instances (Map) -> Map#map.tile_ids.
 
--spec get_tile_instance (btl_location:type(), type()) -> btl_tile:instance().
+-spec get_tile_instance (btl_location:type(), type()) -> shr_tile:instance().
 get_tile_instance (Location, Map) ->
    TileIX = location_to_array_index(Map#map.width, Location),
    array:get(TileIX, Map#map.tile_ids).
@@ -89,7 +89,7 @@ get_tile_instance (Location, Map) ->
    )
    -> type().
 from_list (ID, Width, Height, List) ->
-   TileInstances = lists:map(fun btl_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
 
    #map
    {

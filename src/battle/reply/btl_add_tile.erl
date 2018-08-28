@@ -16,13 +16,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (btl_tile:type()) -> {list(any())}.
+-spec generate (shr_tile:type()) -> {list(any())}.
 generate (Tile) ->
    {
       [
          {<<"msg">>, <<"add_tile">>},
-         {<<"id">>, btl_tile:get_class_id(Tile)},
-         {<<"nam">>, btl_tile:get_name(Tile)},
-         {<<"ct">>, btl_tile:get_cost(Tile)}
+         {<<"id">>, shr_tile:get_class_id(Tile)},
+         {<<"nam">>, shr_tile:get_name(Tile)},
+         {<<"ct">>, shr_tile:get_cost(Tile)}
       ]
    }.

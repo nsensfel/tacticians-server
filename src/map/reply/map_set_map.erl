@@ -27,7 +27,7 @@ generate (Map) ->
             <<"t">>,
             lists:map
             (
-               fun map_tile:instance_to_int_list/1,
+               fun shr_tile:instance_to_int_list/1,
                array:sparse_to_list(map_map:get_tile_instances(Map))
             )
          }

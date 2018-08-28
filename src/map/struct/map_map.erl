@@ -13,7 +13,7 @@
       owner :: binary(),
       width :: integer(),
       height :: integer(),
-      tile_instances :: array:array(map_tile:instance())
+      tile_instances :: array:array(shr_tile:instance())
    }
 ).
 
@@ -87,10 +87,10 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_instances (type()) -> array:array(map_tile:instance()).
+-spec get_tile_instances (type()) -> array:array(shr_tile:instance()).
 get_tile_instances (Map) -> Map#map.tile_instances.
 
--spec get_tile_instance (map_location:type(), type()) -> map_tile:instance().
+-spec get_tile_instance (map_location:type(), type()) -> shr_tile:instance().
 get_tile_instance (Location, Map) ->
    TileIX = location_to_array_index(Map#map.width, Location),
    array:get(TileIX, Map#map.tile_instances).
@@ -114,7 +114,7 @@ get_tile_instances_field () -> #map.tile_instances.
    )
    -> type().
 from_list (ID, Owner, Width, Height, List) ->
-   TileInstances = lists:map(fun map_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
 
    #map
    {
@@ -134,7 +134,7 @@ from_list (ID, Owner, Width, Height, List) ->
    )
    -> type().
 update_from_list (Map, Width, Height, List) ->
-   TileInstances = lists:map(fun map_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
 
    Map#map
    {

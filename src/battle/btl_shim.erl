@@ -289,7 +289,7 @@ generate_random_battle () ->
          fun (_IX, TileInstance, CurrentTileIDs) ->
             sets:add_element
             (
-               btl_tile:extract_main_class_id(TileInstance),
+               shr_tile:extract_main_class_id(TileInstance),
                CurrentTileIDs
             )
          end,

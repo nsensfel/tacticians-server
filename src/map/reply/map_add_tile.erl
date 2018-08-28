@@ -16,13 +16,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (map_tile:type()) -> {list(any())}.
+-spec generate (shr_tile:type()) -> {list(any())}.
 generate (Tile) ->
    {
       [
          {<<"msg">>, <<"add_tile">>},
-         {<<"id">>, map_tile:get_class_id(Tile)},
-         {<<"nam">>, map_tile:get_name(Tile)},
-         {<<"ct">>, map_tile:get_cost(Tile)}
+         {<<"id">>, shr_tile:get_class_id(Tile)},
+         {<<"nam">>, shr_tile:get_name(Tile)},
+         {<<"ct">>, shr_tile:get_cost(Tile)}
       ]
    }.

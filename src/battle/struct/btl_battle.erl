@@ -12,7 +12,7 @@
       id :: id(),
       used_armor_ids :: list(shr_armor:id()),
       used_weapon_ids :: list(shr_weapon:id()),
-      used_tile_ids :: list(btl_tile:class_id()),
+      used_tile_ids :: list(shr_tile:class_id()),
       map :: btl_map:type(),
       characters :: array:array(btl_character:type()),
       players :: array:array(btl_player:type()),
@@ -92,7 +92,7 @@ get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
 -spec get_used_armor_ids (type()) -> list(shr_armor:id()).
 get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
 
--spec get_used_tile_ids (type()) -> list(btl_tile:class_id()).
+-spec get_used_tile_ids (type()) -> list(shr_tile:class_id()).
 get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 
 -spec get_map (type()) -> btl_map:type().
@@ -189,7 +189,7 @@ set_current_player_turn (PlayerTurn, Battle) ->
       list(btl_character:type()),
       list(shr_weapon:id()),
       list(shr_armor:id()),
-      list(btl_tile:class_id())
+      list(shr_tile:class_id())
    )
    -> type().
 new (ID, PlayersAsList, Map, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
