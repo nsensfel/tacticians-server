@@ -23,8 +23,8 @@ generate (Weapon) ->
          {<<"msg">>, <<"add_weapon">>},
          {<<"id">>, shr_weapon:get_id(Weapon)},
          {<<"nam">>, shr_weapon:get_name(Weapon)},
-         {<<"rmi">>, shr_weapon:get_range_minimum(Weapon)},
-         {<<"rma">>, shr_weapon:get_range_maximum(Weapon)},
-         {<<"omni">>, shr_omnimods:encode(shr_armor:get_omnimods(Weapon))}
+         {<<"rmi">>, shr_weapon:get_minimum_range(Weapon)},
+         {<<"rma">>, shr_weapon:get_maximum_range(Weapon)},
+         {<<"omni">>, shr_omnimods:encode(shr_weapon:get_omnimods(Weapon))}
       ]
    }.

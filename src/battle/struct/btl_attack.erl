@@ -30,7 +30,7 @@
 (
    [
       get_sequence/3,
-      get_description_of/3,
+      get_description_of/5,
       apply_to_healths/3
    ]
 ).
@@ -61,22 +61,10 @@ roll_precision (AttackerStatistics, DefenderStatistics) ->
       _ -> hits
    end.
 
--spec roll_damage
-   (
-      shr_statistics:type(),
-      shr_statistics:type()
-   )
-   -> {non_neg_integer(), boolean()}.
-roll_damage (AttackerStatistics, _DefenderStatistics) ->
-   {MinimumDamage, MaximumDamage} =
-      shr_statistics:get_damages(AttackerStatistics),
-   MaximumRoll = max(1, MaximumDamage - MinimumDamage),
-   BaseDamage = MinimumDamage + (rand:uniform(MaximumRoll) - 1),
+-spec roll_critical_hit (shr_statistics:type()) -> boolean().
+roll_critical_hit (AttackerStatistics) ->
    CriticalHitChance = shr_statistics:get_critical_hits(AttackerStatistics),
-   case shr_roll:percentage() of
-      X when (X =< CriticalHitChance) -> {(BaseDamage * 2), true};
-      _ -> {BaseDamage, false}
-   end.
+   (shr_roll:percentage() =< CriticalHitChance).
 
 -spec roll_parry (shr_statistics:type()) -> boolean().
 roll_parry (DefenderStatistics) ->
@@ -86,44 +74,51 @@ roll_parry (DefenderStatistics) ->
 -spec effect_of_attack
    (
       order(),
-      btl_character:type(),
-      btl_character:type(),
+      shr_statistics:type(),
+      shr_omnimods:type(),
+      shr_statistics:type(),
+      shr_omnimods:type(),
       boolean()
    )
    -> type().
-effect_of_attack (Order, Attacker, Defender, CanParry) ->
-   AttackerStatistics = btl_character:get_statistics(Attacker),
-   DefenderStatistics = btl_character:get_statistics(Defender),
+effect_of_attack (Order, AtkStats, AtkOmni, DefStats, DefOmni, CanParry) ->
+   ParryIsSuccessful = (CanParry and roll_parry(DefStats)),
 
-   ParryIsSuccessful = (CanParry and roll_parry(DefenderStatistics)),
-
-   {ActualAtkStatistics, ActualDefStatistics} =
+   {ActualAtkStats, ActualDefStats} =
       case ParryIsSuccessful of
-         true -> {DefenderStatistics, AttackerStatistics};
-         false -> {AttackerStatistics, DefenderStatistics}
-      end,
-   {ActualAttacker, ActualDefender} =
-      case ParryIsSuccessful of
-         true -> {Defender, Attacker};
-         false -> {Attacker, Defender}
+         true -> {DefStats, AtkStats};
+         false -> {AtkStats, DefStats}
       end,
 
-   ActualDefArmor = shr_armor:from_id(btl_character:get_armor_id(ActualDefender)),
-   {ActualAtkWeaponID, _} = btl_character:get_weapon_ids(ActualAttacker),
-   ActualAtkWeaponDmgType =
-      shr_weapon:get_damage_type(shr_weapon:from_id(ActualAtkWeaponID)),
+   {ActualAtkOmni, ActualDefOmni} =
+      case ParryIsSuccessful of
+         true -> {DefOmni, AtkOmni};
+         false -> {AtkOmni, DefOmni}
+      end,
 
-   Precision = roll_precision(ActualAtkStatistics, ActualDefStatistics),
-   {Damage, IsCritical} = roll_damage(ActualAtkStatistics, ActualDefStatistics),
-   S0Damage =
+   Precision = roll_precision(ActualAtkStats, ActualDefStats),
+   IsCritical = roll_critical_hit(ActualAtkStats),
+
+   S0DamageMultiplier =
       case Precision of
          misses -> 0;
-         grazes -> trunc(Damage / 2);
-         hits -> Damage
+         grazes -> 0.5;
+         hits -> 1
       end,
-   ArmorResistance =
-      shr_armor:get_resistance_to(ActualAtkWeaponDmgType, ActualDefArmor),
-   ActualDamage = max(0, (S0Damage - ArmorResistance)),
+
+   S1DamageMultiplier =
+      case IsCritical of
+         true -> (S0DamageMultiplier * 2);
+         false -> S0DamageMultiplier
+      end,
+
+   ActualDamage =
+      shr_omnimods:get_attack_damage
+      (
+         S1DamageMultiplier,
+         ActualAtkOmni,
+         ActualDefOmni
+      ),
 
    #attack
    {
@@ -151,26 +146,42 @@ encode_precision (misses) -> <<"m">>.
 -spec get_description_of
    (
       step(),
-      btl_character:type(),
-      btl_character:type()
+      shr_statistics:type(),
+      shr_omnimods:type(),
+      shr_statistics:type(),
+      shr_omnimods:type()
    )
    -> maybe_type().
-get_description_of ({first, CanParry}, Attacker, Defender) ->
-   effect_of_attack(first, Attacker, Defender, CanParry);
-get_description_of ({second, CanParry}, Attacker, Defender) ->
-   AttackerStatistics = btl_character:get_statistics(Attacker),
+get_description_of ({first, CanParry}, AtkStats, AtkOmni, DefStats, DefOmni) ->
+   effect_of_attack(first, AtkStats, AtkOmni, DefStats, DefOmni, CanParry);
+get_description_of ({second, CanParry}, AtkStats, AtkOmni, DefStats, DefOmni) ->
    AttackerDoubleAttackChange =
-      shr_statistics:get_double_hits(AttackerStatistics),
+      shr_statistics:get_double_hits(AtkStats),
 
    case shr_roll:percentage() of
       X when (X =< AttackerDoubleAttackChange) ->
-         effect_of_attack (second, Attacker, Defender, CanParry);
+         effect_of_attack
+         (
+            second,
+            AtkStats,
+            AtkOmni,
+            DefStats,
+            DefOmni,
+            CanParry
+         );
 
       _ ->
          nothing
    end;
-get_description_of ({counter, CanParry}, Attacker, Defender) ->
-   effect_of_attack(counter, Defender, Attacker, CanParry).
+get_description_of
+(
+   {counter, CanParry},
+   AtkStats,
+   AtkOmni,
+   DefStats,
+   DefOmni
+) ->
+   effect_of_attack(counter, DefStats, DefOmni, AtkStats, AtkOmni, CanParry).
 
 -spec apply_to_healths
    (
@@ -257,34 +268,28 @@ when
    )
    -> list(step()).
 get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
-   {AttackerDefenseRange, AttackerAttackRange} =
-      shr_weapon:get_ranges(AttackerWeapon),
-   {DefenderDefenseRange, DefenderAttackRange} =
-      shr_weapon:get_ranges(DefenderWeapon),
+   AttackerDefenseRange = shr_weapon:get_minimum_range(AttackerWeapon),
+   AttackerAttackRange =  shr_weapon:get_maximum_range(AttackerWeapon),
+   DefenderDefenseRange = shr_weapon:get_minimum_range(DefenderWeapon),
+   DefenderAttackRange =  shr_weapon:get_maximum_range(DefenderWeapon),
 
    AttackerCanAttack = (AttackRange =< AttackerAttackRange),
-   AttackerCanAttack = true,
    AttackerCanDefend =
       (AttackerCanAttack and (AttackRange > AttackerDefenseRange)),
-   AttackerCanParry =
-      (AttackerCanDefend and shr_weapon:can_parry(AttackerWeapon)),
+
+   true = (AttackerCanAttack == true),
 
    DefenderCanAttack = (AttackRange =< DefenderAttackRange),
    DefenderCanDefend =
       (DefenderCanAttack and (AttackRange > DefenderDefenseRange)),
-   DefenderCanParry =
-      (DefenderCanDefend and shr_weapon:can_parry(DefenderWeapon)),
 
-   First = {first, DefenderCanParry},
-   Second = {second, DefenderCanParry},
-   Counter = {counter, AttackerCanParry},
+   First = {first, DefenderCanDefend},
+   Second = {second, DefenderCanDefend},
+   Counter = {counter, AttackerCanDefend},
 
-   if
-      (not DefenderCanDefend) ->
-         [First, Second];
-
-      true ->
-         [First, Counter, Second]
+   case DefenderCanDefend of
+      true -> [First, Counter, Second];
+      _ -> [First, Second]
    end.
 
 -spec encode (type()) -> {list(any())}.

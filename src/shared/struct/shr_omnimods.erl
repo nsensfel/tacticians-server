@@ -197,8 +197,9 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
       dict:fold
       (
          fun (Name, BaseDmg, CurrentResult) ->
+            NormDmg = max(0, BaseDmg),
             ModifiedDmg =
-               (shr_math_util:ceil(BaseDmg * AttackModifier) - BaseDefense),
+               (shr_math_util:ceil(NormDmg * AttackModifier) - BaseDefense),
             case dict:find(Name, DefenderOmnimodsDefmods) of
                {ok, Def} when (Def >= ModifiedDmg) -> CurrentResult;
                {ok, Def} -> (CurrentResult + (ModifiedDmg - Def));
