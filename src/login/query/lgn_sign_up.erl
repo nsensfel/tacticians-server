@@ -118,7 +118,7 @@ generate_reply (QueryState) ->
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   %% TODO: validate input
+   %% TODO [SECURITY][LOW]: validate input size.
    QueryState = register_user(Input),
    generate_reply(QueryState).
 

@@ -69,12 +69,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec validate_name (binary()) -> ok.
 validate_name (_Name) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_portrait (shr_inventory:type(), binary()) -> ok.
 validate_portrait (_Inventory, _Portrait) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_weapons
@@ -84,22 +84,22 @@ validate_portrait (_Inventory, _Portrait) ->
    )
    -> ok.
 validate_weapons (_Inventory, {_ActiveWeapon, _SecondaryWeapon}) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_armor (shr_inventory:type(), shr_armor:id()) -> ok.
 validate_armor (_Inventory, _Armor) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_glyphs (shr_inventory:type(), array:array(shr_glyph:id())) -> ok.
 validate_glyphs (_Inventory, _Glyphs) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_glyph_board (shr_inventory:type(), shr_glyph_board:id()) -> ok.
 validate_glyph_board (_Inventory, _GlyphBoard) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 -spec validate_glyphs_on_board
@@ -109,7 +109,7 @@ validate_glyph_board (_Inventory, _GlyphBoard) ->
    )
    -> ok.
 validate_glyphs_on_board (_Glyphs, _GlyphBoard) ->
-   % TODO: unimplemented
+   % TODO [SECURITY][LOW]: unimplemented
    ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

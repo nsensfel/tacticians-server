@@ -61,10 +61,9 @@ get_path_cost_and_destination (Data, Path) ->
    )
    -> 'ok'.
 assert_character_can_move (Data, Cost) ->
-   Character = btl_character_turn_data:get_character(Data),
-   CharacterStatistics = btl_character:get_statistics(Character),
-   CharacterMovementPoints =
-      shr_statistics:get_movement_points(CharacterStatistics),
+   CharacterData = btl_character_turn_data:get_character_current_data(Data),
+   CharacterStats= btl_character_current_data:get_statistics(CharacterData),
+   CharacterMovementPoints = shr_statistics:get_movement_points(CharacterStats),
 
    true = (Cost =< CharacterMovementPoints),
 
@@ -72,19 +71,24 @@ assert_character_can_move (Data, Cost) ->
 
 -spec commit_move
    (
+      btl_character_current_data:type(),
       btl_character_turn_update:type(),
       list(btl_direction:type()),
       btl_location:type()
    )
    -> btl_character_turn_update:type().
-commit_move (Update, Path, NewLocation) ->
+commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
    Data = btl_character_turn_update:get_data(Update),
    Character = btl_character_turn_data:get_character(Data),
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
 
    UpdatedCharacter = btl_character:set_location(NewLocation, Character),
+   S0Data = btl_character_turn_data:set_character(UpdatedCharacter, Data),
+   S1Data = btl_character_turn_data:refresh_character_current_data(S0Data),
 
-   UpdatedData = btl_character_turn_data:set_character(UpdatedCharacter, Data),
+   S0Update = btl_character_turn_update:set_data(S1Data, Update),
+   S1Update =
+      btl_turn_actions:handle_max_health_changes(PreviousCurrentData, S0Update),
 
    TimelineItem =
       btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
@@ -103,15 +107,15 @@ commit_move (Update, Path, NewLocation) ->
          ]
       ),
 
-   S0Update =
+   S2Update =
       btl_character_turn_update:add_to_timeline
       (
          TimelineItem,
          DBQuery,
-         Update
+         S1Update
       ),
 
-   btl_character_turn_update:set_data(UpdatedData, S0Update).
+   S2Update.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -124,9 +128,11 @@ commit_move (Update, Path, NewLocation) ->
    -> btl_character_turn_update:type().
 handle (BattleAction, Update) ->
    Data = btl_character_turn_update:get_data(Update),
+   CharacterCurrentData =
+      btl_character_turn_data:get_character_current_data(Data),
    Path = btl_battle_action:get_path(BattleAction),
 
    {PathCost, NewLocation} = get_path_cost_and_destination(Data, Path),
    assert_character_can_move(Data, PathCost),
 
-   commit_move(Update, Path, NewLocation).
+   commit_move(CharacterCurrentData, Update, Path, NewLocation).

@@ -89,9 +89,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec secure_value (binary(), binary()) -> binary().
 secure_value (Salt, Val) ->
-   % TODO: Maybe it would be a good idea to include the user's IP in there as
-   % well. This would ensure that sessions alway use the same server (and thus,
-   % the same caches), and make timed cache exploits easier to prevent.
+   % TODO [SECURITY][LOW]: Maybe it would be a good idea to include the user's
+   % IP in there as well. This would ensure that sessions alway use the same
+   % server (and thus, the same caches), and make timed cache exploits easier to
+   % prevent.
    SaltedVal = erlang:iolist_to_binary([Salt, Val]),
    HashedSaltedVal = crypto:hash(sha384, SaltedVal),
 

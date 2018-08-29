@@ -89,7 +89,7 @@ update_data (QueryState, Input) ->
 
    chr_character:validate(Inventory, Character),
 
-   %% TODO
+   %% TODO [FUNCTION: chr][REQUIRED]: unimplemented.
    QueryState.
 
 -spec commit_update (query_state(), input()) -> 'ok'.

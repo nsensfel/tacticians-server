@@ -47,7 +47,7 @@ parse_input (Req) ->
    MapHeight = maps:get(<<"h">>, JSONReqMap),
    MapContent = maps:get(<<"t">>, JSONReqMap),
 
-   %% TODO: those checks should be done while queries are locked.
+   %% TODO [LOW]: those checks should be done while queries are locked.
    true = (MapWidth > 0),
    true = (MapHeight > 0),
    true = (length(MapContent) == (MapWidth * MapHeight)),
@@ -64,7 +64,8 @@ parse_input (Req) ->
                lists:all
                (
                   fun (Bo) ->
-                     %% FIXME: this does not prevent "Error" tiles.
+                     %% FIXME [SECURITY][LOW]: this does not prevent "Error"
+                     %% tiles.
                      (Bo >= 0)
                   end,
                   B

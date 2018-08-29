@@ -20,6 +20,6 @@
 generate_random_character_roster () ->
    Result = chr_roster:new(<<"0">>, <<"0">>),
 
-   %% TODO: unimplemented.
+   %% TODO [DEBUG][REQUIRED]: unimplemented.
 
    Result.

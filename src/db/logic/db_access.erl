@@ -88,7 +88,7 @@ insert_at (DB, ID, ReadPerm, WritePerm, Value) ->
       any())
    -> ({'aborted', any()} | {'atomic', {'ok', binary()}}).
 insert (DB, ReadPerm, WritePerm, Value) ->
-   ID = <<"?">>, %% TODO: gen new ID.
+   ID = <<"?">>, %% TODO [FUNCTION: db][HIGH]: gen new ID.
    case insert_at(DB, ID, ReadPerm, WritePerm, Value) of
       {'atomic', 'ok'} -> {'atomic', {'ok', ID}};
       {aborted, Val} -> {aborted, Val}
@@ -114,7 +114,7 @@ reserve (DB, ID, Cred) ->
       [Cred],
       {
          reserved,
-         <<"?">> %% TODO: timestamp
+         <<"?">> %% TODO [FUNCTION: db][LOW]: timestamp
       }
    ).
 
@@ -126,7 +126,7 @@ reserve (DB, ID, Cred) ->
    )
    -> ({'aborted', any()} | {'atomic', ({'ok', any()} | 'not_found')}).
 remove (_DB, _ID, _Cred) ->
-   %% TODO: unimplemented
+   %% TODO [FUNCTION: db][MEDIUM]: unimplemented
    %% Don't forget to checkt that Cred has write access before removing the
    %% value.
    {'aborted', 'unimplemented'}.

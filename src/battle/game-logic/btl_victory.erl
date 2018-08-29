@@ -69,7 +69,8 @@ handle_player_defeat (PlayerIX, Update) ->
    Battle = btl_character_turn_data:get_battle(Data),
    Characters = btl_battle:get_characters(Battle),
 
-   %% FIXME: The controlled character might slip through.
+   %% FIXME [FUNCTION: battle][MEDIUM]: The controlled character might slip
+   %% through.
    {UpdatedCharacters, ModifiedIXs} =
       mark_players_characters_as_defeated(PlayerIX, Characters),
 
@@ -81,7 +82,8 @@ handle_player_defeat (PlayerIX, Update) ->
          ModifiedIXs
       ),
 
-   %% TODO: Battle.player[PlayerIX].is_active <- false
+   %% TODO [FUNCTION: battle][MEDIUM]: Battle.player[PlayerIX].is_active <-
+   %% false
 
    UpdatedBattle = btl_battle:set_characters(UpdatedCharacters, Battle),
    UpdatedData = btl_character_turn_data:set_battle(UpdatedBattle, Data),
