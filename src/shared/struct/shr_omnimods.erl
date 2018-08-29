@@ -179,7 +179,7 @@ apply_to_statistics (Omnimods, Statistics) ->
    (
       fun shr_statistics:apply_mod/3,
       Statistics,
-      Omnimods#omnimods.attmods
+      Omnimods#omnimods.stamods
    ).
 
 -spec get_attack_damage (float(), type(), type()) -> non_neg_integer().
