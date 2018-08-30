@@ -187,28 +187,56 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
    AttackerOmnimodsAttmods = AttackerOmnimods#omnimods.atkmods,
    DefenderOmnimodsDefmods = DefenderOmnimods#omnimods.defmods,
 
+   io:format("Attack!~n"),
+
    BaseDefense =
       case dict:find(base, DefenderOmnimodsDefmods) of
          {ok, BaseDefValue} -> BaseDefValue;
          _ -> 0
       end,
 
+   io:format("Defender base defense: ~p~n", [BaseDefense]),
+
    Result =
       dict:fold
       (
          fun (Name, BaseDmg, CurrentResult) ->
+            io:format("Precalc damage from ~p: ~p~n", [Name, BaseDmg]),
             NormDmg = max(0, BaseDmg),
             ModifiedDmg =
                (shr_math_util:ceil(NormDmg * AttackModifier) - BaseDefense),
+            io:format("Actual attack damage from ~p: ~p~n", [Name, ModifiedDmg]),
             case dict:find(Name, DefenderOmnimodsDefmods) of
-               {ok, Def} when (Def >= ModifiedDmg) -> CurrentResult;
-               {ok, Def} -> (CurrentResult + (ModifiedDmg - Def));
-               _ -> (CurrentResult + ModifiedDmg)
+               {ok, Def} when (Def >= ModifiedDmg) ->
+                  io:format
+                  (
+                     "Defender had ~p ~p armor, ignoring damage.~n",
+                     [Def, Name]
+                  ),
+                  CurrentResult;
+
+               {ok, Def} ->
+                  DamageTaken = (ModifiedDmg - Def),
+                  io:format
+                  (
+                     "Defender had ~p ~p armor, taking ~p damage.~n",
+                     [Def, Name, DamageTaken]
+                  ),
+                  (CurrentResult + DamageTaken);
+               _ ->
+                  io:format
+                  (
+                     "Defender had no ~p armor, taking full damage.~n",
+                     [Name]
+                  ),
+                  (CurrentResult + ModifiedDmg)
             end
          end,
          0,
          AttackerOmnimodsAttmods
       ),
+
+   io:format("Defender took a total of ~p damage.~n", [Result]),
 
    Result.
 

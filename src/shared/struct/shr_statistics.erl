@@ -90,7 +90,7 @@ sudden_exp_growth (V) -> float_to_int(math:pow(4.0, V / 25.0)).
 %already_high_slow_growth (V) -> float_to_int(30 * math:log((V + 5)/4)).
 
 -spec damage_base_modifier (non_neg_integer()) -> float().
-damage_base_modifier (Strength) -> ((math:pow(Strength, 1.8) / 2000.0) - 0.75).
+damage_base_modifier (Strength) -> (math:pow((Strength + 10)*4, 1.5) / 3000.0).
 
 -spec make_movement_points_safe (non_neg_integer()) -> non_neg_integer().
 make_movement_points_safe (Val) -> min_max(0, 200, Val).
