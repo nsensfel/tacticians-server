@@ -103,7 +103,7 @@ commit_update (QueryState) ->
          ]
       ),
 
-   shr_database:commit(Query),
+   ok = shr_database:commit(Query),
    shr_timed_cache:update(player_db, PlayerID, PlayerID, UpdatedPlayer),
 
    'ok'.
@@ -123,7 +123,7 @@ handle (Req) ->
    QueryState = fetch_data(Input),
    Update = update_data(QueryState, Input),
    commit_update(Update),
-   generate_reply(QueryState).
+   generate_reply(Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
