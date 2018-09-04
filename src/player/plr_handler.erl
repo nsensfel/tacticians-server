@@ -1,4 +1,4 @@
--module(qry_handler).
+-module(plr_handler).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,11 +16,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec start (any()) -> 'ok'.
-start (_YawsParams) ->
-   {ok, TimedCachesManagerPid} = shr_timed_caches_manager:start(),
-   ok = plr_handler:start(TimedCachesManagerPid),
-   ok = lgn_handler:start(TimedCachesManagerPid),
-   ok = btl_handler:start(TimedCachesManagerPid),
-   ok = map_handler:start(TimedCachesManagerPid),
+-spec start (pid()) -> 'ok'.
+start (_TimedCachesManagerPid) ->
    ok.

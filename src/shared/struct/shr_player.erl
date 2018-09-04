@@ -16,7 +16,10 @@
       token :: binary(), % salt(crypto:strong_rand_bytes(512))
       email :: binary(),
       last_active :: integer(),
-      maps :: list(binary()),
+      maps :: array:array(shr_map_summary:type()),
+      campaigns :: array:array(shr_battle_summary:type()),
+      invasions :: array:array(shr_battle_summary:type()),
+      events :: array:array(shr_battle_summary:type()),
       roster_id :: binary(),
       inventory_id :: binary()
    }
@@ -46,7 +49,10 @@
       get_token/1,
       get_email/1,
       get_last_active/1,
-      get_maps/1,
+      get_map_summaries/1,
+      get_campaign_summaries/1,
+      get_invasion_summaries/1,
+      get_event_summaries/1,
       get_inventory_id/1,
       get_roster_id/1,
 
@@ -56,7 +62,10 @@
       new_token/1,
       set_email/2,
       refresh_active/1,
-      set_maps/2,
+      set_map_summaries/2,
+      set_campaign_summaries/2,
+      set_invasion_summaries/2,
+      set_event_summaries/2,
       set_inventory_id/2,
       set_roster_id/2
    ]
@@ -71,7 +80,10 @@
       get_token_field/0,
       get_email_field/0,
       get_last_active_field/0,
-      get_maps_field/0,
+      get_map_summaries_field/0,
+      get_campaign_summaries_field/0,
+      get_invasion_summaries_field/0,
+      get_event_summaries_field/0,
       get_inventory_id_field/0,
       get_roster_id_field/0
    ]
@@ -103,6 +115,7 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (binary(), binary(), binary(), binary()) -> type().
 new (ID, Username, Password, Email) ->
+   EmptyArray = array:new(),
    Result =
       #player
       {
@@ -112,7 +125,10 @@ new (ID, Username, Password, Email) ->
          token = <<"">>,
          email = Email,
          last_active = 0,
-         maps = [],
+         maps = EmptyArray,
+         campaigns = EmptyArray,
+         invasions = EmptyArray,
+         events = EmptyArray,
          inventory_id = <<"0">>,
          roster_id = <<"0">>
       },
@@ -142,8 +158,17 @@ get_email (Player) -> Player#player.email.
 -spec get_last_active (type()) -> integer().
 get_last_active (Player) -> Player#player.last_active.
 
--spec get_maps (type()) -> list(binary()).
-get_maps (Player) -> Player#player.maps.
+-spec get_map_summaries (type()) -> array:array(shr_map_summary:type()).
+get_map_summaries (Player) -> Player#player.maps.
+
+-spec get_campaign_summaries (type()) -> array:array(shr_battle_summary:type()).
+get_campaign_summaries (Player) -> Player#player.campaigns.
+
+-spec get_invasion_summaries (type()) -> array:array(shr_battle_summary:type()).
+get_invasion_summaries (Player) -> Player#player.invasions.
+
+-spec get_event_summaries (type()) -> array:array(shr_battle_summary:type()).
+get_event_summaries (Player) -> Player#player.events.
 
 -spec get_roster_id (type()) -> binary().
 get_roster_id (Player) -> Player#player.roster_id.
@@ -184,8 +209,44 @@ refresh_active (Player) ->
       last_active = erlang:system_time(second)
    }.
 
--spec set_maps (list(binary()), type()) -> type().
-set_maps (Maps, Player) -> Player#player{ maps = Maps }.
+-spec set_map_summaries (array:array(shr_map_summary:type()), type()) -> type().
+set_map_summaries (Maps, Player) -> Player#player{ maps = Maps }.
+
+-spec set_campaign_summaries
+   (
+      array:array(shr_battle_summary:type()),
+      type()
+   )
+   -> type().
+set_campaign_summaries (Campaigns, Player) ->
+   Player#player
+   {
+      campaigns = Campaigns
+   }.
+
+-spec set_invasion_summaries
+   (
+      array:array(shr_battle_summary:type()),
+      type()
+   )
+   -> type().
+set_invasion_summaries (Invasions, Player) ->
+   Player#player
+   {
+      invasions = Invasions
+   }.
+
+-spec set_event_summaries
+   (
+      array:array(shr_battle_summary:type()),
+      type()
+   )
+   -> type().
+set_event_summaries (Events, Player) ->
+   Player#player
+   {
+      events = Events
+   }.
 
 -spec set_roster_id (binary(), type()) -> type().
 set_roster_id (RosterID, Player) -> Player#player{ roster_id = RosterID }.
@@ -211,8 +272,17 @@ get_email_field () -> #player.email.
 -spec get_last_active_field () -> non_neg_integer().
 get_last_active_field () -> #player.last_active.
 
--spec get_maps_field () -> non_neg_integer().
-get_maps_field () -> #player.maps.
+-spec get_map_summaries_field () -> non_neg_integer().
+get_map_summaries_field () -> #player.maps.
+
+-spec get_campaign_summaries_field () -> non_neg_integer().
+get_campaign_summaries_field () -> #player.campaigns.
+
+-spec get_invasion_summaries_field () -> non_neg_integer().
+get_invasion_summaries_field () -> #player.invasions.
+
+-spec get_event_summaries_field () -> non_neg_integer().
+get_event_summaries_field () -> #player.events.
 
 -spec get_roster_id_field () -> non_neg_integer().
 get_roster_id_field () -> #player.roster_id.
