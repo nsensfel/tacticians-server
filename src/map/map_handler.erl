@@ -27,7 +27,19 @@ start (TimedCachesManagerPid) ->
             <<"0">>,
             any,
             any,
-            map_shim:generate_random_map()
+            map_shim:generate_random_map(0, <<"0">>)
+         )
+   end,
+   case shr_database:fetch(map_db, <<"1">>, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert_at
+         (
+            map_db,
+            <<"1">>,
+            any,
+            any,
+            map_shim:generate_random_map(1, <<"1">>)
          )
    end,
    shr_timed_caches_manager:new_cache(TimedCachesManagerPid, map_db, none),

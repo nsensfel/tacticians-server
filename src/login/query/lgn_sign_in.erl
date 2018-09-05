@@ -53,7 +53,7 @@ fetch_data (Input) ->
    % Having this be cached my be both useless and a security issue.
    PlayerID = shr_timed_cache:fetch(login_db, any, Username),
 
-   Player = shr_timed_cache:fetch(player_db, PlayerID, PlayerID),
+   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
    #query_state
    {
@@ -104,7 +104,7 @@ commit_update (QueryState) ->
       ),
 
    ok = shr_database:commit(Query),
-   shr_timed_cache:update(player_db, PlayerID, PlayerID, UpdatedPlayer),
+   shr_timed_cache:update(player_db, any, PlayerID, UpdatedPlayer),
 
    'ok'.
 
