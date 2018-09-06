@@ -66,6 +66,13 @@ M4_EXEC = $(M4) $(M4_OPTS)
 ################################################################################
 ## SANITY CHECKS ###############################################################
 ################################################################################
+ifeq ($(strip $(wildcard $(REQUIRED_HEADERS))),)
+$(error "Could not find Yaws header (yaws_api.hrl). Install Yaws and copy the aforementioned file in the INCLUDE_DIR ($(INCLUDE_DIR)).")
+endif
+
+ifeq ($(strip $(wildcard $(DATA_DIR))),)
+$(error "Could not find the game's data folder (currently set to $(DATA_DIR)). Download it and set the DATA_DIR variable to match its location.")
+endif
 
 
 ################################################################################
@@ -83,6 +90,12 @@ MAKEFILE_TO_M4 = \
 ## TARGET RULES ################################################################
 ################################################################################
 all: build
+	@echo ""
+	@echo ""
+	@echo "#### Running the server"
+	@echo "The server is split in two parts, which must both be run in parallel."
+	@echo "1) 'make run_db_node' will start the DB managing part."
+	@echo "2) 'make run_query_node' will start the query managing part."
 
 debug: debug_run
 
