@@ -88,7 +88,7 @@ decode (EncodedAction) ->
 can_follow (nothing, attack) -> true;
 can_follow (nothing, switch_weapon) -> true;
 can_follow (nothing, move) -> true;
-can_follow (switch_weapon, attack) -> true;
+can_follow (move, switch_weapon) -> true;
 can_follow (move, attack) -> true;
 can_follow (_, _) -> false.
 
