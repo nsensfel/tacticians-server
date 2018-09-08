@@ -47,16 +47,17 @@ parse_input (Req) ->
       session_token = SessionToken
    }.
 
--spec authenticate_user (input()) -> {'ok', shr_player:type()}.
+-spec authenticate_user (input()) -> ({'ok', shr_player:type()} | 'error').
 authenticate_user (Input) ->
    PlayerID = Input#input.player_id,
    SessionToken = Input#input.session_token,
 
    Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
-   shr_security:assert_identity(SessionToken, Player),
-
-   {ok, Player}.
+   case shr_security:credentials_match(SessionToken, Player) of
+      true -> {ok, Player};
+      _ -> error
+   end.
 
 -spec fetch_data (shr_player:type(), input()) -> query_state().
 fetch_data (Player, Input) ->
@@ -94,11 +95,15 @@ generate_reply (QueryState) ->
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   {ok, Player} = authenticate_user(Input),
-   shr_security:lock_queries(Input#input.player_id),
-   QueryState = fetch_data(Player, Input),
-   shr_security:unlock_queries(Input#input.player_id),
-   generate_reply(QueryState).
+   case authenticate_user(Input) of
+      {ok, Player} ->
+         shr_security:lock_queries(Input#input.player_id),
+         QueryState = fetch_data(Player, Input),
+         shr_security:unlock_queries(Input#input.player_id),
+         generate_reply(QueryState);
+
+      error -> jiffy:encode([shr_disconnected:generate()])
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

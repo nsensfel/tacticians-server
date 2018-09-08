@@ -25,17 +25,17 @@ decode_request (BinaryRequest) ->
    btl_character_turn_request:decode(JSONMap).
 
 %%%% USER AUTHENTICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec authenticate_user (btl_character_turn_request:type()) -> 'ok'.
+-spec authenticate_user (btl_character_turn_request:type()) -> ('ok' | 'error').
 authenticate_user (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    SessionToken = btl_character_turn_request:get_session_token(Request),
 
    Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
-   shr_security:assert_identity(SessionToken, Player),
-   shr_security:lock_queries(PlayerID),
-
-   ok.
+   case shr_security:credentials_match(SessionToken, Player) of
+      true -> ok;
+      _ -> error
+   end.
 
 %%%% MAIN LOGIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec fetch_data
@@ -265,13 +265,19 @@ generate_reply (Update) ->
 -spec handle (binary()) -> binary().
 handle (EncodedRequest) ->
    Request = decode_request(EncodedRequest),
-   authenticate_user(Request),
-   Data = fetch_data(Request),
-   assert_user_permissions(Data, Request),
-   Update = update_data(Data, Request),
-   commit_update(Update, Request),
-   disconnect_user(Request),
-   generate_reply(Update).
+   case authenticate_user(Request) of
+      ok ->
+         PlayerID = btl_character_turn_request:get_player_id(Request),
+         shr_security:lock_queries(PlayerID),
+         Data = fetch_data(Request),
+         assert_user_permissions(Data, Request),
+         Update = update_data(Data, Request),
+         commit_update(Update, Request),
+         disconnect_user(Request),
+         generate_reply(Update);
+
+      error -> jiffy:encode([shr_disconnected:generate()])
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

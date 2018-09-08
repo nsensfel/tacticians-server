@@ -48,16 +48,17 @@ parse_input (Req) ->
       map_id = MapID
    }.
 
--spec authenticate_user (input()) -> 'ok'.
+-spec authenticate_user (input()) -> ('ok' | 'error').
 authenticate_user (Input) ->
    PlayerID = Input#input.player_id,
    SessionToken = Input#input.session_token,
 
    Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
-   shr_security:assert_identity(SessionToken, Player),
-
-   ok.
+   case shr_security:credentials_match(SessionToken, Player) of
+      true -> ok;
+      _ -> error
+   end.
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
@@ -83,11 +84,15 @@ generate_reply (QueryState) ->
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
-   authenticate_user(Input),
-   shr_security:lock_queries(Input#input.player_id),
-   QueryState = fetch_data(Input),
-   shr_security:unlock_queries(Input#input.player_id),
-   generate_reply(QueryState).
+   case authenticate_user(Input) of
+      ok ->
+         shr_security:lock_queries(Input#input.player_id),
+         QueryState = fetch_data(Input),
+         shr_security:unlock_queries(Input#input.player_id),
+         generate_reply(QueryState);
+
+      error -> jiffy:encode([shr_disconnected:generate()])
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
