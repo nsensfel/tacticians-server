@@ -1,4 +1,4 @@
--module(chr_update).
+-module(rst_update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,7 +12,7 @@
       player_id :: binary(),
       session_token :: binary(),
       character_ix :: non_neg_integer(),
-      character :: chr_character:type()
+      character :: rst_character:type()
    }
 ).
 
@@ -22,7 +22,7 @@
    {
       player :: shr_player:type(),
       inventory :: shr_inventory:type(),
-      roster :: chr_roster:type()
+      roster :: rst_roster:type()
    }
 ).
 
@@ -45,7 +45,7 @@ parse_input (Req) ->
    CharacterIX = maps:get(<<"cix">>, JSONReqMap),
    EncodedCharacter = maps:get(<<"chr">>, JSONReqMap),
 
-   Character = chr_character:decode(EncodedCharacter),
+   Character = rst_character:decode(EncodedCharacter),
 
    #input
    {
@@ -88,7 +88,7 @@ update_data (QueryState, Input) ->
    Inventory = QueryState#query_state.inventory,
    Character = Input#input.character,
 
-   chr_character:validate(Inventory, Character),
+   rst_character:validate(Inventory, Character),
 
    %% TODO [FUNCTION: chr][REQUIRED]: unimplemented.
    QueryState.
@@ -102,7 +102,7 @@ commit_update (QueryState, Input) ->
    Roster = QueryState#query_state.roster,
 
    RosterID = shr_player:get_roster_id(Player),
-   UpdatedRoster = chr_roster:set_character(CharacterIX, Character, Roster),
+   UpdatedRoster = rst_roster:set_character(CharacterIX, Character, Roster),
 
    Query =
       shr_db_query:new
@@ -113,7 +113,7 @@ commit_update (QueryState, Input) ->
          [
             shr_db_query:update_indexed
             (
-               chr_roster:get_characters_field(),
+               rst_roster:get_characters_field(),
                CharacterIX,
                [shr_db_query:set_value(Character)]
             )

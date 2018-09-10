@@ -1,4 +1,4 @@
--module(chr_add_char).
+-module(rst_handler).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/2]).
+-export([start/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,24 +16,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate
-   (
-      non_neg_integer(),
-      chr_character:type()
-   )
-   -> {list(any())}.
-generate (IX, Character) ->
-   {ActiveWeapon, SecondaryWeapon} = chr_character:get_weapon_ids(Character),
+-spec start (pid()) -> 'ok'.
+start (TimedCachesManagerPid) ->
+   case shr_database:fetch(roster_db, <<"0">>, admin) of
+      {ok, _} -> ok;
+      not_found ->
+         shr_database:insert_at
+         (
+            roster_db,
+            <<"0">>,
+            any,
+            any,
+            rst_shim:generate_random_character_roster()
+         )
+   end,
+   shr_timed_caches_manager:new_cache(TimedCachesManagerPid, roster_db, none),
 
-   {
-      [
-         {<<"msg">>, <<"add_char">>},
-         {<<"ix">>, IX},
-         {<<"nam">>, chr_character:get_name(Character)},
-         {<<"awp">>, ActiveWeapon},
-         {<<"swp">>, SecondaryWeapon},
-         {<<"ar">>, chr_character:get_armor_id(Character)},
-         {<<"gls">>, array:to_list(chr_character:get_glyph_ids(Character))},
-         {<<"gb">>, chr_character:get_glyph_board_id(Character)}
-      ]
-   }.
+   ok.

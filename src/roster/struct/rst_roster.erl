@@ -1,4 +1,4 @@
--module(chr_roster).
+-module(rst_roster).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,7 +11,7 @@
    {
       id :: id(),
       owner :: binary(),
-      characters :: array:array(chr_character:type())
+      characters :: array:array(rst_character:type())
    }
 ).
 
@@ -67,19 +67,19 @@ get_id (Roster) -> Roster#roster.id.
 -spec get_owner (type()) -> binary().
 get_owner (Roster) -> Roster#roster.owner.
 
--spec get_characters (type()) -> array:array(chr_character:type()).
+-spec get_characters (type()) -> array:array(rst_character:type()).
 get_characters (Roster) -> Roster#roster.characters.
 
--spec get_character (non_neg_integer(), type()) -> chr_character:type().
+-spec get_character (non_neg_integer(), type()) -> rst_character:type().
 get_character (IX, Roster) -> array:get(IX, Roster#roster.characters).
 
--spec set_characters (array:array(chr_character:type()), type()) -> type().
+-spec set_characters (array:array(rst_character:type()), type()) -> type().
 set_characters (Characters, Roster) -> Roster#roster{ characters = Characters }.
 
 -spec set_character
    (
       non_neg_integer(),
-      chr_character:type(),
+      rst_character:type(),
       type()
    )
    -> type().
@@ -89,7 +89,7 @@ set_character (IX, Character, Roster) ->
       characters = array:set(IX, Character, Roster#roster.characters)
    }.
 
--spec add_character (chr_character:type(), type()) -> type().
+-spec add_character (rst_character:type(), type()) -> type().
 add_character (Character, Roster) ->
    CurrentCharacters = Roster#roster.characters,
    CurrentSize = array:size(CurrentCharacters),

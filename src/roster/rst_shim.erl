@@ -1,4 +1,4 @@
--module(chr_handler).
+-module(rst_shim).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([start/1]).
+-export([generate_random_character_roster/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,25 +16,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec start (pid()) -> 'ok'.
-start (TimedCachesManagerPid) ->
-   case shr_database:fetch(char_roster_db, <<"0">>, admin) of
-      {ok, _} -> ok;
-      not_found ->
-         shr_database:insert_at
-         (
-            char_roster_db,
-            <<"0">>,
-            any,
-            any,
-            chr_shim:generate_random_character_roster()
-         )
-   end,
-   shr_timed_caches_manager:new_cache
-   (
-      TimedCachesManagerPid,
-      char_roster_db,
-      none
-   ),
+-spec generate_random_character_roster () -> rst_roster:type().
+generate_random_character_roster () ->
+   Result = rst_roster:new(<<"0">>, <<"0">>),
 
-   ok.
+   %% TODO [DEBUG][REQUIRED]: unimplemented.
+
+   Result.

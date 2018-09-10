@@ -18,6 +18,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate () -> {list(any())}.
 generate () ->
+   io:format("User was disconnected.~n"),
    {
       [
          {<<"msg">>, <<"disconnected">>}

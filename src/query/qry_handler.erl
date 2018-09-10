@@ -23,4 +23,5 @@ start (_YawsParams) ->
    ok = lgn_handler:start(TimedCachesManagerPid),
    ok = btl_handler:start(TimedCachesManagerPid),
    ok = map_handler:start(TimedCachesManagerPid),
+   ok = rst_handler:start(TimedCachesManagerPid),
    ok.

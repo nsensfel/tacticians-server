@@ -1,4 +1,4 @@
--module(chr_load).
+-module(rst_load).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,7 +20,7 @@
    {
       player :: shr_player:type(),
       inventory :: shr_inventory:type(),
-      roster :: chr_roster:type()
+      roster :: rst_roster:type()
    }
 ).
 
@@ -80,12 +80,12 @@ generate_reply (QueryState) ->
    Roster = QueryState#query_state.roster,
    Inventory = QueryState#query_state.inventory,
 
-   RosterCharacters = chr_roster:get_characters(Roster),
+   RosterCharacters = rst_roster:get_characters(Roster),
    SetInventory = shr_set_inventory:generate(Inventory),
    EncodedRoster =
       array:to_list
       (
-         array:sparse_map(fun chr_add_char:generate/2, RosterCharacters)
+         array:sparse_map(fun rst_add_char:generate/2, RosterCharacters)
       ),
 
    Output = jiffy:encode([SetInventory|EncodedRoster]),

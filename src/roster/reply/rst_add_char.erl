@@ -1,4 +1,4 @@
--module(chr_shim).
+-module(rst_add_char).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate_random_character_roster/0]).
+-export([generate/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,10 +16,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_random_character_roster () -> chr_roster:type().
-generate_random_character_roster () ->
-   Result = chr_roster:new(<<"0">>, <<"0">>),
+-spec generate
+   (
+      non_neg_integer(),
+      rst_character:type()
+   )
+   -> {list(any())}.
+generate (IX, Character) ->
+   {ActiveWeapon, SecondaryWeapon} = rst_character:get_weapon_ids(Character),
 
-   %% TODO [DEBUG][REQUIRED]: unimplemented.
-
-   Result.
+   {
+      [
+         {<<"msg">>, <<"add_char">>},
+         {<<"ix">>, IX},
+         {<<"nam">>, rst_character:get_name(Character)},
+         {<<"awp">>, ActiveWeapon},
+         {<<"swp">>, SecondaryWeapon},
+         {<<"ar">>, rst_character:get_armor_id(Character)},
+         {<<"gls">>, array:to_list(rst_character:get_glyph_ids(Character))},
+         {<<"gb">>, rst_character:get_glyph_board_id(Character)}
+      ]
+   }.
