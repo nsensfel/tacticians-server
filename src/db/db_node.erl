@@ -27,9 +27,10 @@ wait_for_stop () ->
 start () ->
    Mnesia = db_model:new("/tmp/to_db_node.mnesia", []),
    db_model:start(Mnesia),
-   db_model:add_db(login_db, Mnesia),
-   db_model:add_db(player_db, Mnesia),
    db_model:add_db(battle_db, Mnesia),
+   db_model:add_db(login_db, Mnesia),
    db_model:add_db(map_db, Mnesia),
+   db_model:add_db(player_db, Mnesia),
+   db_model:add_db(roster_db, Mnesia),
    wait_for_stop(),
    ok.
