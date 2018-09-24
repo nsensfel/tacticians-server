@@ -73,8 +73,8 @@ fetch_data (Player, Input) ->
    RosterID = shr_player:get_roster_id(Player),
    InventoryID = shr_player:get_inventory_id(Player),
 
-   Roster = shr_timed_cache:fetch(char_roster_db, PlayerID, RosterID),
-   Inventory = shr_timed_cache:fetch(char_roster_db, PlayerID, InventoryID),
+   Roster = shr_timed_cache:fetch(roster_db, PlayerID, RosterID),
+   Inventory = shr_timed_cache:fetch(roster_db, PlayerID, InventoryID),
 
    #query_state
    {
@@ -107,7 +107,7 @@ commit_update (QueryState, Input) ->
    Query =
       shr_db_query:new
       (
-         char_roster_db,
+         roster_db,
          RosterID,
          {user, PlayerID},
          [
@@ -121,7 +121,7 @@ commit_update (QueryState, Input) ->
       ),
 
    shr_database:commit(Query),
-   shr_timed_cache:update(char_roster_db, PlayerID, RosterID, UpdatedRoster),
+   shr_timed_cache:update(roster_db, PlayerID, RosterID, UpdatedRoster),
 
    'ok'.
 

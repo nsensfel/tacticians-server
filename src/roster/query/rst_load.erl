@@ -63,10 +63,15 @@ authenticate_user (Input) ->
 fetch_data (Player, Input) ->
    PlayerID = Input#input.player_id,
    RosterID = shr_player:get_roster_id(Player),
-   InventoryID = shr_player:get_inventory_id(Player),
+   % InventoryID = shr_player:get_inventory_id(Player),
 
-   Roster = shr_timed_cache:fetch(char_roster_db, PlayerID, RosterID),
-   Inventory = shr_timed_cache:fetch(char_roster_db, PlayerID, InventoryID),
+   Roster = shr_timed_cache:fetch(roster_db, PlayerID, RosterID),
+   %% TODO
+   %% Inventory = shr_timed_cache:fetch(inventory_db, PlayerID, InventoryID),
+
+   io:format("[W] Using shim inventory.~n"),
+
+   Inventory = shr_inventory:new(PlayerID),
 
    #query_state
    {
