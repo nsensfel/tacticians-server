@@ -75,11 +75,12 @@ roll_parry (DefenderStatistics) ->
    (
       precision(),
       boolean(),
+      float(),
       shr_omnimods:type(),
       shr_omnimods:type()
    )
    -> non_neg_integer().
-get_damage (Precision, IsCritical, ActualAtkOmni, ActualDefOmni) ->
+get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
    S0DamageMultiplier =
       case Precision of
          misses -> 0;
@@ -93,10 +94,12 @@ get_damage (Precision, IsCritical, ActualAtkOmni, ActualDefOmni) ->
          _ -> S0DamageMultiplier
       end,
 
+   S2DamageMultiplier = (S1DamageMultiplier * AtkModifier),
+
    ActualDamage =
       shr_omnimods:get_attack_damage
       (
-         S1DamageMultiplier,
+         S2DamageMultiplier,
          ActualAtkOmni,
          ActualDefOmni
       ),
@@ -129,7 +132,16 @@ effect_of_attack (Order, AtkCurrData, DefCurrData, CanParry) ->
 
    Precision = roll_precision(ActualAtkStats, ActualDefStats),
    IsCritical = roll_critical_hit(ActualAtkStats),
-   Damage = get_damage(Precision, IsCritical, ActualAtkOmni, ActualDefOmni),
+   AtkDamageModifier = shr_statistics:get_damage_modifier(ActualAtkStats),
+   Damage =
+      get_damage
+      (
+         Precision,
+         IsCritical,
+         AtkDamageModifier,
+         ActualAtkOmni,
+         ActualDefOmni
+      ),
 
    #attack
    {
