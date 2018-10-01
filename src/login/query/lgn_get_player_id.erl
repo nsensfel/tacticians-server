@@ -1,22 +1,9 @@
--module(plr_get_battles).
-
-% This module is intended for use by the browser extension, to check for active
-% battles for a given player. It does not require being logged in.
+-module(lgn_get_player_id).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("../../../include/yaws_api.hrl").
-
--record
-(
-   query_state,
-   {
-      player :: shr_player:type()
-   }
-).
-
--type query_state() :: #query_state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,37 +13,32 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec fetch_data (binary()) -> query_state().
-fetch_data (PlayerID) ->
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+-spec fetch_data (binary()) -> binary().
+fetch_data (Input) ->
+   PlayerID = shr_timed_cache:fetch(login_db, any, Input),
 
-   #query_state
-   {
-      player = Player
-   }.
+   PlayerID.
 
-
--spec generate_reply(query_state()) -> binary().
-generate_reply (QueryState) ->
-   Player = QueryState#query_state.player,
-
-   Output = jiffy:encode([plr_set_battles:generate(Player)]),
+-spec generate_reply(binary()) -> binary().
+generate_reply (PlayerID) ->
+   SetPlayerID = lgn_set_player_id:generate(PlayerID),
+   Output = jiffy:encode([SetPlayerID]),
 
    Output.
 
 -spec handle (binary()) -> binary().
-handle (PlayerID) ->
-   QueryState = fetch_data(PlayerID),
-   generate_reply(QueryState).
+handle (UsernameOrEmail) ->
+   PlayerID = fetch_data(UsernameOrEmail),
+   generate_reply(PlayerID).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out(A) ->
-   {ok, PlayerIDTXT} = yaws_api:queryvar(A, "pid"),
-   PlayerID = list_to_binary(PlayerIDTXT),
+   {ok, UsernameOrEmailTXT} = yaws_api:queryvar(A, "name"),
+   UsernameOrEmail = list_to_binary(UsernameOrEmailTXT),
    {
       content,
       "application/json; charset=UTF-8",
-      handle(PlayerID)
+      handle(UsernameOrEmail)
    }.
