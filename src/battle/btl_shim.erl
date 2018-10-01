@@ -231,7 +231,7 @@ generate_random_battle () ->
    %MapWidth = 32, % shr_roll:between(16, 32),
    %MapHeight = 32, %shr_roll:between(16, 32),
    %Map = btl_map:random(0, MapWidth, MapHeight),
-   Map = btl_map:from_list(0, 32, 32, new_demo_map()),
+   Map = btl_map:from_list(32, 32, new_demo_map()),
    Characters = generate_random_characters(1, 8, 8, 0, Map, [], []),
    PlayersAsList = [btl_player:new(0, 8, <<"0">>), btl_player:new(1, 0, <<"1">>)],
 
