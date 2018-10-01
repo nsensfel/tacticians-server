@@ -10,21 +10,12 @@
 
 -record
 (
-   input,
-   {
-      target_id :: binary()
-   }
-).
-
--record
-(
    query_state,
    {
       player :: shr_player:type()
    }
 ).
 
--type input() :: #input{}.
 -type query_state() :: #query_state{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,21 +26,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec parse_input (binary()) -> input().
-parse_input (Req) ->
-   JSONReqMap = jiffy:decode(Req, [return_maps]),
-   TargetID = maps:get(<<"id">>, JSONReqMap),
-
-   #input
-   {
-      target_id = TargetID
-   }.
-
--spec fetch_data (input()) -> query_state().
-fetch_data (Input) ->
-   TargetID = Input#input.target_id,
-
-   Player = shr_timed_cache:fetch(player_db, any, TargetID),
+-spec fetch_data (binary()) -> query_state().
+fetch_data (PlayerID) ->
+   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
 
    #query_state
    {
@@ -57,8 +36,8 @@ fetch_data (Input) ->
    }.
 
 
--spec generate_reply(query_state(), input()) -> binary().
-generate_reply (QueryState, _Input) ->
+-spec generate_reply(query_state()) -> binary().
+generate_reply (QueryState) ->
    Player = QueryState#query_state.player,
 
    Output = jiffy:encode([plr_set_battles:generate(Player)]),
@@ -66,17 +45,18 @@ generate_reply (QueryState, _Input) ->
    Output.
 
 -spec handle (binary()) -> binary().
-handle (Req) ->
-   Input = parse_input(Req),
-   QueryState = fetch_data(Input),
-   generate_reply(QueryState, Input).
+handle (PlayerIDTXT) ->
+   PlayerID = list_to_binary(PlayerIDTXT),
+   QueryState = fetch_data(PlayerID),
+   generate_reply(QueryState).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out(A) ->
+   {ok, PlayerID} = yaws_api:queryvar(A, "pid"),
    {
       content,
       "application/json; charset=UTF-8",
-      handle(A#arg.clidata)
+      handle(PlayerID)
    }.
