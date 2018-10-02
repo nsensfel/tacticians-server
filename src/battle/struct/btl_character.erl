@@ -3,14 +3,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: non_neg_integer().
 -type rank() :: ('optional' | 'target' | 'commander').
 
 -record
 (
    character,
    {
-      id :: id(),
       player_ix :: non_neg_integer(),
       name :: binary(),
       rank :: rank(),
@@ -36,11 +34,9 @@
 -export
 (
    [
-      get_id/1,
       get_player_index/1,
       get_name/1,
       get_rank/1,
-      get_icon/1,
       get_portrait/1,
       get_weapon_ids/1,
       get_armor_id/1,
@@ -71,58 +67,18 @@
 -export
 (
    [
-      random/5
+      new/10
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec find_random_location
-   (
-      btl_map:type(),
-      list({non_neg_integer(), non_neg_integer()})
-   )
-   -> {{non_neg_integer(), non_neg_integer()}, shr_tile:type()}.
-find_random_location (Map, ForbiddenLocations) ->
-   MapWidth = btl_map:get_width(Map),
-   MapHeight = btl_map:get_height(Map),
-
-   Candidate =
-      {
-         shr_roll:between(0, (MapWidth - 1)),
-         shr_roll:between(0, (MapHeight - 1))
-      },
-
-   IsForbidden = lists:member(Candidate, ForbiddenLocations),
-
-   case IsForbidden of
-      true -> find_random_location(Map, ForbiddenLocations);
-
-      _ ->
-         Tile =
-            shr_tile:from_class_id
-            (
-               shr_tile:extract_main_class_id
-               (
-                  btl_map:get_tile_instance(Candidate, Map)
-               )
-            ),
-
-         case (shr_tile:get_cost(Tile) > 200) of
-            true -> find_random_location(Map, ForbiddenLocations);
-
-            false -> {Candidate, Tile}
-         end
-   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (Char) -> Char#character.id.
-
 -spec get_player_index (type()) -> non_neg_integer().
 get_player_index (Char) -> Char#character.player_ix.
 
@@ -226,36 +182,46 @@ set_weapon_ids (WeaponIDs, Char) ->
    }.
 
 %%%% Utils
--spec random
+-spec new
    (
       non_neg_integer(),
-      non_neg_integer(),
+      binary(),
+      rank(),
       shr_omnimods:type(),
-      btl_map:type(),
-      list({non_neg_integer(), non_neg_integer()})
+      shr_portrait:id(),
+      {shr_weapon:id(), shr_weapon:id()},
+      shr_armor:id(),
+      btl_location:type(),
+      shr_omnimods:type()
    )
    -> type().
-random (ID, PlayerIX, GlyphOmnimods, Map, ForbiddenLocations) ->
-   {Location, CurrentTile} = find_random_location(Map, ForbiddenLocations),
-   ActiveWeaponID = shr_weapon:random_id(),
-   WeaponIDs = {ActiveWeaponID, shr_weapon:random_id()},
-   ArmorID = shr_armor:random_id(),
-   IDAsListString = integer_to_list(ID),
-   IDAsBinaryString = list_to_binary(IDAsListString),
+new
+(
+   PlayerIX,
+   Name,
+   Rank,
+   GlyphsOmnimods,
+   PortraitID,
+   WeaponIDs,
+   ArmorID,
+   Location,
+   LocationOmnimods
+) ->
+   {MainWeaponID, _} = WeaponIDs,
 
    Armor = shr_armor:from_id(ArmorID),
-   ActiveWeapon = shr_weapon:from_id(ActiveWeaponID),
+   MainWeapon = shr_weapon:from_id(MainWeaponID),
 
    PermanentOmnimods =
-      shr_omnimods:merge(shr_armor:get_omnimods(Armor), GlyphOmnimods),
+      shr_omnimods:merge(shr_armor:get_omnimods(Armor), GlyphsOmnimods),
 
    CurrentOmnimods =
       shr_omnimods:merge
       (
          shr_omnimods:merge
          (
-            shr_weapon:get_omnimods(ActiveWeapon),
-            shr_tile:get_omnimods(CurrentTile)
+            shr_weapon:get_omnimods(MainWeapon),
+            LocationOmnimods
          ),
          PermanentOmnimods
       ),
@@ -276,17 +242,10 @@ random (ID, PlayerIX, GlyphOmnimods, Map, ForbiddenLocations) ->
 
    #character
    {
-      id = ID,
       player_ix = PlayerIX,
-      name = list_to_binary("Char" ++ IDAsListString),
-      rank =
-         if
-            ((ID rem 8) == 0) -> commander;
-            ((ID rem 3) == 0) -> target;
-            true -> optional
-         end,
-      icon = IDAsBinaryString,
-      portrait = IDAsBinaryString,
+      name = Name,
+      rank = Rank,
+      portrait = PortraitID,
       weapon_ids = WeaponIDs,
       armor_id = ArmorID,
       location = Location,

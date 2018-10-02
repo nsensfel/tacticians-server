@@ -12,9 +12,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec reserve_id () -> binary().
-reserve_id () -> <<"0">>.
 
+%%%% DB ACCESS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec reserve_id () -> binary().
+reserve_id () ->
+   %% TODO Unimplemented.
+   <<"0">>.
+
+-spec commit (btl_battle:type()) -> ok.
+commit (_Battle) ->
+   %% TODO Unimplemented.
+   ok.
+
+%%%% USED IDS COLLECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_equipment_ids
    (
       list(btl_character:type())
@@ -56,6 +66,84 @@ get_tile_ids (TileInstances) ->
 
    UsedTileIDs.
 
+%%%% ROSTERS HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec find_random_location
+   (
+      btl_map:type(),
+      list({non_neg_integer(), non_neg_integer()})
+   )
+   -> {{non_neg_integer(), non_neg_integer()}, shr_tile:type()}.
+find_random_location (Map, ForbiddenLocations) ->
+   MapWidth = btl_map:get_width(Map),
+   MapHeight = btl_map:get_height(Map),
+
+   Candidate =
+      {
+         shr_roll:between(0, (MapWidth - 1)),
+         shr_roll:between(0, (MapHeight - 1))
+      },
+
+   IsForbidden = lists:member(Candidate, ForbiddenLocations),
+
+   case IsForbidden of
+      true -> find_random_location(Map, ForbiddenLocations);
+
+      _ ->
+         Tile =
+            shr_tile:from_class_id
+            (
+               shr_tile:extract_main_class_id
+               (
+                  btl_map:get_tile_instance(Candidate, Map)
+               )
+            ),
+
+         case (shr_tile:get_cost(Tile) > 200) of
+            true -> find_random_location(Map, ForbiddenLocations);
+
+            false -> {Candidate, Tile}
+         end
+   end.
+
+-spec get_glyphs_omnimods (rst_character:type()) -> shr_omnimods:type().
+get_glyphs_omnimods (RosterChar) ->
+   GlyphBoardID = rst_character:get_glyph_board_id(RosterChar),
+   GlyphIDs = rst_character:get_glyph_ids(RosterChar),
+   GlyphBoard = shr_glyph_board:from_id(GlyphBoardID),
+   Glyphs = array:map(fun rst_glyph:from_id/1, GlyphIDs),
+   Result = shr_glyph_board:get_omnimods(Glyphs, GlyphBoard),
+
+   Result.
+
+-spec create_character
+   (
+      non_neg_integer(),
+      rst_character:type(),
+      btl_map:type(),
+      list(btl_location:type())
+   )
+   -> btl_character:type().
+create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
+   {Location, Tile} = find_random_location(Map, ForbiddenLocations),
+   TileOmnimods = shr_tile:get_omnimods(Tile),
+   GlyphsOmnimods = get_glyphs_omnimods(RosterChar),
+
+   Result =
+      btl_character:new
+      (
+         PlayerIX,
+         rst_character:get_name(RosterChar),
+         optional, % TODO: link this to roster.
+         GlyphsOmnimods,
+         rst_character:get_portrait_id(RosterChar),
+         rst_character:get_weapon_ids(RosterChar),
+         rst_character:get_armor_id(RosterChar),
+         Location,
+         TileOmnimods
+      ),
+
+   Result.
+
 -spec handle_rosters
    (
       list(rst_roster:type())
@@ -65,6 +153,7 @@ handle_rosters (_Rosters) ->
    %% TODO Unimplemented.
    {[], []}.
 
+%%%% BATTLE CREATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_battle
    (
       binary(),
@@ -98,11 +187,6 @@ generate_battle (ID, Map, Rosters) ->
       ),
 
    Battle.
-
--spec commit (btl_battle:type()) -> ok.
-commit (_Battle) ->
-   %% TODO Unimplemented.
-   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
