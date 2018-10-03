@@ -12,8 +12,7 @@
       player_ix :: non_neg_integer(),
       name :: binary(),
       rank :: rank(),
-      icon :: binary(),
-      portrait :: binary(),
+      portrait_id :: shr_portrait:id(),
       weapon_ids :: {shr_weapon:id(), shr_weapon:id()},
       armor_id :: shr_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
@@ -26,7 +25,7 @@
 
 -opaque type() :: #character{}.
 
--export_type([type/0, rank/0, id/0]).
+-export_type([type/0, rank/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -37,7 +36,7 @@
       get_player_index/1,
       get_name/1,
       get_rank/1,
-      get_portrait/1,
+      get_portrait_id/1,
       get_weapon_ids/1,
       get_armor_id/1,
       get_location/1,
@@ -67,7 +66,7 @@
 -export
 (
    [
-      new/10
+      new/9
    ]
 ).
 
@@ -88,11 +87,8 @@ get_name (Char) -> Char#character.name.
 -spec get_rank (type()) -> rank().
 get_rank (Char) -> Char#character.rank.
 
--spec get_icon (type()) -> binary().
-get_icon (Char) -> Char#character.icon.
-
--spec get_portrait (type()) -> binary().
-get_portrait (Char) -> Char#character.portrait.
+-spec get_portrait_id (type()) -> shr_portrait:id().
+get_portrait_id (Char) -> Char#character.portrait_id.
 
 -spec get_armor_id (type()) -> shr_armor:id().
 get_armor_id (Char) -> Char#character.armor_id.
@@ -245,7 +241,7 @@ new
       player_ix = PlayerIX,
       name = Name,
       rank = Rank,
-      portrait = PortraitID,
+      portrait_id = PortraitID,
       weapon_ids = WeaponIDs,
       armor_id = ArmorID,
       location = Location,

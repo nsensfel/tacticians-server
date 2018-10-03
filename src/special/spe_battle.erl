@@ -48,7 +48,7 @@ get_equipment_ids (Characters) ->
 
    {UsedWeaponIDs, UsedArmorIDs}.
 
--spec get_tile_ids (array:array(shr_tile:type())) -> sets:set(binary()).
+-spec get_tile_ids (array:array(shr_tile:instance())) -> sets:set(binary()).
 get_tile_ids (TileInstances) ->
    UsedTileIDs =
       array:sparse_foldl

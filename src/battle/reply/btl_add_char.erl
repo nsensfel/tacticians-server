@@ -41,8 +41,7 @@ generate (IX, Character, PlayerIX) ->
          {<<"ix">>, IX},
          {<<"nam">>, btl_character:get_name(Character)},
          {<<"rnk">>, rank_to_string(btl_character:get_rank(Character))},
-         {<<"ico">>, btl_character:get_icon(Character)},
-         {<<"prt">>, btl_character:get_portrait(Character)},
+         {<<"prt">>, btl_character:get_portrait_id(Character)},
          {
             <<"hea">>,
             btl_character:get_current_health(Character)

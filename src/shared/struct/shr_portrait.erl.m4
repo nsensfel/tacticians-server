@@ -66,4 +66,4 @@ get_icon_id (Pt) -> Pt#portrait.icon_id.
 m4_include(__MAKEFILE_DATA_DIR/portrait/global.m4.conf)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/portrait/basic.m4d)m4_dnl
 from_id(_) ->
-   from_id(0).
+   from_id(<<"cat">>).

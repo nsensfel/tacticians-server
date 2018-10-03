@@ -24,4 +24,5 @@ start (_YawsParams) ->
    ok = btl_handler:start(TimedCachesManagerPid),
    ok = map_handler:start(TimedCachesManagerPid),
    ok = rst_handler:start(TimedCachesManagerPid),
+   ok = qry_shim:fill_db(),
    ok.
