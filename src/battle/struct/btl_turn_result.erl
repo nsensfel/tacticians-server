@@ -8,7 +8,7 @@
 (
    switched_weapon,
    {
-      character_ix :: btl_character:id()
+      character_ix :: non_neg_integer()
    }
 ).
 
@@ -16,7 +16,7 @@
 (
    moved,
    {
-      character_ix :: btl_character:id(),
+      character_ix :: non_neg_integer(),
       path :: list(btl_direction:enum()),
       new_location :: btl_location:type()
    }
@@ -26,8 +26,8 @@
 (
    attacked,
    {
-      attacker_ix :: btl_character:id(),
-      defender_ix :: btl_character:id(),
+      attacker_ix :: non_neg_integer(),
+      defender_ix :: non_neg_integer(),
       sequence :: list(btl_attack:type())
    }
 ).
@@ -108,13 +108,13 @@ new_player_lost (PlayerIX) ->
 new_player_turn_started (PlayerIX) ->
    #player_turn_started { player_ix = PlayerIX }.
 
--spec new_character_switched_weapons (btl_character:id()) -> type().
+-spec new_character_switched_weapons (non_neg_integer()) -> type().
 new_character_switched_weapons (CharacterIX) ->
    #switched_weapon { character_ix = CharacterIX }.
 
 -spec new_character_moved
    (
-      btl_character:id(),
+      non_neg_integer(),
       list(btl_direction:enum()),
       btl_location:type()
    )
@@ -129,8 +129,8 @@ new_character_moved (CharacterIX, Path, NewLocation) ->
 
 -spec new_character_attacked
    (
-      btl_character:id(),
-      btl_character:id(),
+      non_neg_integer(),
+      non_neg_integer(),
       list(btl_attack:type())
    )
    -> type().

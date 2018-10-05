@@ -110,10 +110,11 @@ get_glyphs_omnimods (RosterChar) ->
    GlyphBoardID = rst_character:get_glyph_board_id(RosterChar),
    GlyphIDs = rst_character:get_glyph_ids(RosterChar),
    GlyphBoard = shr_glyph_board:from_id(GlyphBoardID),
-   Glyphs = array:map(fun rst_glyph:from_id/1, GlyphIDs),
-   Result = shr_glyph_board:get_omnimods(Glyphs, GlyphBoard),
-
-   Result.
+   Glyphs = lists:map(fun shr_glyph:from_id/1, array:sparse_to_list(GlyphIDs)),
+   case shr_glyph_board:get_omnimods_with_glyphs(Glyphs, GlyphBoard) of
+      {ok, Result} -> Result;
+      error -> shr_omnimods:new([], [], [], [])
+   end.
 
 -spec create_character
    (
@@ -144,14 +145,79 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
 
    Result.
 
+-spec handle_characters
+   (
+      list(rst_character:type()),
+      non_neg_integer(),
+      list(btl_character:type()),
+      btl_map:type(),
+      list(btl_location:type())
+   )
+   -> {list(btl_character:type()), list(btl_location:type())}.
+handle_characters ([], _PlayerIX, Characters, _Map, UsedLocations) ->
+   {Characters, UsedLocations};
+handle_characters
+(
+   [RosterCharacter|NextRosterCharacters],
+   PlayerIX,
+   Characters,
+   Map,
+   UsedLocations
+) ->
+   NewCharacter =
+      create_character(PlayerIX, RosterCharacter, Map, UsedLocations),
+
+   handle_characters
+   (
+      NextRosterCharacters,
+      PlayerIX,
+      [NewCharacter|Characters],
+      Map,
+      [btl_character:get_location(NewCharacter)|UsedLocations]
+   ).
+
 -spec handle_rosters
    (
-      list(rst_roster:type())
+      list(rst_roster:type()),
+      list(btl_character:type()),
+      list(btl_player:type()),
+      non_neg_integer(),
+      btl_map:type(),
+      list(btl_location:type())
    )
    -> {list(btl_character:type()), list(btl_player:type())}.
-handle_rosters (_Rosters) ->
-   %% TODO Unimplemented.
-   {[], []}.
+handle_rosters ([], Characters, Players, _PlayersCount, _Map, _UsedLocations) ->
+   {Characters, lists:reverse(Players)};
+handle_rosters
+(
+   [Roster|NextRosters],
+   Characters,
+   Players,
+   PlayersCount,
+   Map,
+   UsedLocations
+) ->
+   NewPlayer = btl_player:new(PlayersCount, 0, rst_roster:get_owner(Roster)),
+   {NextCharacters, NextUsedLocations} =
+      handle_characters
+      (
+         array:to_list(rst_roster:get_characters(Roster)),
+         PlayersCount,
+         Characters,
+         Map,
+         UsedLocations
+      ),
+
+   handle_rosters
+   (
+      NextRosters,
+      NextCharacters,
+      [NewPlayer|Players],
+      (PlayersCount + 1),
+      Map,
+      NextUsedLocations
+   ).
+
 
 %%%% BATTLE CREATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_battle
@@ -170,7 +236,9 @@ generate_battle (ID, Map, Rosters) ->
          map_map:get_height(Map),
          TileInstances
       ),
-   {Characters, PlayersAsList} = handle_rosters(Rosters),
+   {Characters, PlayersAsList} =
+      handle_rosters(Rosters, [], [], 0, BattleMap, []),
+
    {UsedWeaponIDs, UsedArmorIDs} = get_equipment_ids(Characters),
    UsedTileIDs = get_tile_ids(TileInstances),
 
