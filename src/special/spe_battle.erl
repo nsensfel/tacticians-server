@@ -110,7 +110,7 @@ get_glyphs_omnimods (RosterChar) ->
    GlyphBoardID = rst_character:get_glyph_board_id(RosterChar),
    GlyphIDs = rst_character:get_glyph_ids(RosterChar),
    GlyphBoard = shr_glyph_board:from_id(GlyphBoardID),
-   Glyphs = lists:map(fun shr_glyph:from_id/1, array:sparse_to_list(GlyphIDs)),
+   Glyphs = lists:map(fun shr_glyph:from_id/1, GlyphIDs),
    case shr_glyph_board:get_omnimods_with_glyphs(Glyphs, GlyphBoard) of
       {ok, Result} -> Result;
       error -> shr_omnimods:new([], [], [], [])

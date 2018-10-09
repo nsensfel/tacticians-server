@@ -43,6 +43,7 @@
 -export
 (
    [
+      none/0,
       get_omnimods_with_glyphs/2
    ]
 ).
@@ -90,7 +91,10 @@ get_slots (GlyphBoard) -> GlyphBoard#glyph_board.slots.
 m4_include(__MAKEFILE_DATA_DIR/glyph_board/global.m4.conf)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/glyph_board/basic.m4d)m4_dnl
 from_id(_) ->
-   from_id(<<"0">>).
+   none().
+
+-spec none () -> type().
+none () -> from_id(<<"0">>).
 
 -spec get_omnimods_with_glyphs
    (

@@ -33,7 +33,7 @@ generate (IX, Character) ->
          {<<"awp">>, ActiveWeapon},
          {<<"swp">>, SecondaryWeapon},
          {<<"ar">>, rst_character:get_armor_id(Character)},
-         {<<"gls">>, array:to_list(rst_character:get_glyph_ids(Character))},
+         {<<"gls">>, rst_character:get_glyph_ids(Character)},
          {<<"gb">>, rst_character:get_glyph_board_id(Character)}
       ]
    }.

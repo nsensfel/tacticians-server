@@ -18,4 +18,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec fill_db () -> 'ok'.
 fill_db () ->
+   P0 =
+      spe_player:generate
+      (
+         <<"Player1">>,
+         <<"Kalimer0">>,
+         <<"Player1@tacticians.online">>
+      ),
+
+   P1 =
+      spe_player:generate
+      (
+         <<"Player2">>,
+         <<"Kalimer1">>,
+         <<"Player2@tacticians.online">>
+      ),
+
    ok.
