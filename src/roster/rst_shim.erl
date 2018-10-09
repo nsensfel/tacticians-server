@@ -18,7 +18,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_random_character_roster () -> rst_roster:type().
 generate_random_character_roster () ->
-   Result = rst_roster:new(<<"0">>, <<"0">>),
+   Result = rst_roster:new(<<"0">>),
 
    %% TODO [DEBUG][REQUIRED]: unimplemented.
 

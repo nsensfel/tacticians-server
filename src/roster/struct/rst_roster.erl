@@ -9,7 +9,6 @@
 (
    roster,
    {
-      id :: id(),
       owner :: binary(),
       characters :: array:array(rst_character:type())
    }
@@ -26,7 +25,6 @@
 -export
 (
    [
-      get_id/1,
       get_owner/1,
       get_characters/1,
       get_character/2,
@@ -49,7 +47,7 @@
 -export
 (
    [
-      new/2
+      new/1
    ]
 ).
 
@@ -61,9 +59,6 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (Roster) -> Roster#roster.id.
-
 -spec get_owner (type()) -> binary().
 get_owner (Roster) -> Roster#roster.owner.
 
@@ -117,11 +112,10 @@ remove_character (IX, Roster) ->
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #roster.characters.
 
--spec new (binary(), binary()) -> type().
-new (ID, Owner) ->
+-spec new (binary()) -> type().
+new (Owner) ->
    #roster
    {
-      id = ID,
       owner = Owner,
       characters = array:new()
    }.
