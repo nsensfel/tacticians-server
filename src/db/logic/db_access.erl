@@ -88,7 +88,7 @@ insert_at (DB, ID, ReadPerm, WritePerm, Value) ->
       any())
    -> ({'aborted', any()} | {'atomic', {'ok', binary()}}).
 insert (DB, ReadPerm, WritePerm, Value) ->
-   ID = <<"?">>, %% TODO [FUNCTION: db][HIGH]: gen new ID.
+   ID = db_item_ids_manager:allocate(DB),
    case insert_at(DB, ID, ReadPerm, WritePerm, Value) of
       {'atomic', 'ok'} -> {'atomic', {'ok', ID}};
       {aborted, Val} -> {aborted, Val}

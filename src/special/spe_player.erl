@@ -87,7 +87,6 @@ generate (Username, Password, Email) ->
 
    {ok, PlayerID} = shr_database:insert(player_db, janitor, janitor, Player),
 
-
    shr_janitor:new(player_db, PlayerID),
 
    InvID = generate_inventory(PlayerID),

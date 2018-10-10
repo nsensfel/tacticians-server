@@ -32,5 +32,9 @@ start () ->
    db_model:add_db(map_db, Mnesia),
    db_model:add_db(player_db, Mnesia),
    db_model:add_db(roster_db, Mnesia),
+   db_model:add_db(inventory_db, Mnesia),
+
+   ok = db_item_ids_manager:start(),
+
    wait_for_stop(),
    ok.

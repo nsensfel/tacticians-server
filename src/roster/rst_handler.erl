@@ -18,18 +18,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start (pid()) -> 'ok'.
 start (TimedCachesManagerPid) ->
-   case shr_database:fetch(roster_db, <<"0">>, admin) of
-      {ok, _} -> ok;
-      not_found ->
-         shr_database:insert_at
-         (
-            roster_db,
-            <<"0">>,
-            any,
-            any,
-            rst_shim:generate_random_character_roster()
-         )
-   end,
    shr_timed_caches_manager:new_cache(TimedCachesManagerPid, roster_db, none),
 
    ok.
