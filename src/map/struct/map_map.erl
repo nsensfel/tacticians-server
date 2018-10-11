@@ -147,12 +147,5 @@ default (Owner) ->
       width = 32,
       height = 32,
       tile_instances =
-         array:new
-         (
-            [
-               {size, 1024},
-               {default, DefaultTileInstance},
-               {fixed, true}
-            ]
-         )
+         array:from_list(lists:duplicate(1024, DefaultTileInstance))
    }.

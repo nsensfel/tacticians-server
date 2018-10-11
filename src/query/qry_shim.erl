@@ -22,7 +22,7 @@ generate_player_0 () ->
          <<"Player1@tacticians.online">>
       ),
 
-   spe_map:generate(shr_player:get_id(Player)),
+   spe_map:grant_additional(shr_player:get_id(Player)),
 
    Player.
 
@@ -37,7 +37,7 @@ generate_player_1 () ->
          <<"Player2@tacticians.online">>
       ),
 
-   spe_map:generate(shr_player:get_id(Player)),
+   spe_map:grant_additional(shr_player:get_id(Player)),
 
    Player.
 

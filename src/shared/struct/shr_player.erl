@@ -16,10 +16,10 @@
       token :: binary(), % salt(crypto:strong_rand_bytes(512))
       email :: binary(),
       last_active :: integer(),
-      maps :: array:array(shr_map_summary:type()),
-      campaigns :: array:array(shr_battle_summary:type()),
-      invasions :: array:array(shr_battle_summary:type()),
-      events :: array:array(shr_battle_summary:type()),
+      maps :: list(shr_map_summary:type()),
+      campaigns :: list(shr_battle_summary:type()),
+      invasions :: list(shr_battle_summary:type()),
+      events :: list(shr_battle_summary:type()),
       roster_id :: binary(),
       inventory_id :: binary()
    }
@@ -115,7 +115,6 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (binary(), binary(), binary(), binary()) -> type().
 new (ID, Username, Password, Email) ->
-   EmptyArray = array:new(),
    Result =
       #player
       {
@@ -125,10 +124,10 @@ new (ID, Username, Password, Email) ->
          token = <<"">>,
          email = Email,
          last_active = 0,
-         maps = EmptyArray,
-         campaigns = EmptyArray,
-         invasions = EmptyArray,
-         events = EmptyArray,
+         maps = [],
+         campaigns = [],
+         invasions = [],
+         events = [],
          inventory_id = <<"0">>,
          roster_id = <<"0">>
       },
@@ -158,16 +157,16 @@ get_email (Player) -> Player#player.email.
 -spec get_last_active (type()) -> integer().
 get_last_active (Player) -> Player#player.last_active.
 
--spec get_map_summaries (type()) -> array:array(shr_map_summary:type()).
+-spec get_map_summaries (type()) -> list(shr_map_summary:type()).
 get_map_summaries (Player) -> Player#player.maps.
 
--spec get_campaign_summaries (type()) -> array:array(shr_battle_summary:type()).
+-spec get_campaign_summaries (type()) -> list(shr_battle_summary:type()).
 get_campaign_summaries (Player) -> Player#player.campaigns.
 
--spec get_invasion_summaries (type()) -> array:array(shr_battle_summary:type()).
+-spec get_invasion_summaries (type()) -> list(shr_battle_summary:type()).
 get_invasion_summaries (Player) -> Player#player.invasions.
 
--spec get_event_summaries (type()) -> array:array(shr_battle_summary:type()).
+-spec get_event_summaries (type()) -> list(shr_battle_summary:type()).
 get_event_summaries (Player) -> Player#player.events.
 
 -spec get_roster_id (type()) -> binary().
@@ -209,12 +208,12 @@ refresh_active (Player) ->
       last_active = erlang:system_time(second)
    }.
 
--spec set_map_summaries (array:array(shr_map_summary:type()), type()) -> type().
+-spec set_map_summaries (list(shr_map_summary:type()), type()) -> type().
 set_map_summaries (Maps, Player) -> Player#player{ maps = Maps }.
 
 -spec set_campaign_summaries
    (
-      array:array(shr_battle_summary:type()),
+      list(shr_battle_summary:type()),
       type()
    )
    -> type().
@@ -226,7 +225,7 @@ set_campaign_summaries (Campaigns, Player) ->
 
 -spec set_invasion_summaries
    (
-      array:array(shr_battle_summary:type()),
+      list(shr_battle_summary:type()),
       type()
    )
    -> type().
@@ -236,12 +235,7 @@ set_invasion_summaries (Invasions, Player) ->
       invasions = Invasions
    }.
 
--spec set_event_summaries
-   (
-      array:array(shr_battle_summary:type()),
-      type()
-   )
-   -> type().
+-spec set_event_summaries (list(shr_battle_summary:type()), type()) -> type().
 set_event_summaries (Events, Player) ->
    Player#player
    {

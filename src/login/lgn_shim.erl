@@ -24,7 +24,7 @@ add_ref_to_event (BattleID, EventName, IsPlayersTurn, Player) ->
    Event =
       shr_battle_summary:new(BattleID, EventName, <<"Never">>, IsPlayersTurn),
 
-   Result = shr_player:set_event_summaries(array:from_list([Event]), Player),
+   Result = shr_player:set_event_summaries([Event], Player),
 
    Result.
 
@@ -38,7 +38,7 @@ add_ref_to_event (BattleID, EventName, IsPlayersTurn, Player) ->
 add_ref_to_map (MapID, EventName, Player) ->
    MapRef = shr_map_summary:new(MapID, EventName),
 
-   Result = shr_player:set_map_summaries(array:from_list([MapRef]), Player),
+   Result = shr_player:set_map_summaries([MapRef], Player),
 
    Result.
 

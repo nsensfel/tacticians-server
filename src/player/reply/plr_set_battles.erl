@@ -22,21 +22,21 @@ generate (Player) ->
       lists:map
       (
          fun shr_battle_summary:encode/1,
-         array:to_list(shr_player:get_campaign_summaries(Player))
+         shr_player:get_campaign_summaries(Player)
       ),
 
    InvasionList =
       lists:map
       (
          fun shr_battle_summary:encode/1,
-         array:to_list(shr_player:get_invasion_summaries(Player))
+         shr_player:get_invasion_summaries(Player)
       ),
 
    EventList =
       lists:map
       (
          fun shr_battle_summary:encode/1,
-         array:to_list(shr_player:get_event_summaries(Player))
+         shr_player:get_event_summaries(Player)
       ),
 
    {

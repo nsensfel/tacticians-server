@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/1]).
+-export([grant_additional/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,8 +16,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (binary()) -> map_map:type().
-generate (OwnerID) ->
+-spec grant_additional (binary()) -> map_map:type().
+grant_additional (OwnerID) ->
    Map = map_map:default(OwnerID),
 
    {ok, MapID} =
@@ -29,12 +29,10 @@ generate (OwnerID) ->
          Map
       ),
 
-   MapSummary = shr_map_summary:new(<<"Untitled Map">>, MapID),
+   MapSummary = shr_map_summary:new(MapID, <<"Untitled Map">>),
 
    PlayerUpdateQueryOps =
       [
-         %% FIXME: shr_db_query:add_to_field handles lists,
-         %% shr_player:get_map_summaries_field() points to an array.
          shr_db_query:add_to_field
          (
             shr_player:get_map_summaries_field(),
