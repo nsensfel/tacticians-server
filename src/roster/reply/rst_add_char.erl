@@ -30,6 +30,7 @@ generate (IX, Character) ->
          {<<"msg">>, <<"add_char">>},
          {<<"ix">>, IX},
          {<<"nam">>, rst_character:get_name(Character)},
+         {<<"prt">>, rst_character:get_portrait_id(Character)},
          {<<"awp">>, ActiveWeapon},
          {<<"swp">>, SecondaryWeapon},
          {<<"ar">>, rst_character:get_armor_id(Character)},
