@@ -187,13 +187,12 @@ handle_info(_, State) ->
 %%%% Interface Functions
 -spec allocate (atom()) -> binary().
 allocate (DB) ->
-   gen_server:call({global, db_item_ids_manager}, {allocate, DB}),
+   {allocated_id, Result} =
+      gen_server:call({global, db_item_ids_manager}, {allocate, DB}),
 
-   receive
-      {allocated_id, Result} ->
-         io:format("~n[DB: ~p] Item ID ~p allocated.~n", [DB, Result]),
-         Result
-   end.
+   io:format("~n[DB: ~p] Item ID ~p allocated.~n", [DB, Result]),
+
+   Result.
 
 -spec free (binary(), atom()) -> 'ok'.
 free (ID, DB) ->

@@ -30,6 +30,5 @@ can_access (any, _) -> true;
 can_access (janitor, janitor) -> true;
 can_access (List, {user, User}) ->
    lists:member({user, User}, List);
-can_access (janitor, janitor) -> true;
 can_access (List, janitor) ->
    lists:member(janitor, List).
