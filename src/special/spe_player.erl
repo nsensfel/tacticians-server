@@ -52,7 +52,7 @@ generate_inventory (PlayerID) ->
       shr_database:insert
       (
          inventory_db,
-         [{user, PlayerID}],
+         any,
          [{user, PlayerID}],
          Inventory
       ),
@@ -66,7 +66,7 @@ generate_roster (PlayerID) ->
       shr_database:insert
       (
          roster_db,
-         [{user, PlayerID}],
+         any,
          [{user, PlayerID}],
          Roster
       ),

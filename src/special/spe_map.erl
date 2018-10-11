@@ -1,21 +1,13 @@
--module(shr_db_user).
+-module(spe_map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type db_named_user() :: {'user', any()}.
--type db_user() :: (db_named_user() | 'admin' | 'any' | 'janitor').
--type db_permission() :: (list(db_named_user()) | 'any' | 'janitor').
 
-
--type user() :: db_user().
--type permission() :: db_permission().
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type([user/0, permission/0]).
-
--export([can_access/2]).
+-export([generate/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,13 +16,37 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec can_access (permission(), user()) -> boolean().
-can_access (_, admin) -> true;
-can_access (any, _) -> true;
-can_access (janitor, janitor) -> true;
-can_access (List, {user, User}) ->
-   lists:member({user, User}, List);
-can_access (List, janitor) ->
-   lists:member(janitor, List);
-can_access (List, User) ->
-   can_access(List, {user, User}).
+-spec generate (binary()) -> map_map:type().
+generate (OwnerID) ->
+   Map = map_map:default(OwnerID),
+
+   {ok, MapID} =
+      shr_database:insert
+      (
+         map_db,
+         any,
+         [{user, OwnerID}],
+         Map
+      ),
+
+   MapSummary = shr_map_summary:new(<<"Untitled Map">>, MapID),
+
+   PlayerUpdateQueryOps =
+      [
+         %% FIXME: shr_db_query:add_to_field handles lists,
+         %% shr_player:get_map_summaries_field() points to an array.
+         shr_db_query:add_to_field
+         (
+            shr_player:get_map_summaries_field(),
+            [MapSummary],
+            false
+         )
+      ],
+
+   ok =
+      shr_database:commit
+      (
+         shr_db_query:new(player_db, OwnerID, admin, PlayerUpdateQueryOps)
+      ),
+
+   Map.

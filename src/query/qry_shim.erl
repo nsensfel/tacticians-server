@@ -22,7 +22,10 @@ generate_player_0 () ->
          <<"Player1@tacticians.online">>
       ),
 
+   spe_map:generate(shr_player:get_id(Player)),
+
    Player.
+
 
 -spec generate_player_1 () -> shr_player:type().
 generate_player_1 () ->
@@ -33,6 +36,8 @@ generate_player_1 () ->
          <<"Kalimer1">>,
          <<"Player2@tacticians.online">>
       ),
+
+   spe_map:generate(shr_player:get_id(Player)),
 
    Player.
 

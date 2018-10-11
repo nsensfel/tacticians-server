@@ -42,7 +42,8 @@
 (
    [
       instance_to_int_list/1,
-      instance_from_ints/1
+      instance_from_ints/1,
+      default_tile_instance/0
    ]
 ).
 
@@ -123,3 +124,6 @@ instance_from_ints (L) ->
 
 -spec instance_to_int_list (instance()) -> list(non_neg_integer()).
 instance_to_int_list (I) -> I.
+
+-spec default_tile_instance () -> instance().
+default_tile_instance () -> [1, 0].

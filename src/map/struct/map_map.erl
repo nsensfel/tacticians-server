@@ -9,7 +9,6 @@
 (
    map,
    {
-      id :: id(),
       owner :: binary(),
       width :: integer(),
       height :: integer(),
@@ -28,7 +27,6 @@
 -export
 (
    [
-      get_id/1,
       get_owner/1,
       get_width/1,
       get_height/1,
@@ -49,8 +47,9 @@
 -export
 (
    [
-      from_list/5,
-      update_from_list/4
+      from_list/4,
+      update_from_list/4,
+      default/1
    ]
 ).
 
@@ -75,9 +74,6 @@ location_to_array_index (ArrayWidth, {X, Y}) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (Map) -> Map#map.id.
-
 -spec get_owner (type()) -> binary().
 get_owner (Map) -> Map#map.owner.
 
@@ -106,19 +102,17 @@ get_tile_instances_field () -> #map.tile_instances.
 
 -spec from_list
    (
-      non_neg_integer(),
       binary(),
       non_neg_integer(),
       non_neg_integer(),
       list(list(non_neg_integer()))
    )
    -> type().
-from_list (ID, Owner, Width, Height, List) ->
+from_list (Owner, Width, Height, List) ->
    TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
 
    #map
    {
-      id = list_to_binary(integer_to_list(ID)),
       owner = Owner,
       width = Width,
       height = Height,
@@ -141,4 +135,24 @@ update_from_list (Map, Width, Height, List) ->
       width = Width,
       height = Height,
       tile_instances = array:from_list(TileInstances)
+   }.
+
+-spec default (binary()) -> type().
+default (Owner) ->
+   DefaultTileInstance = shr_tile:default_tile_instance(),
+
+   #map
+   {
+      owner = Owner,
+      width = 32,
+      height = 32,
+      tile_instances =
+         array:new
+         (
+            [
+               {size, 1024},
+               {default, DefaultTileInstance},
+               {fixed, true}
+            ]
+         )
    }.
