@@ -1,0 +1,75 @@
+Elements:
+
+            Wind
+   Lightning      Snow
+Fire                 Water
+   Magma          Plant
+            Earth
+
+Omnimods for each element:
+- Damage (>0)
+- Defense (any)
+- Status Chance (0-100)
+- Status Def (any)
+
+Chance to inflict status calculated similarly to evasion:
+   min(100, max(0, {attacker status chance} - {defender status def}))
+
+Status Def > 100 -> ({defender status def} - 100)% of {attacker damage} are
+   actually healing defender.
+
+Omnimods are manually set so that gaining X in an element leads to:
+* X/2 in the elements next to it.
+* -X in the opposite element
+* -(X/2) in the elements next to its opposite element
+
+Having this done manually allows for exception.
+
+The element chosen for the status that can be triggered is chosen randomly among
+the ones the character, with weights depending on the percentage of the damage
+caused by that element. For each element, there are two variants: Alpha, which
+inflicts a status on the character getting hit, and Beta, which grants one for
+the character doing the hitting. Status are taken into consideration only after
+the attack that generated them. Characters may have multiple elemental status in
+effect.
+
+Characters affected by the status of element, be it antagonistic or not, gain
+affinity in that element (i.e. omnimods for that element, and all the associated
+{X/2,-X,-(X/2)} stuff).
+
+* Wind:
+   Alpha: Reduces max movement points.
+   Beta: Increases max movement points.
+
+* Lightning:
+   Alpha: Character is disabled for a turn.
+   Beta:
+      Attacking this character, regardless of range, will result in taking
+      lightning damage.
+
+* Fire:
+   Alpha:
+      Character suffer fire damage over time (don't forget to make it worth it
+      despite the affinity gain).
+   Beta:
+      Character deals more damage.
+
+* Magma:
+   Alpha: TBD
+   Beta: TBD + Inflict magma damage when attacked by melee.
+
+* Earth:
+   Alpha: Lowers the character's defense
+   Beta: Increases the character's defense.
+
+* Plant:
+   Alpha: Character cannot be healed, nor gain SPs (not even with skill).
+   Beta: Character gains life-steal.
+
+* Water:
+   Alpha: Halves the character's HP.
+   Beta: The character receives some healing.
+
+* Snow:
+   Alpha: Character loses all evasion.
+   Beta: Character gets max evasion.
