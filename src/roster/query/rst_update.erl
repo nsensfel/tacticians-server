@@ -5,14 +5,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("../../../include/yaws_api.hrl").
 
+-type decoded_character() :: {non_neg_integer(), rst_character:type()}.
+
 -record
 (
    input,
    {
       player_id :: binary(),
       session_token :: binary(),
-      character_ix :: non_neg_integer(),
-      character :: rst_character:type()
+      characters :: list(decoded_character())
    }
 ).
 
@@ -37,22 +38,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec decode_character_list (list(map())) -> list(decoded_character()).
+decode_character_list (EncodedCharactersList) ->
+   lists:map
+   (
+      fun (Map) ->
+         {maps:get(<<"ix">>, Map), rst_character:decode(Map)}
+      end,
+      EncodedCharactersList
+   ).
+
 -spec parse_input (binary()) -> input().
 parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
-   CharacterIX = maps:get(<<"cix">>, JSONReqMap),
-   EncodedCharacter = maps:get(<<"chr">>, JSONReqMap),
-
-   Character = rst_character:decode(EncodedCharacter),
+   EncodedCharacterList = maps:get(<<"rst">>, JSONReqMap),
+   CharacterList = decode_character_list(EncodedCharacterList),
 
    #input
    {
       player_id = PlayerID,
       session_token = SessionToken,
-      character_ix = CharacterIX,
-      character = Character
+      characters = CharacterList
    }.
 
 -spec authenticate_user (input()) -> ({'ok', shr_player:type()} | 'error').
@@ -86,9 +94,15 @@ fetch_data (Player, Input) ->
 -spec update_data (query_state(), input()) -> query_state().
 update_data (QueryState, Input) ->
    Inventory = QueryState#query_state.inventory,
-   Character = Input#input.character,
+   Characters = Input#input.characters,
 
-   rst_character:validate(Inventory, Character),
+   lists:map
+   (
+      fun (Character) ->
+         rst_character:validate(Inventory, Character)
+      end,
+      Characters
+   ),
 
    %% TODO [FUNCTION: chr][REQUIRED]: unimplemented.
    QueryState.
@@ -96,13 +110,32 @@ update_data (QueryState, Input) ->
 -spec commit_update (query_state(), input()) -> 'ok'.
 commit_update (QueryState, Input) ->
    PlayerID = Input#input.player_id,
-   CharacterIX = Input#input.character_ix,
-   Character = Input#input.character,
+   Characters = Input#input.characters,
    Player = QueryState#query_state.player,
    Roster = QueryState#query_state.roster,
 
    RosterID = shr_player:get_roster_id(Player),
-   UpdatedRoster = rst_roster:set_character(CharacterIX, Character, Roster),
+
+   {UpdatedRoster, QueryList} =
+      lists:foldl
+      (
+         fun ({IX, Character}, {CurrentRoster, UpdateList}) ->
+             {
+               rst_roster:set_character(IX, Character, CurrentRoster),
+               [
+                  shr_db_query:update_indexed
+                  (
+                     rst_roster:get_characters_field(),
+                     IX,
+                     [shr_db_query:set_value(Character)]
+                  )
+                  | UpdateList
+               ]
+            }
+         end,
+         {Roster, []},
+         Characters
+      ),
 
    Query =
       shr_db_query:new
@@ -110,14 +143,7 @@ commit_update (QueryState, Input) ->
          roster_db,
          RosterID,
          {user, PlayerID},
-         [
-            shr_db_query:update_indexed
-            (
-               rst_roster:get_characters_field(),
-               CharacterIX,
-               [shr_db_query:set_value(Character)]
-            )
-         ]
+         QueryList
       ),
 
    shr_database:commit(Query),
