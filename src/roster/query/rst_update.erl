@@ -79,10 +79,11 @@ authenticate_user (Input) ->
 fetch_data (Player, Input) ->
    PlayerID = Input#input.player_id,
    RosterID = shr_player:get_roster_id(Player),
-   InventoryID = shr_player:get_inventory_id(Player),
+   _InventoryID = shr_player:get_inventory_id(Player),
 
    Roster = shr_timed_cache:fetch(roster_db, PlayerID, RosterID),
-   Inventory = shr_timed_cache:fetch(roster_db, PlayerID, InventoryID),
+%   Inventory = shr_timed_cache:fetch(inventory_db, PlayerID, InventoryID),
+   Inventory = shr_inventory:new(PlayerID),
 
    #query_state
    {
@@ -98,7 +99,7 @@ update_data (QueryState, Input) ->
 
    lists:map
    (
-      fun (Character) ->
+      fun ({_IX, Character}) ->
          rst_character:validate(Inventory, Character)
       end,
       Characters

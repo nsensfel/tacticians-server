@@ -148,6 +148,9 @@ apply_set_field (Op, Elem) ->
 -spec apply_op_to (db_query_op(), any()) -> any().
 apply_op_to (Op, Elem) when is_record(Op, set_field) ->
    apply_set_field(Op, Elem);
+apply_op_to (MOp, _Elem) when is_record(MOp, set_val) ->
+   NewVal = MOp#set_val.val,
+   NewVal;
 apply_op_to (Op, Elem) when is_record(Op, add_to_field) ->
    apply_add_to_field(Op, Elem);
 apply_op_to (Op, Elem) when is_record(Op, update_indexed) ->
@@ -167,10 +170,6 @@ apply_master_op_to (MOp, Elem) when is_record(MOp, set_write_perm) ->
    NewPerm = MOp#set_write_perm.perm,
 
    shr_db_item:set_write_permission(NewPerm, Elem);
-apply_master_op_to (MOp, Elem) when is_record(MOp, set_val) ->
-   NewVal = MOp#set_val.val,
-
-   shr_db_item:set_value(NewVal, Elem);
 apply_master_op_to (MOp, Elem) ->
    OldValue = shr_db_item:get_value(Elem),
    NewValue = apply_op_to(MOp, OldValue),
