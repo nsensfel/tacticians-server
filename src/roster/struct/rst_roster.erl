@@ -117,5 +117,5 @@ new (Owner) ->
    #roster
    {
       owner = Owner,
-      characters = array:from_list([rst_character:new()])
+      characters = array:from_list([rst_character:new(), rst_character:new()])
    }.
