@@ -1,0 +1,97 @@
+Hitting your target, parrying, critical hits, double hits, and elemental status
+are controlled by random chance. On the one hand, this adds depth through
+management of risks and rewards, and it forces unexpected events on the players.
+On the other hand, it can quickly make combats feel unfair (e.g. good tactics
+failing due to bad luck) or infuriate players (e.g. missing a 95% chance shot in
+XCOM).
+
+To mitigate the drawbacks, TO should balance the impact of luck.
+
+During a battle, each players has a Luck meter. Luck in between -200 and 200. It
+starts at 0.
+
+When a player makes a roll with X% chance, the result is as follows:
+Roll = rand(100);
+IsSuccess = ((X + Luck) >= Roll);
+if (IsSuccess)
+{
+   if (X > 50)
+   {
+      // It was likely to succeed, pay just what you used.
+      MissingPoints = max(0, (Roll - X))
+      Luck' = (Luck - MissingPoints)
+   }
+   else if (X =< 50)
+   {
+      // It was unlikely to succeed, pay a lot.
+      Cost = (55 - X) // How far was it from being reasonable?
+      Luck' = (Luck - Cost)
+   }
+}
+else
+{
+   // Failure due to bad roll.
+   if (X >= 50)
+   {
+      // It was likely to succeed, you're owed a lot.
+      OwedPoints = (X - 45)
+      Luck' = (Luck + OwedPoints)
+   }
+}
+
+For example:
+
+A/ The character of a player with 15 Luck attempts a 10% chance parry:
+if (Roll <= 25)
+{
+   // Unlikely Success.
+   Cost = (55 - 10) = 45
+   Luck' = 15 - 45 = -30
+}
+else if (Roll > 25)
+{
+  // Expected Failure.
+}
+
+B/ The character of a player with 20 Luck attempts a 45% chance parry:
+if (Roll <= 60)
+{
+   // Unlikely Success.
+   Cost = (55 - 45) = 10
+   Luck' = 20 - 10 = 10
+}
+else if (Roll > 60)
+{
+  // Expected Failure.
+}
+
+D/ The character of a player with 20 Luck attempts a 55% chance parry:
+if (Roll <= 70)
+{
+   // Likely Success.
+   UsedUpLuck = max(0, (55 - Roll)) = [0, 20]
+   Luck' = 20 - UsedUpLuck = [0, 20]
+}
+else if (Roll > 70)
+{
+  // Unlucky dice roll.
+  OwedPoints = (55 - 45) = 10
+  Luck' = 20 + 10 = 30
+}
+
+D/ The character of a player with -35 Luck attempts a 15% chance parry:
+No roll required. This fails. No luck update.
+
+E/ The character of a player with -35 Luck attempts a 75% chance parry:
+if (Roll <= 40)
+{
+   // Without the negative luck, it was likely to succeed
+   // Luck clearly didn't help, so none is to be payed.
+}
+else if (Roll > 40)
+{
+   // If not for that negative luck, you were likely to make it.
+   // You're owed some luck back.
+   OwedPoints = (75 - 45) = 30
+   Luck' = -35 + 30 = -5
+}
