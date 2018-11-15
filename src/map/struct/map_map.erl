@@ -105,11 +105,11 @@ get_tile_instances_field () -> #map.tile_instances.
       binary(),
       non_neg_integer(),
       non_neg_integer(),
-      list(list(non_neg_integer()))
+      list(list(binary()))
    )
    -> type().
 from_list (Owner, Width, Height, List) ->
-   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_binary_list/1, List),
 
    #map
    {
@@ -124,11 +124,11 @@ from_list (Owner, Width, Height, List) ->
       type(),
       non_neg_integer(),
       non_neg_integer(),
-      list(list(non_neg_integer()))
+      list(list(binary()))
    )
    -> type().
 update_from_list (Map, Width, Height, List) ->
-   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_binary_list/1, List),
 
    Map#map
    {

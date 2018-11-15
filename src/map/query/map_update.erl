@@ -14,7 +14,7 @@
       map_id :: binary(),
       w :: non_neg_integer(),
       h :: non_neg_integer(),
-      t :: list(list(non_neg_integer()))
+      t :: list(list(binary()))
    }
 ).
 
@@ -55,22 +55,8 @@ parse_input (Req) ->
       lists:all
       (
          fun (T) ->
-            [M|[V|B]] = T,
-            (
-               (M > 0)
-               and (V >= 0)
-               and ((length(B) rem 2) == 0)
-               and
-               lists:all
-               (
-                  fun (Bo) ->
-                     %% FIXME [SECURITY][LOW]: this does not prevent "Error"
-                     %% tiles.
-                     (Bo >= 0)
-                  end,
-                  B
-               )
-            )
+            [_M|[_V|B]] = T,
+            ((length(B) rem 2) == 0)
          end,
          MapContent
       ),

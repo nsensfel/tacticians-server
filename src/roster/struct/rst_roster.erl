@@ -114,8 +114,23 @@ get_characters_field () -> #roster.characters.
 
 -spec new (binary()) -> type().
 new (Owner) ->
+   NewChar = rst_character:new(),
    #roster
    {
       owner = Owner,
-      characters = array:from_list([rst_character:new(), rst_character:new()])
+      characters =
+         array:from_list
+         (
+            [
+               NewChar,
+               NewChar,
+               NewChar,
+               NewChar,
+
+               NewChar,
+               NewChar,
+               NewChar,
+               NewChar
+            ]
+         )
    }.

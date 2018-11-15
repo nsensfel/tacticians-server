@@ -78,11 +78,11 @@ get_tile_instance (Location, Map) ->
    (
       non_neg_integer(),
       non_neg_integer(),
-      list(list(non_neg_integer()))
+      list(list(binary()))
    )
    -> type().
 from_list (Width, Height, List) ->
-   TileInstances = lists:map(fun shr_tile:instance_from_ints/1, List),
+   TileInstances = lists:map(fun shr_tile:instance_from_binary_list/1, List),
 
    #map
    {
