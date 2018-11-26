@@ -24,7 +24,8 @@
 -export
 (
    [
-      new/4
+      new/4,
+      none/0
    ]
 ).
 
@@ -81,6 +82,16 @@ new (ID, Name, Time, IsPlayersTurn) ->
       name = Name,
       last_edit = Time,
       is_players_turn = IsPlayersTurn
+   }.
+
+-spec none () -> type().
+none () ->
+   #battle_summary
+   {
+      id = <<"">>,
+      name = <<"">>,
+      last_edit = <<"">>,
+      is_players_turn = false
    }.
 
 %%%% Accessors

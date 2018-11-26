@@ -115,6 +115,7 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (binary(), binary(), binary(), binary()) -> type().
 new (ID, Username, Password, Email) ->
+   NoInvasion = shr_battle_summary:none(),
    Result =
       #player
       {
@@ -126,7 +127,15 @@ new (ID, Username, Password, Email) ->
          last_active = 0,
          maps = [],
          campaigns = [],
-         invasions = [],
+         invasions =
+            [
+               NoInvasion,
+               NoInvasion,
+               NoInvasion,
+               NoInvasion,
+               NoInvasion,
+               NoInvasion
+            ],
          events = [],
          inventory_id = <<"0">>,
          roster_id = <<"0">>
