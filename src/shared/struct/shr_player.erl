@@ -115,7 +115,7 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (binary(), binary(), binary(), binary()) -> type().
 new (ID, Username, Password, Email) ->
-   NoInvasion = shr_battle_summary:none(),
+   EmptyBattleSlot = shr_battle_summary:none(),
    Result =
       #player
       {
@@ -126,17 +126,40 @@ new (ID, Username, Password, Email) ->
          email = Email,
          last_active = 0,
          maps = [],
-         campaigns = [],
+         campaigns =
+            [
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot
+            ],
          invasions =
             [
-               NoInvasion,
-               NoInvasion,
-               NoInvasion,
-               NoInvasion,
-               NoInvasion,
-               NoInvasion
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot
             ],
-         events = [],
+         events =
+            [
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+
+               EmptyBattleSlot,
+               EmptyBattleSlot,
+               EmptyBattleSlot
+            ],
          inventory_id = <<"0">>,
          roster_id = <<"0">>
       },
