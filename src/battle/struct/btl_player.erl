@@ -3,14 +3,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: binary().
 
 -record
 (
    player,
    {
       ix :: non_neg_integer(),
-      id :: id(),
+      id :: shr_player:id(),
       character_ix :: non_neg_integer(),
       timeline :: list(any()),
       is_active :: boolean()
@@ -19,7 +18,7 @@
 
 -opaque type() :: #player{}.
 
--export_type([type/0, id/0]).
+-export_type([type/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -56,7 +55,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_id (type()) -> id().
+-spec get_id (type()) -> shr_player:id().
 get_id (Player) -> Player#player.id.
 
 -spec get_index (type()) -> non_neg_integer().
@@ -86,7 +85,7 @@ add_to_timeline (NewEvents, Player) ->
 -spec reset_timeline (type()) -> type().
 reset_timeline (Player) -> Player#player{ timeline = [] }.
 
--spec new (non_neg_integer(), non_neg_integer(), id()) -> type().
+-spec new (non_neg_integer(), non_neg_integer(), shr_player:id()) -> type().
 new (IX, CharacterIX, ID) ->
    #player
    {

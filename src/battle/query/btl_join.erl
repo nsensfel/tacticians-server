@@ -1,9 +1,11 @@
--module(plr_load).
+-module(btl_join).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("../../../include/yaws_api.hrl").
+
+-type mode() :: (attack | defend | {invalid, binary()}).
 
 -record
 (
@@ -11,7 +13,10 @@
    {
       player_id :: shr_player:id(),
       session_token :: binary(),
-      target_id :: binary()
+      mode :: mode(),
+      size :: non_neg_integer(),
+      roster_ixs :: list(non_neg_integer()),
+      map_id :: string()
    }
 ).
 
@@ -19,7 +24,7 @@
 (
    query_state,
    {
-      player :: shr_player:type()
+      battle :: btl_battle:type()
    }
 ).
 
@@ -39,13 +44,35 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
-   TargetID = maps:get(<<"id">>, JSONReqMap),
+
+   Mode =
+      case maps:get(<<"m">>, JSONReqMap) of
+         <<"a">> -> attack;
+         <<"b">> -> defend;
+         V -> {invalid, V}
+      end,
+
+   true = ((Mode == attack) or (Mode == defend)),
+
+   Size =
+      case maps:get(<<"s">>, JSONReqMap) of
+         <<"s">> -> 8;
+         <<"m">> -> 16;
+         <<"l">> -> 24;
+         _ -> 0
+      end,
+
+   Roster = maps:get(<<"r">>, JSONReqMap),
+   MapID =  maps:get(<<"map_id">>, JSONReqMap),
 
    #input
    {
       player_id = PlayerID,
       session_token = SessionToken,
-      target_id = TargetID
+      mode = Mode,
+      size = Size,
+      roster_ixs = Roster,
+      map_id = MapID
    }.
 
 -spec authenticate_user (input()) -> ('ok' | 'error').
@@ -62,21 +89,19 @@ authenticate_user (Input) ->
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
-   TargetID = Input#input.target_id,
+   PlayerID = Input#input.player_id,
+   BattleID = Input#input.battle_id,
 
-   Player = shr_timed_cache:fetch(player_db, any, TargetID),
+   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
 
    #query_state
    {
-      player = Player
+      battle = Battle
    }.
 
 
 -spec generate_reply(query_state(), input()) -> binary().
-generate_reply (QueryState, _Input) ->
-   Player = QueryState#query_state.player,
-
-   Output = jiffy:encode([plr_set_player:generate(Player)]),
+generate_reply (QueryState, Input) ->
 
    Output.
 

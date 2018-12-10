@@ -9,7 +9,7 @@
 (
    input,
    {
-      player_id :: btl_player:id(),
+      player_id :: shr_player:id(),
       session_token :: binary(),
       battle_id :: binary()
    }

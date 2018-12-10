@@ -13,7 +13,7 @@
 (
    type,
    {
-      player_id :: btl_player:id(),
+      player_id :: shr_player:id(),
       session_token :: binary(),
       battle_id :: binary(),
       character_ix :: non_neg_integer(),
@@ -68,7 +68,7 @@ decode (Map) ->
       actions = Actions
    }.
 
--spec get_player_id (type()) -> btl_player:id().
+-spec get_player_id (type()) -> shr_player:id().
 get_player_id (Request) -> Request#type.player_id.
 
 -spec get_session_token (type()) -> binary().
