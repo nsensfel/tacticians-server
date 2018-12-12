@@ -45,12 +45,12 @@ YAWS_CONFIG_FILE ?= $(CONFIG_DIR)/yaws.conf
 OPTIONAL_DIRS = $(BIN_DIR) $(INCLUDE_DIR) $(WWW_DIR) $(LOG_DIR)
 
 ## Preprocessor
-PREPROCESSOR_CONFIG_FILES = $(shell find $(CONFIG_DIR) -name "*.m4.conf")
-PREPROCESSABLE_FILES = $(shell find ${CURDIR} -name "*.m4")
+PREPROCESSOR_CONFIG_FILES = $(shell find -L $(CONFIG_DIR) -name "*.m4.conf")
+PREPROCESSABLE_FILES = $(shell find -L ${CURDIR} -name "*.m4")
 PREPROCESSED_FILES = $(patsubst %.m4,%,$(PREPROCESSABLE_FILES))
 
 ## Erlang
-ERL_SRC_FILES = $(shell find $(SRC_DIR) -name "*.erl")
+ERL_SRC_FILES = $(shell find -L $(SRC_DIR) -name "*.erl")
 ERL_BIN_FILES = $(patsubst %.erl,$(BIN_DIR)/%.beam,$(notdir $(ERL_SRC_FILES)))
 
 ## Yaws
@@ -147,7 +147,7 @@ $(OPTIONAL_DIRS): %:
 	mkdir -p $@
 
 .SECONDEXPANSION:
-$(ERL_BIN_FILES): $(BIN_DIR)/%.beam: $$(shell find $(SRC_DIR) -name "%.erl")
+$(ERL_BIN_FILES): $(BIN_DIR)/%.beam: $$(shell find -L $(SRC_DIR) -name "%.erl")
 	$(ERLC_EXEC) -o $(BIN_DIR) $<
 
 .PHONY:

@@ -17,57 +17,70 @@ reserve_login (UsernameLC, EmailLC) ->
    shr_janitor:new(login_db, UsernameLC),
    shr_janitor:new(login_db, EmailLC),
 
-   ok = shr_database:reserve(login_db, UsernameLC, janitor),
-   ok = shr_database:reserve(login_db, EmailLC, janitor),
+   ok = ataxia_client:reserve(login_db, ataxia_security:janitor(), UsernameLC),
+   ok = ataxia_client:reserve(login_db, ataxia_security:janitor(), EmailLC),
 
    ok.
 
 -spec finalize_login (binary(), binary(), binary()) -> 'ok'.
 finalize_login (UsernameLC, EmailLC, PlayerID) ->
    LoginUpdateQueryOps =
-      [
-         shr_db_query:set_value(PlayerID),
-         shr_db_query:set_read_permission(any),
-         shr_db_query:set_write_permission([{user, PlayerID}])
-      ],
-
-   ok =
-      shr_database:commit
+      ataxic:sequence_meta
       (
-         shr_db_query:new(login_db, UsernameLC, janitor, LoginUpdateQueryOps)
+         [
+            ataxic:value(ataxic:constant(PlayerID)),
+            ataxic:read_permission(ataxic:constant(ataxia_security:any())),
+            ataxic:write_permission
+            (
+               ataxic:constant([ataxia_security:user(PlayerID)])
+            )
+         ]
       ),
 
    ok =
-      shr_database:commit
+      ataxia_client:commit
       (
-         shr_db_query:new(login_db, EmailLC, janitor, LoginUpdateQueryOps)
+         login_db,
+         ataxia_security:janitor(),
+         LoginUpdateQueryOps,
+         UsernameLC
+      ),
+
+   ok =
+      ataxia_client:commit
+      (
+         login_db,
+         ataxia_security:janitor(),
+         LoginUpdateQueryOps,
+         EmailLC
       ),
 
    'ok'.
 
--spec generate_inventory (binary()) -> binary().
+-spec generate_inventory (ataxia_id:type()) -> ataxia_id:type().
 generate_inventory (PlayerID) ->
    Inventory = shr_inventory:new(PlayerID),
+
    {ok, InventoryID} =
-      shr_database:insert
+      ataxia_client:insert
       (
          inventory_db,
-         any,
-         [{user, PlayerID}],
+         ataxia_security:any(),
+         [ataxia_security:user(PlayerID)],
          Inventory
       ),
 
    InventoryID.
 
--spec generate_roster (binary()) -> binary().
+-spec generate_roster (ataxia_id:type()) -> ataxia_id:type().
 generate_roster (PlayerID) ->
    Roster = rst_roster:new(PlayerID),
    {ok, RosterID} =
-      shr_database:insert
+      ataxia_client:insert
       (
          roster_db,
-         any,
-         [{user, PlayerID}],
+         ataxia_security:any(),
+         [ataxia_security:user(PlayerID)],
          Roster
       ),
 
@@ -85,7 +98,14 @@ generate (Username, Password, Email) ->
 
    Player = shr_player:new(<<"">>, Username, Password, Email),
 
-   {ok, PlayerID} = shr_database:insert(player_db, janitor, janitor, Player),
+   {ok, PlayerID} =
+      ataxia_client:insert
+      (
+         player_db,
+         ataxia_security:janitor(),
+         ataxia_security:janitor(),
+         Player
+      ),
 
    shr_janitor:new(player_db, PlayerID),
 
