@@ -32,14 +32,17 @@ grant_additional (OwnerID) ->
    MapSummary = shr_map_summary:new(MapID, <<"Untitled Map">>),
 
    PlayerUpdateQueryOp =
-      ataxic:on_field
+      ataxic:value
       (
-         shr_player:get_map_summaries_field(),
-         ataxic:apply_function
+         ataxic:on_field
          (
-            lists,
-            append,
-            [ataxic:constant([MapSummary]), ataxic:current_value()]
+            shr_player:get_map_summaries_field(),
+            ataxic:apply_function
+            (
+               lists,
+               append,
+               [ataxic:constant([MapSummary]), ataxic:current_value()]
+            )
          )
       ),
 

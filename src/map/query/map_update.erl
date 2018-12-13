@@ -115,32 +115,36 @@ commit_update (QueryState, Input) ->
    MapID = Input#input.map_id,
    Map = QueryState#query_state.map,
 
-   Query =
-      shr_db_query:new
+   ok =
+      ataxia_client:commit
       (
          map_db,
-         MapID,
-         {user, PlayerID},
-         [
-            shr_db_query:set_field
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:value
+         (
+            ataxic:sequence
             (
-               map_map:get_height_field(),
-               Input#input.h
-            ),
-            shr_db_query:set_field
-            (
-               map_map:get_width_field(),
-               Input#input.w
-            ),
-            shr_db_query:set_field
-            (
-               map_map:get_tile_instances_field(),
-               map_map:get_tile_instances(Map)
+               [
+                  ataxic:on_field
+                  (
+                     map_map:get_height_field(),
+                     ataxic:constant(Input#input.h)
+                  ),
+                  ataxic:on_field
+                  (
+                     map_map:get_width_field(),
+                     ataxic:constant(Input#input.w)
+                  ),
+                  ataxic:on_field
+                  (
+                     map_map:get_tile_instances_field(),
+                     ataxic:constant(map_map:get_tile_instances(Map))
+                  )
+               ]
             )
-         ]
+         )
       ),
 
-   shr_database:commit(Query),
    shr_timed_cache:update(map_db, PlayerID, MapID, Map),
 
    'ok'.

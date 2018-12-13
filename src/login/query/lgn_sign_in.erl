@@ -83,27 +83,31 @@ commit_update (QueryState) ->
    NewToken = shr_player:get_token(UpdatedPlayer),
    NewActiveTime = shr_player:get_last_active(UpdatedPlayer),
 
-   Query =
-      shr_db_query:new
+   ok =
+      ataxia_client:update
       (
          player_db,
-         PlayerID,
-         {user, PlayerID},
-         [
-            shr_db_query:set_field
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:value
+         (
+            ataxic:sequence
             (
-               shr_player:get_token_field(),
-               NewToken
-            ),
-            shr_db_query:set_field
-            (
-               shr_player:get_last_active_field(),
-               NewActiveTime
+               [
+                  ataxic:on_field
+                  (
+                     shr_player:get_token_field(),
+                     ataxic:constant(NewToken)
+                  ),
+                  ataxic:on_field
+                  (
+                     shr_player:get_last_active_field(),
+                     ataxic:constant(NewActiveTime)
+                  )
+               ]
             )
-         ]
+         )
       ),
 
-   ok = shr_database:commit(Query),
    shr_timed_cache:update(player_db, any, PlayerID, UpdatedPlayer),
 
    'ok'.

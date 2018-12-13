@@ -32,13 +32,13 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
             ataxic:read_permission(ataxic:constant(ataxia_security:any())),
             ataxic:write_permission
             (
-               ataxic:constant([ataxia_security:user(PlayerID)])
+               ataxic:constant([ataxia_security:user_from_id(PlayerID)])
             )
          ]
       ),
 
    ok =
-      ataxia_client:commit
+      ataxia_client:update
       (
          login_db,
          ataxia_security:janitor(),
@@ -47,7 +47,7 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
       ),
 
    ok =
-      ataxia_client:commit
+      ataxia_client:update
       (
          login_db,
          ataxia_security:janitor(),
@@ -62,11 +62,11 @@ generate_inventory (PlayerID) ->
    Inventory = shr_inventory:new(PlayerID),
 
    {ok, InventoryID} =
-      ataxia_client:insert
+      ataxia_client:add
       (
          inventory_db,
          ataxia_security:any(),
-         [ataxia_security:user(PlayerID)],
+         [ataxia_security:user_from_id(PlayerID)],
          Inventory
       ),
 
@@ -76,11 +76,11 @@ generate_inventory (PlayerID) ->
 generate_roster (PlayerID) ->
    Roster = rst_roster:new(PlayerID),
    {ok, RosterID} =
-      ataxia_client:insert
+      ataxia_client:add
       (
          roster_db,
          ataxia_security:any(),
-         [ataxia_security:user(PlayerID)],
+         [ataxia_security:user_from_id(PlayerID)],
          Roster
       ),
 
@@ -99,7 +99,7 @@ generate (Username, Password, Email) ->
    Player = shr_player:new(<<"">>, Username, Password, Email),
 
    {ok, PlayerID} =
-      ataxia_client:insert
+      ataxia_client:add
       (
          player_db,
          ataxia_security:janitor(),
@@ -113,20 +113,49 @@ generate (Username, Password, Email) ->
    RosterID = generate_roster(PlayerID),
 
    PlayerUpdateQueryOps =
-      [
-         shr_db_query:set_field(shr_player:get_id_field(), PlayerID),
-         shr_db_query:set_field(shr_player:get_inventory_id_field(), InvID),
-         shr_db_query:set_field(shr_player:get_roster_id_field(), RosterID),
-         shr_db_query:set_read_permission(any),
-         shr_db_query:set_write_permission([{user, PlayerID}])
-      ],
+      ataxic:sequence_meta
+      (
+         [
+            ataxic:value
+            (
+               ataxic:sequence
+               (
+                  [
+                     ataxic:on_field
+                     (
+                        shr_player:get_id_field(),
+                        ataxic:constant(PlayerID)
+                     ),
+                     ataxic:on_field
+                     (
+                        shr_player:get_inventory_id_field(),
+                        ataxic:constant(InvID)
+                     ),
+                     ataxic:on_field
+                     (
+                        shr_player:get_roster_id_field(),
+                        ataxic:constant(RosterID)
+                     )
+                  ]
+               )
+            ),
+            ataxic:read_permission(ataxic:constant(ataxia_security:any())),
+            ataxic:write_permission
+            (
+               ataxic:constant([ataxia_security:user_from_id(PlayerID)])
+            )
+         ]
+      ),
 
    ok = finalize_login(UsernameLC, EmailLC, PlayerID),
 
    ok =
-      shr_database:commit
+      ataxia:update
       (
-         shr_db_query:new(player_db, PlayerID, janitor, PlayerUpdateQueryOps)
+         player_db,
+         ataxia_security:janitor(),
+         PlayerUpdateQueryOps,
+         PlayerID
       ),
 
 
