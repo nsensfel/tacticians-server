@@ -63,7 +63,7 @@ parse_input (Req) ->
       end,
 
    Roster = maps:get(<<"r">>, JSONReqMap),
-   MapID =  maps:get(<<"map_id">>, JSONReqMap),
+   MapID = maps:get(<<"map_id">>, JSONReqMap),
 
    #input
    {
@@ -86,6 +86,33 @@ authenticate_user (Input) ->
       true -> ok;
       _ -> error
    end.
+
+-spec handle_new_attack (input()) -> query_state().
+handle_new_attack (Input) ->
+   PlayerID = <<"">>,
+   PlayerDBUser = shr_db_user:player(PlayerID),
+   PartySize = 8,
+   DBCond =
+      recl:ge
+      (
+         recl:on_field
+         (
+            btl_builder:get_free_slots_field(),
+            [recl:current_value()]
+         ),
+         recl:constant(PartySize)
+      ),
+
+   TempLockQuery =
+      shr_db_query:first_match
+      (
+         db_name,
+         PlayerDBUser,
+         DBCond,
+         shr_db_query:temporary_lock(PlayerDBUser)
+      ),
+
+   %% Need: find[lone]; update; fetch
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
@@ -110,9 +137,7 @@ handle (Req) ->
    Input = parse_input(Req),
    case authenticate_user(Input) of
       ok ->
-         shr_security:lock_queries(Input#input.player_id),
          QueryState = fetch_data(Input),
-         shr_security:unlock_queries(Input#input.player_id),
          generate_reply(QueryState, Input);
 
       error -> jiffy:encode([shr_disconnected:generate()])

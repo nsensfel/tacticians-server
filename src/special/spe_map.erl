@@ -16,35 +16,40 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec grant_additional (binary()) -> map_map:type().
+-spec grant_additional (ataxia_id:type()) -> map_map:type().
 grant_additional (OwnerID) ->
    Map = map_map:default(OwnerID),
 
    {ok, MapID} =
-      shr_database:insert
+      ataxia_client:add
       (
          map_db,
-         any,
-         [{user, OwnerID}],
+         ataxia_security:any(),
+         [ataxia_security:user_from_id(OwnerID)],
          Map
       ),
 
    MapSummary = shr_map_summary:new(MapID, <<"Untitled Map">>),
 
-   PlayerUpdateQueryOps =
-      [
-         shr_db_query:add_to_field
+   PlayerUpdateQueryOp =
+      ataxic:on_field
+      (
+         shr_player:get_map_summaries_field(),
+         ataxic:apply_function
          (
-            shr_player:get_map_summaries_field(),
-            [MapSummary],
-            false
+            lists,
+            append,
+            [ataxic:constant([MapSummary]), ataxic:current_value()]
          )
-      ],
+      ),
 
    ok =
-      shr_database:commit
+      ataxia_client:update
       (
-         shr_db_query:new(player_db, OwnerID, admin, PlayerUpdateQueryOps)
+         player_db,
+         ataxia_security:admin(),
+         PlayerUpdateQueryOp,
+         OwnerID
       ),
 
    Map.
