@@ -121,11 +121,18 @@ finalize_character (Update) ->
    FinalizedData = btl_character_turn_data:clean_battle(UpdatedData),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:on_field
       (
          btl_battle:get_characters_field(),
-         btl_character_turn_data:get_character_ix(Data),
-         [ shr_db_query:set_field(btl_character:get_is_active_field(), false) ]
+         ataxic_sugar:update_array_cell
+         (
+            btl_character_turn_data:get_character_ix(Data),
+            ataxic:on_field
+            (
+               btl_character:get_is_active_field(),
+               ataxic:constant(false)
+            )
+         )
       ),
 
    S0Update = btl_character_turn_update:set_data(FinalizedData, Update),
