@@ -43,17 +43,18 @@ mod_current_health (CurrentMaxHealth, PreviousMaxHealth, Update) ->
    S0Update = btl_character_turn_update:set_data(UpdatedData, Update),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:on_field
       (
          btl_battle:get_characters_field(),
-         CharacterIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            CharacterIX,
+            ataxic:on_field
             (
                btl_character:get_current_health_field(),
-               NewHealth
+               ataxic:constant(NewHealth)
             )
-         ]
+         )
       ),
 
    S1Update =  btl_character_turn_update:add_to_db(DBQuery, S0Update),
