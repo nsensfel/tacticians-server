@@ -121,17 +121,17 @@ generate (Username, Password, Email) ->
                ataxic:sequence
                (
                   [
-                     ataxic:on_field
+                     ataxic:update_field
                      (
                         shr_player:get_id_field(),
                         ataxic:constant(PlayerID)
                      ),
-                     ataxic:on_field
+                     ataxic:update_field
                      (
                         shr_player:get_inventory_id_field(),
                         ataxic:constant(InvID)
                      ),
-                     ataxic:on_field
+                     ataxic:update_field
                      (
                         shr_player:get_roster_id_field(),
                         ataxic:constant(RosterID)
@@ -150,7 +150,7 @@ generate (Username, Password, Email) ->
    ok = finalize_login(UsernameLC, EmailLC, PlayerID),
 
    ok =
-      ataxia:update
+      ataxia_client:update
       (
          player_db,
          ataxia_security:janitor(),

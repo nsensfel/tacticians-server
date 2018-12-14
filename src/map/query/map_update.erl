@@ -125,17 +125,17 @@ commit_update (QueryState, Input) ->
             ataxic:sequence
             (
                [
-                  ataxic:on_field
+                  ataxic:update_field
                   (
                      map_map:get_height_field(),
                      ataxic:constant(Input#input.h)
                   ),
-                  ataxic:on_field
+                  ataxic:update_field
                   (
                      map_map:get_width_field(),
                      ataxic:constant(Input#input.w)
                   ),
-                  ataxic:on_field
+                  ataxic:update_field
                   (
                      map_map:get_tile_instances_field(),
                      ataxic:constant(map_map:get_tile_instances(Map))

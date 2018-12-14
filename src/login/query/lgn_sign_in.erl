@@ -93,12 +93,12 @@ commit_update (QueryState) ->
             ataxic:sequence
             (
                [
-                  ataxic:on_field
+                  ataxic:update_field
                   (
                      shr_player:get_token_field(),
                      ataxic:constant(NewToken)
                   ),
-                  ataxic:on_field
+                  ataxic:update_field
                   (
                      shr_player:get_last_active_field(),
                      ataxic:constant(NewActiveTime)

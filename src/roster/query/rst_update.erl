@@ -124,11 +124,10 @@ commit_update (QueryState, Input) ->
              {
                rst_roster:set_character(IX, Character, CurrentRoster),
                [
-                  shr_db_query:update_indexed
+                  ataxic_sugar:update_array_cell
                   (
-                     rst_roster:get_characters_field(),
                      IX,
-                     [shr_db_query:set_value(Character)]
+                     ataxic:constant(Character)
                   )
                   | UpdateList
                ]
@@ -138,16 +137,21 @@ commit_update (QueryState, Input) ->
          Characters
       ),
 
-   Query =
-      shr_db_query:new
+   ok =
+      ataxia_client:update
       (
          roster_db,
-         RosterID,
-         {user, PlayerID},
-         QueryList
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:value
+         (
+            ataxic:update_field
+            (
+               rst_roster:get_characters_field(),
+               ataxic:sequence(QueryList)
+            )
+         )
       ),
 
-   shr_database:commit(Query),
    shr_timed_cache:update(roster_db, PlayerID, RosterID, UpdatedRoster),
 
    'ok'.

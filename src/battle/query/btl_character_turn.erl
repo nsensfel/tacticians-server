@@ -121,13 +121,13 @@ finalize_character (Update) ->
    FinalizedData = btl_character_turn_data:clean_battle(UpdatedData),
 
    DBQuery =
-      ataxic:on_field
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
          ataxic_sugar:update_array_cell
          (
             btl_character_turn_data:get_character_ix(Data),
-            ataxic:on_field
+            ataxic:update_field
             (
                btl_character:get_is_active_field(),
                ataxic:constant(false)
@@ -173,18 +173,26 @@ update_timeline (Update) ->
    UpdatedData = btl_character_turn_data:set_battle(UpdatedBattle, Data),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_players_field(),
-         PlayerIX,
-         [
-            shr_db_query:add_to_field
+         ataxic_sugar:update_array_cell
+         (
+            PlayerIX,
+            ataxic:update_field
             (
                btl_player:get_timeline_field(),
-               NewTimelineElements,
-               true % We add those to the start of the list
+               ataxic:apply_function
+               (
+                  lists,
+                  append,
+                  [
+                     ataxic:constant(NewTimelineElements),
+                     ataxic:current_value()
+                  ]
+               )
             )
-         ]
+         )
       ),
 
    S0Update = btl_character_turn_update:set_data(UpdatedData, Update),
@@ -216,9 +224,15 @@ send_to_database (Update, Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    BattleID = btl_character_turn_request:get_battle_id(Request),
    Ops = btl_character_turn_update:get_db(Update),
-   Query = shr_db_query:new(battle_db, BattleID, {user, PlayerID}, Ops),
 
-   shr_database:commit(Query),
+   ok =
+      ataxia_client:update
+      (
+         battle_db,
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:value(ataxic:sequence(Ops)),
+         BattleID
+      ),
 
    ok.
 

@@ -34,7 +34,7 @@ grant_additional (OwnerID) ->
    PlayerUpdateQueryOp =
       ataxic:value
       (
-         ataxic:on_field
+         ataxic:update_field
          (
             shr_player:get_map_summaries_field(),
             ataxic:apply_function

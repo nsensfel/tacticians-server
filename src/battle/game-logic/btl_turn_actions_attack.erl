@@ -166,31 +166,33 @@ handle (BattleAction, Update) ->
       ),
 
    DBQuery0 =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         TargetIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            TargetIX,
+            ataxic:update_field
             (
                btl_character:get_current_health_field(),
-               RemainingDefenderHealth
+               ataxic:constant(RemainingDefenderHealth)
             )
-         ]
+         )
       ),
 
    DBQuery1 =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         CharacterIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            CharacterIX,
+            ataxic:update_field
             (
                btl_character:get_current_health_field(),
-               RemainingAttackerHealth
+               ataxic:constant(RemainingAttackerHealth)
             )
-         ]
+         )
       ),
 
    S0Update =

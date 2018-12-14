@@ -43,13 +43,13 @@ mod_current_health (CurrentMaxHealth, PreviousMaxHealth, Update) ->
    S0Update = btl_character_turn_update:set_data(UpdatedData, Update),
 
    DBQuery =
-      ataxic:on_field
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
          ataxic_sugar:update_array_cell
          (
             CharacterIX,
-            ataxic:on_field
+            ataxic:update_field
             (
                btl_character:get_current_health_field(),
                ataxic:constant(NewHealth)

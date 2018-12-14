@@ -51,17 +51,18 @@ handle (Update) ->
    TimelineItem = btl_turn_result:new_character_switched_weapons(CharacterIX),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         CharacterIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            CharacterIX,
+            ataxic:update_field
             (
                btl_character:get_weapons_field(),
                UpdatedWeaponIDs
             )
-         ]
+         )
       ),
 
    btl_character_turn_update:add_to_timeline(TimelineItem, DBQuery, S1Update).

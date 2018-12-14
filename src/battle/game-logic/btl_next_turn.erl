@@ -27,7 +27,7 @@ set_player_turn_to_next (Battle) ->
    UpdatedBattle = btl_battle:set_current_player_turn(NextPlayerTurn, Battle),
 
    DBQuery =
-      ataxic:on_field
+      ataxic:update_field
       (
          btl_battle:get_current_player_turn_field(),
          ataxic:constant(NextPlayerTurn)
@@ -47,13 +47,13 @@ reset_next_player_timeline (Battle) ->
       btl_battle:set_player(NextPlayerIX, UpdatedNextPlayer, Battle),
 
    DBQuery =
-      ataxic:on_field
+      ataxic:update_field
       (
          btl_battle:get_players_field(),
          ataxic_sugar:update_array_cell
          (
             NextPlayerIX,
-            ataxic:on_field
+            ataxic:update_field
             (
                btl_player:get_timeline_field(),
                ataxic:constant([])
@@ -83,7 +83,7 @@ activate_next_players_characters (Battle, NextPlayer) ->
       ),
 
    DBQuery =
-      ataxic:on_field
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
          ataxic:sequence
@@ -94,7 +94,7 @@ activate_next_players_characters (Battle, NextPlayer) ->
                   ataxic_sugar:update_array_cell
                   (
                      IX,
-                     ataxic:on_field
+                     ataxic:update_field
                      (
                         btl_character:get_is_active_field(),
                         ataxic:constant(true)

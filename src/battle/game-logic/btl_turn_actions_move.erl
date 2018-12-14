@@ -94,17 +94,18 @@ commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
       btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         CharacterIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            CharacterIX,
+            ataxic:update_field
             (
-               btl_character:get_location_field(),
-               NewLocation
+               btl_character:get_locatiupdate_field(),
+               ataxic:constant(NewLocation)
             )
-         ]
+         )
       ),
 
    S2Update =

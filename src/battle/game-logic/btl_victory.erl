@@ -43,17 +43,18 @@ mark_players_characters_as_defeated (PlayerIX, Characters) ->
 add_db_query_to_mark_character_as_defeated (IX, Update) ->
    btl_character_turn_update:add_to_db
    (
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         IX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            IX,
+            ataxic:update_field
             (
                btl_character:get_is_defeated_field(),
-               true
+               ataxic:constant(true)
             )
-         ]
+         )
       ),
       Update
    ).
@@ -90,17 +91,18 @@ handle_player_defeat (PlayerIX, Update) ->
    S2Update = btl_character_turn_update:set_data(UpdatedData, S1Update),
 
    DBQuery =
-      shr_db_query:update_indexed
+      ataxic:update_field
       (
          btl_battle:get_players_field(),
-         PlayerIX,
-         [
-            shr_db_query:set_field
+         ataxic_sugar:update_array_cell
+         (
+            PlayerIX,
+            ataxic:update_field
             (
                btl_player:get_is_active_field(),
-               false
+               ataxic:constant(false)
             )
-         ]
+         )
       ),
 
    S3Update =

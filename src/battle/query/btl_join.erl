@@ -95,7 +95,7 @@ handle_new_attack (Input) ->
    DBCond =
       recl:ge
       (
-         recl:on_field
+         recl:update_field
          (
             btl_builder:get_free_slots_field(),
             [recl:current_value()]

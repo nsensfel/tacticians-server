@@ -56,7 +56,7 @@
 
       get_rank_field/0,
       get_weapons_field/0,
-      get_location_field/0,
+      get_locatiupdate_field/0,
       get_current_health_field/0,
       get_is_active_field/0,
       get_is_defeated_field/0
@@ -255,8 +255,8 @@ new
 get_rank_field () -> #character.rank.
 -spec get_weapons_field() -> non_neg_integer().
 get_weapons_field () -> #character.weapon_ids.
--spec get_location_field() -> non_neg_integer().
-get_location_field () -> #character.location.
+-spec get_locatiupdate_field() -> non_neg_integer().
+get_locatiupdate_field () -> #character.location.
 -spec get_current_health_field() -> non_neg_integer().
 get_current_health_field () -> #character.current_health.
 -spec get_is_active_field() -> non_neg_integer().
