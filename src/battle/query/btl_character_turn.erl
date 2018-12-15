@@ -230,7 +230,7 @@ send_to_database (Update, Request) ->
       (
          battle_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:value(ataxic:sequence(Ops)),
+         ataxic:update_value(ataxic:sequence(Ops)),
          BattleID
       ),
 

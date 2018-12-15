@@ -98,12 +98,15 @@ generate (Username, Password, Email) ->
 
    Player = shr_player:new(<<"">>, Username, Password, Email),
 
+   JanitorOnlyPermission =
+      ataxia_security:allow_only(ataxia_security:janitor()),
+
    {ok, PlayerID} =
       ataxia_client:add
       (
          player_db,
-         ataxia_security:janitor(),
-         ataxia_security:janitor(),
+         JanitorOnlyPermission,
+         JanitorOnlyPermission,
          Player
       ),
 
@@ -116,7 +119,7 @@ generate (Username, Password, Email) ->
       ataxic:sequence_meta
       (
          [
-            ataxic:value
+            ataxic:update_value
             (
                ataxic:sequence
                (
@@ -139,10 +142,22 @@ generate (Username, Password, Email) ->
                   ]
                )
             ),
-            ataxic:read_permission(ataxic:constant(ataxia_security:any())),
-            ataxic:write_permission
+            ataxic:update_read_permission
             (
-               ataxic:constant([ataxia_security:user_from_id(PlayerID)])
+               ataxic:constant
+               (
+                  ataxia_security:allow_only(ataxia_security:any())
+               )
+            ),
+            ataxic:update_write_permission
+            (
+               ataxic:constant
+               (
+                  ataxia_security:allow_only
+                  (
+                     ataxia_security:user_from_id(PlayerID)
+                  )
+               )
             )
          ]
       ),

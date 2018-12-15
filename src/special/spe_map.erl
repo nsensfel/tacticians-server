@@ -24,15 +24,15 @@ grant_additional (OwnerID) ->
       ataxia_client:add
       (
          map_db,
-         ataxia_security:any(),
-         [ataxia_security:user_from_id(OwnerID)],
+         ataxia_security:only_allow(ataxia_security:any()),
+         ataxia_security:only_allow(ataxia_security:user_from_id(OwnerID)),
          Map
       ),
 
    MapSummary = shr_map_summary:new(MapID, <<"Untitled Map">>),
 
    PlayerUpdateQueryOp =
-      ataxic:value
+      ataxic:update_value
       (
          ataxic:update_field
          (

@@ -142,14 +142,15 @@ commit_update (QueryState, Input) ->
       (
          roster_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:value
+         ataxic:update_value
          (
             ataxic:update_field
             (
                rst_roster:get_characters_field(),
                ataxic:sequence(QueryList)
             )
-         )
+         ),
+         RosterID
       ),
 
    shr_timed_cache:update(roster_db, PlayerID, RosterID, UpdatedRoster),

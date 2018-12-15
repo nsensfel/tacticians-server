@@ -116,11 +116,11 @@ commit_update (QueryState, Input) ->
    Map = QueryState#query_state.map,
 
    ok =
-      ataxia_client:commit
+      ataxia_client:update
       (
          map_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:value
+         ataxic:update_value
          (
             ataxic:sequence
             (
@@ -142,7 +142,8 @@ commit_update (QueryState, Input) ->
                   )
                ]
             )
-         )
+         ),
+         MapID
       ),
 
    shr_timed_cache:update(map_db, PlayerID, MapID, Map),

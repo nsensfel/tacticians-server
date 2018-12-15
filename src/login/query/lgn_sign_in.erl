@@ -88,7 +88,7 @@ commit_update (QueryState) ->
       (
          player_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:value
+         ataxic:update_value
          (
             ataxic:sequence
             (
@@ -105,7 +105,8 @@ commit_update (QueryState) ->
                   )
                ]
             )
-         )
+         ),
+         PlayerID
       ),
 
    shr_timed_cache:update(player_db, any, PlayerID, UpdatedPlayer),

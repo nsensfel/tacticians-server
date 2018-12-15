@@ -90,29 +90,43 @@ authenticate_user (Input) ->
 -spec handle_new_attack (input()) -> query_state().
 handle_new_attack (Input) ->
    PlayerID = <<"">>,
-   PlayerDBUser = shr_db_user:player(PlayerID),
+   PlayerDBUser = ataxia_security:user_from_id(PlayerID),
    PartySize = 8,
-   DBCond =
-      recl:ge
-      (
-         recl:update_field
-         (
-            btl_builder:get_free_slots_field(),
-            [recl:current_value()]
-         ),
-         recl:constant(PartySize)
-      ),
 
-   TempLockQuery =
-      shr_db_query:first_match
+   AvailableBattle =
+      ataxia_client:update_and_fetch_any
       (
-         db_name,
+         btl_pending,
          PlayerDBUser,
-         DBCond,
-         shr_db_query:temporary_lock(PlayerDBUser)
+         ataxic:update_lock
+         (
+            ataxic:apply_function
+            (
+               ataxia_lock,
+               locked,
+               [
+                  ataxic:constant(PlayerDBUser),
+                  ataxic:constant(60)
+               ]
+            )
+         ),
+         ataxic:ge
+         (
+            ataxic:field
+            (
+               ataxia_entry:get_value_field(),
+               ataxic:field
+               (
+                  btl_pending_battle:get_free_slots_field(),
+                  ataxic:current_value()
+               )
+            ),
+            ataxic:constant(PartySize)
+         )
       ),
 
-   %% Need: find[lone]; update; fetch
+   ...
+
 
 -spec fetch_data (input()) -> query_state().
 fetch_data (Input) ->
