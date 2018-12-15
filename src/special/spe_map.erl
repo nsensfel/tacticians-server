@@ -24,8 +24,8 @@ grant_additional (OwnerID) ->
       ataxia_client:add
       (
          map_db,
-         ataxia_security:only_allow(ataxia_security:any()),
-         ataxia_security:only_allow(ataxia_security:user_from_id(OwnerID)),
+         ataxia_security:allow_only(ataxia_security:any()),
+         ataxia_security:allow_only(ataxia_security:user_from_id(OwnerID)),
          Map
       ),
 

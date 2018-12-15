@@ -25,16 +25,16 @@ wait_for_stop () ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec start () -> 'ok'.
 start () ->
-   Mnesia = db_model:new("/tmp/to_db_node.mnesia", []),
-   db_model:start(Mnesia),
-   db_model:add_db(battle_db, Mnesia),
-   db_model:add_db(login_db, Mnesia),
-   db_model:add_db(map_db, Mnesia),
-   db_model:add_db(player_db, Mnesia),
-   db_model:add_db(roster_db, Mnesia),
-   db_model:add_db(inventory_db, Mnesia),
+   Mnesia = ataxia_admin:new("/tmp/to_db_node.mnesia", []),
+   ataxia_admin:start(Mnesia),
+   ataxia_admin:add_db(battle_db, Mnesia),
+   ataxia_admin:add_db(login_db, Mnesia),
+   ataxia_admin:add_db(map_db, Mnesia),
+   ataxia_admin:add_db(player_db, Mnesia),
+   ataxia_admin:add_db(roster_db, Mnesia),
+   ataxia_admin:add_db(inventory_db, Mnesia),
 
-   ok = db_item_ids_manager:start(),
+   ok = ataxia_id_manager:start(),
 
    wait_for_stop(),
    ok.

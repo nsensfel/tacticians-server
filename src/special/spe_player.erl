@@ -28,9 +28,12 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
       ataxic:sequence_meta
       (
          [
-            ataxic:value(ataxic:constant(PlayerID)),
-            ataxic:read_permission(ataxic:constant(ataxia_security:any())),
-            ataxic:write_permission
+            ataxic:update_value(ataxic:constant(PlayerID)),
+            ataxic:update_read_permission
+            (
+               ataxic:constant(ataxia_security:any())
+            ),
+            ataxic:update_write_permission
             (
                ataxic:constant([ataxia_security:user_from_id(PlayerID)])
             )
@@ -65,8 +68,8 @@ generate_inventory (PlayerID) ->
       ataxia_client:add
       (
          inventory_db,
-         ataxia_security:any(),
-         [ataxia_security:user_from_id(PlayerID)],
+         ataxia_security:allow_only(ataxia_security:any()),
+         ataxia_security:allow_only(ataxia_security:user_from_id(PlayerID)),
          Inventory
       ),
 
@@ -79,8 +82,8 @@ generate_roster (PlayerID) ->
       ataxia_client:add
       (
          roster_db,
-         ataxia_security:any(),
-         [ataxia_security:user_from_id(PlayerID)],
+         ataxia_security:allow_only(ataxia_security:any()),
+         ataxia_security:allow_only(ataxia_security:user_from_id(PlayerID)),
          Roster
       ),
 

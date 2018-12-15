@@ -38,7 +38,7 @@
 -spec add_to_cache (atom(), any(), any()) -> any().
 add_to_cache (DB, Owner, ObjectID) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
-   {ok, Data} = shr_database:fetch(DB, ObjectID, Owner),
+   {ok, Data} = ataxia_client:fetch(DB, Owner, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
 

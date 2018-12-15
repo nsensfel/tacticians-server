@@ -22,7 +22,7 @@ core (DB, ItemID) ->
    receive
    after
       60000 ->
-         shr_database:remove(DB, ItemID, janitor)
+         ataxia_client:remove(DB, ataxia_security:janitor(), ItemID)
    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
