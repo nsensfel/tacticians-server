@@ -15,7 +15,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec fetch_data (binary()) -> binary().
 fetch_data (Input) ->
-   PlayerID = shr_timed_cache:fetch(login_db, any, Input),
+   PlayerID = shr_timed_cache:fetch(login_db, ataxia_security:any(), Input),
 
    PlayerID.
 

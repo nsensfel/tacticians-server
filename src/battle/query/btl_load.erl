@@ -53,7 +53,7 @@ authenticate_user (Input) ->
    PlayerID = Input#input.player_id,
    SessionToken = Input#input.session_token,
 
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   Player = shr_timed_cache:fetch(player_db, ataxia_security:any(), PlayerID),
 
    case shr_security:credentials_match(SessionToken, Player) of
       true -> ok;
@@ -65,7 +65,13 @@ fetch_data (Input) ->
    PlayerID = Input#input.player_id,
    BattleID = Input#input.battle_id,
 
-   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
+   Battle =
+      shr_timed_cache:fetch
+      (
+         battle_db,
+         ataxia_security:user_from_id(PlayerID),
+         BattleID
+      ),
 
    #query_state
    {

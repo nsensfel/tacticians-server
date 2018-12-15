@@ -30,7 +30,7 @@ authenticate_user (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    SessionToken = btl_character_turn_request:get_session_token(Request),
 
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   Player = shr_timed_cache:fetch(player_db, ataxia_security:any(), PlayerID),
 
    case shr_security:credentials_match(SessionToken, Player) of
       true -> ok;
@@ -47,7 +47,13 @@ fetch_data (Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    BattleID = btl_character_turn_request:get_battle_id(Request),
    CharacterIX = btl_character_turn_request:get_character_ix(Request),
-   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
+   Battle =
+      shr_timed_cache:fetch
+      (
+         battle_db,
+         ataxia_security:user_from_id(PlayerID),
+         BattleID
+      ),
 
    btl_character_turn_data:new(Battle, CharacterIX).
 
@@ -248,7 +254,13 @@ send_to_cache (Update, Request) ->
    Data = btl_character_turn_update:get_data(Update),
    Battle = btl_character_turn_data:get_battle(Data),
 
-   shr_timed_cache:update(battle_db, PlayerID, BattleID, Battle),
+   shr_timed_cache:update
+   (
+      battle_db,
+      ataxia_security:user_from_id(PlayerID),
+      BattleID,
+      Battle
+   ),
 
    ok.
 

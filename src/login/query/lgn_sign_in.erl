@@ -51,9 +51,9 @@ fetch_data (Input) ->
    Username = Input#input.username,
 
    % Having this be cached my be both useless and a security issue.
-   PlayerID = shr_timed_cache:fetch(login_db, any, Username),
+   PlayerID = shr_timed_cache:fetch(login_db, ataxia_security:any(), Username),
 
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   Player = shr_timed_cache:fetch(player_db, ataxia_security:any(), PlayerID),
 
    #query_state
    {
@@ -109,7 +109,13 @@ commit_update (QueryState) ->
          PlayerID
       ),
 
-   shr_timed_cache:update(player_db, any, PlayerID, UpdatedPlayer),
+   shr_timed_cache:update
+   (
+      player_db,
+      ataxia_security:any(),
+      PlayerID,
+      UpdatedPlayer
+   ),
 
    'ok'.
 

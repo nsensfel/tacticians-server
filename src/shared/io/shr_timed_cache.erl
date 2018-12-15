@@ -35,14 +35,27 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec add_to_cache (atom(), any(), any()) -> any().
+-spec add_to_cache
+   (
+      atom(),
+      ataxia_security:user(),
+      ataxia_id:type()
+   )
+   -> any().
 add_to_cache (DB, Owner, ObjectID) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
    {ok, Data} = ataxia_client:fetch(DB, Owner, ObjectID),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
    Data.
 
--spec add_update_to_cache (atom(), any(), any(), any()) -> 'ok'.
+-spec add_update_to_cache
+   (
+      atom(),
+      ataxia_security:user(),
+      ataxia_id:type(),
+      any()
+   )
+   -> 'ok'.
 add_update_to_cache (DB, Owner, ObjectID, Data) ->
    {ok, TimerPID} = gen_server:start(?MODULE, {DB, {Owner, ObjectID}}, []),
    ets:insert(DB, {{Owner, ObjectID}, TimerPID, Data}),
@@ -86,7 +99,7 @@ handle_info(_, {DB, ObjectID}) ->
    {noreply, {DB, ObjectID}, shr_timed_caches_manager:get_timeout()}.
 
 %%%% Interface Functions
--spec fetch (atom(), any(), any()) -> any().
+-spec fetch (atom(), ataxia_security:user(), ataxia_id:type()) -> any().
 fetch (DB, Owner, ObjectID) ->
    io:format("~nfetch from cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
    case ets:lookup(DB, {Owner, ObjectID}) of
@@ -97,7 +110,7 @@ fetch (DB, Owner, ObjectID) ->
          Data
    end.
 
--spec update (atom(), any(), any(), any()) -> 'ok'.
+-spec update (atom(), ataxia_security:user(), ataxia_id:type(), any()) -> 'ok'.
 update (DB, Owner, ObjectID, Data) ->
    io:format("~nUpdating cache: ~p.~n", [{DB, {Owner, ObjectID}}]),
    case ets:lookup(DB, {Owner, ObjectID}) of
@@ -108,7 +121,7 @@ update (DB, Owner, ObjectID, Data) ->
    end,
    add_update_to_cache(DB, Owner, ObjectID, Data).
 
--spec invalidate (atom(), any(), any()) -> 'ok'.
+-spec invalidate (atom(), ataxia_security:user(), ataxia_id:type()) -> 'ok'.
 invalidate (DB, Owner, ObjectID) ->
    case ets:lookup(DB, {Owner, ObjectID}) of
       [] ->

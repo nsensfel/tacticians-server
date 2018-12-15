@@ -28,11 +28,23 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
             ataxic:update_value(ataxic:constant(PlayerID)),
             ataxic:update_read_permission
             (
-               ataxic:constant(ataxia_security:any())
+               ataxic:constant
+               (
+                  ataxia_security:allow_only
+                  (
+                     ataxia_security:any()
+                  )
+               )
             ),
             ataxic:update_write_permission
             (
-               ataxic:constant([ataxia_security:user_from_id(PlayerID)])
+               ataxic:constant
+               (
+                  ataxia_security:allow_only
+                  (
+                     ataxia_security:user_from_id(PlayerID)
+                  )
+               )
             )
          ]
       ),

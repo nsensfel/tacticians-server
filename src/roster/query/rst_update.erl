@@ -68,7 +68,7 @@ authenticate_user (Input) ->
    PlayerID = Input#input.player_id,
    SessionToken = Input#input.session_token,
 
-   Player = shr_timed_cache:fetch(player_db, any, PlayerID),
+   Player = shr_timed_cache:fetch(player_db, ataxia_security:any(), PlayerID),
 
    case shr_security:credentials_match(SessionToken, Player) of
       true -> {ok, Player};
@@ -81,7 +81,14 @@ fetch_data (Player, Input) ->
    RosterID = shr_player:get_roster_id(Player),
    _InventoryID = shr_player:get_inventory_id(Player),
 
-   Roster = shr_timed_cache:fetch(roster_db, PlayerID, RosterID),
+   Roster =
+      shr_timed_cache:fetch
+      (
+         roster_db,
+         ataxia_security:user_from_id(PlayerID),
+         RosterID
+      ),
+
 %   Inventory = shr_timed_cache:fetch(inventory_db, PlayerID, InventoryID),
    Inventory = shr_inventory:new(PlayerID),
 
@@ -153,7 +160,13 @@ commit_update (QueryState, Input) ->
          RosterID
       ),
 
-   shr_timed_cache:update(roster_db, PlayerID, RosterID, UpdatedRoster),
+   shr_timed_cache:update
+   (
+      roster_db,
+      ataxia_security:user_from_id(PlayerID),
+      RosterID,
+      UpdatedRoster
+   ),
 
    'ok'.
 
