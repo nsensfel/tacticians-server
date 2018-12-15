@@ -14,11 +14,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec reserve_login (binary(), binary()) -> 'ok'.
 reserve_login (UsernameLC, EmailLC) ->
-   shr_janitor:new(login_db, UsernameLC),
-   shr_janitor:new(login_db, EmailLC),
-
-   ok = ataxia_client:reserve(login_db, ataxia_security:janitor(), UsernameLC),
-   ok = ataxia_client:reserve(login_db, ataxia_security:janitor(), EmailLC),
+   ok = ataxia_client:reserve(login_db, UsernameLC),
+   ok = ataxia_client:reserve(login_db, EmailLC),
 
    ok.
 
