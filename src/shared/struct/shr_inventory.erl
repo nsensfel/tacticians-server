@@ -8,11 +8,11 @@
    inventory,
    {
       owner_id :: shr_player:id(),
-      portrait_ids :: sets:set(binary()),
-      glyph_ids :: sets:set(binary()),
-      glyph_board_ids :: sets:set(binary()),
-      weapon_ids :: sets:set(binary()),
-      armor_ids :: sets:set(binary())
+      portrait_ids :: ordsets:ordset(binary()),
+      glyph_ids :: ordsets:ordset(binary()),
+      glyph_board_ids :: ordsets:ordset(binary()),
+      weapon_ids :: ordsets:ordset(binary()),
+      armor_ids :: ordsets:ordset(binary())
    }
 ).
 
@@ -72,50 +72,50 @@
 -spec get_owner_id (type()) -> shr_player:id().
 get_owner_id (Inv) -> Inv#inventory.owner_id.
 
--spec get_portrait_ids (type()) -> sets:set(binary()).
+-spec get_portrait_ids (type()) -> ordsets:ordset(binary()).
 get_portrait_ids (Inv) -> Inv#inventory.portrait_ids.
 
--spec get_glyph_ids (type()) -> sets:set(binary()).
+-spec get_glyph_ids (type()) -> ordsets:ordset(binary()).
 get_glyph_ids (Inv) -> Inv#inventory.glyph_ids.
 
--spec get_glyph_board_ids (type()) -> sets:set(binary()).
+-spec get_glyph_board_ids (type()) -> ordsets:ordset(binary()).
 get_glyph_board_ids (Inv) -> Inv#inventory.glyph_board_ids.
 
--spec get_weapon_ids (type()) -> sets:set(binary()).
+-spec get_weapon_ids (type()) -> ordsets:ordset(binary()).
 get_weapon_ids (Inv) -> Inv#inventory.weapon_ids.
 
--spec get_armor_ids (type()) -> sets:set(binary()).
+-spec get_armor_ids (type()) -> ordsets:ordset(binary()).
 get_armor_ids (Inv) -> Inv#inventory.armor_ids.
 
--spec set_portrait_ids (sets:set(binary()), type()) -> type().
+-spec set_portrait_ids (ordsets:ordset(binary()), type()) -> type().
 set_portrait_ids (Value, Inv) ->
    Inv#inventory
    {
       portrait_ids = Value
    }.
 
--spec set_glyph_ids (sets:set(binary()), type()) -> type().
+-spec set_glyph_ids (ordsets:ordset(binary()), type()) -> type().
 set_glyph_ids (Value, Inv) ->
    Inv#inventory
    {
       glyph_ids = Value
    }.
 
--spec set_glyph_board_ids (sets:set(binary()), type()) -> type().
+-spec set_glyph_board_ids (ordsets:ordset(binary()), type()) -> type().
 set_glyph_board_ids (Value, Inv) ->
    Inv#inventory
    {
       glyph_board_ids = Value
    }.
 
--spec set_weapon_ids (sets:set(binary()), type()) -> type().
+-spec set_weapon_ids (ordsets:ordset(binary()), type()) -> type().
 set_weapon_ids (Value, Inv) ->
    Inv#inventory
    {
       weapon_ids = Value
    }.
 
--spec set_armor_ids (sets:set(binary()), type()) -> type().
+-spec set_armor_ids (ordsets:ordset(binary()), type()) -> type().
 set_armor_ids (Value, Inv) ->
    Inv#inventory
    {
@@ -139,7 +139,7 @@ get_armor_ids_field () -> #inventory.armor_ids.
 
 -spec new (shr_player:id()) -> type().
 new (OwnerID) ->
-   EmptySet = sets:new(),
+   EmptySet = ordsets:new(),
 
    #inventory
    {

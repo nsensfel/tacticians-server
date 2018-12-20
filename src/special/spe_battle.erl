@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/2]).
+-export([generate/2, add_to/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,7 +29,7 @@ commit (_Battle) ->
    (
       list(btl_character:type())
    )
-   -> {sets:set(binary()), sets:set(binary())}.
+   -> {ordsets:ordset(binary()), ordsets:ordset(binary())}.
 get_equipment_ids (Characters) ->
    {UsedWeaponIDs, UsedArmorIDs} =
       lists:foldl
@@ -38,29 +38,33 @@ get_equipment_ids (Characters) ->
             {MWpID, SWpID} = btl_character:get_weapon_ids(Character),
             AID = btl_character:get_armor_id(Character),
             {
-               sets:add_element(MWpID, sets:add_element(SWpID, UWIDs)),
-               sets:add_element(AID, UAIDs)
+               ordsets:add_element(MWpID, ordsets:add_element(SWpID, UWIDs)),
+               ordsets:add_element(AID, UAIDs)
             }
          end,
-         {sets:new(), sets:new()},
+         {ordsets:new(), ordsets:new()},
          Characters
       ),
 
    {UsedWeaponIDs, UsedArmorIDs}.
 
--spec get_tile_ids (array:array(shr_tile:instance())) -> sets:set(binary()).
+-spec get_tile_ids
+   (
+      array:array(shr_tile:instance())
+   )
+   -> ordsets:ordset(binary()).
 get_tile_ids (TileInstances) ->
    UsedTileIDs =
       array:sparse_foldl
       (
          fun (_IX, TileInstance, CurrentTileIDs) ->
-            sets:add_element
+            ordsets:add_element
             (
                shr_tile:extract_main_class_id(TileInstance),
                CurrentTileIDs
             )
          end,
-         sets:new(),
+         ordsets:new(),
          TileInstances
       ),
 
@@ -70,7 +74,7 @@ get_tile_ids (TileInstances) ->
 -spec find_random_location
    (
       btl_map:type(),
-      list({non_neg_integer(), non_neg_integer()})
+      ordsets:ordset({non_neg_integer(), non_neg_integer()})
    )
    -> {{non_neg_integer(), non_neg_integer()}, shr_tile:type()}.
 find_random_location (Map, ForbiddenLocations) ->
@@ -83,7 +87,7 @@ find_random_location (Map, ForbiddenLocations) ->
          shr_roll:between(0, (MapHeight - 1))
       },
 
-   IsForbidden = lists:member(Candidate, ForbiddenLocations),
+   IsForbidden = ordsets:is_element(Candidate, ForbiddenLocations),
 
    case IsForbidden of
       true -> find_random_location(Map, ForbiddenLocations);
@@ -121,7 +125,7 @@ get_glyphs_omnimods (RosterChar) ->
       non_neg_integer(),
       rst_character:type(),
       btl_map:type(),
-      list(btl_location:type())
+      ordsets:ordset(btl_location:type())
    )
    -> btl_character:type().
 create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
@@ -151,11 +155,11 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
       non_neg_integer(),
       list(btl_character:type()),
       btl_map:type(),
-      list(btl_location:type())
+      ordsets:ordset(btl_location:type())
    )
-   -> {list(btl_character:type()), list(btl_location:type())}.
-handle_characters ([], _PlayerIX, Characters, _Map, UsedLocations) ->
-   {Characters, UsedLocations};
+   -> list(btl_character:type()).
+handle_characters ([], _PlayerIX, Characters, _Map, _UsedLocations) ->
+   Characters;
 handle_characters
 (
    [RosterCharacter|NextRosterCharacters],
@@ -176,47 +180,33 @@ handle_characters
       [btl_character:get_location(NewCharacter)|UsedLocations]
    ).
 
--spec handle_rosters
+-spec handle_roster
    (
-      list(rst_roster:type()),
-      list(btl_character:type()),
-      list(btl_player:type()),
+      rst_roster:type(),
       non_neg_integer(),
       btl_map:type(),
-      list(btl_location:type())
+      ordsets:ordset(btl_location:type())
    )
-   -> {list(btl_character:type()), list(btl_player:type())}.
-handle_rosters ([], Characters, Players, _PlayersCount, _Map, _UsedLocations) ->
-   {Characters, lists:reverse(Players)};
-handle_rosters
+   -> {list(btl_character:type()), btl_player:type()}.
+handle_roster
 (
-   [Roster|NextRosters],
-   Characters,
-   Players,
+   Roster,
    PlayersCount,
    Map,
    UsedLocations
 ) ->
    NewPlayer = btl_player:new(PlayersCount, 0, rst_roster:get_owner(Roster)),
-   {NextCharacters, NextUsedLocations} =
+   NewCharacters =
       handle_characters
       (
          array:to_list(rst_roster:get_characters(Roster)),
          PlayersCount,
-         Characters,
+         [],
          Map,
          UsedLocations
       ),
 
-   handle_rosters
-   (
-      NextRosters,
-      NextCharacters,
-      [NewPlayer|Players],
-      (PlayersCount + 1),
-      Map,
-      NextUsedLocations
-   ).
+   {NewCharacters, NewPlayer}.
 
 
 %%%% BATTLE CREATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,10 +214,10 @@ handle_rosters
    (
       binary(),
       map_map:type(),
-      list(rst_roster:type())
+      rst_roster:type()
    )
    -> btl_battle:type().
-generate_battle (ID, Map, Rosters) ->
+generate_battle (ID, Map, Roster) ->
    TileInstances = map_map:get_tile_instances(Map),
    BattleMap =
       btl_map:from_array
@@ -236,8 +226,8 @@ generate_battle (ID, Map, Rosters) ->
          map_map:get_height(Map),
          TileInstances
       ),
-   {Characters, PlayersAsList} =
-      handle_rosters(Rosters, [], [], 0, BattleMap, []),
+   {Characters, FirstPlayer} =
+      handle_roster(Roster, 0, BattleMap, ordsets:new()),
 
    {UsedWeaponIDs, UsedArmorIDs} = get_equipment_ids(Characters),
    UsedTileIDs = get_tile_ids(TileInstances),
@@ -246,12 +236,12 @@ generate_battle (ID, Map, Rosters) ->
       btl_battle:new
       (
          ID,
-         PlayersAsList,
+         [FirstPlayer],
          BattleMap,
          Characters,
-         sets:to_list(UsedWeaponIDs),
-         sets:to_list(UsedArmorIDs),
-         sets:to_list(UsedTileIDs)
+         UsedWeaponIDs,
+         UsedArmorIDs,
+         UsedTileIDs
       ),
 
    Battle.
@@ -262,11 +252,20 @@ generate_battle (ID, Map, Rosters) ->
 -spec generate
    (
       map_map:type(),
-      list(rst_roster:type())
+      rst_roster:type()
    )
    -> btl_battle:type().
-generate (Map, Rosters) ->
+generate (Map, Roster) ->
    ID = reserve_id(),
-   Battle = generate_battle(ID, Map, Rosters),
+   Battle = generate_battle(ID, Map, Roster),
    ok = commit(Battle),
+   Battle.
+
+-spec add_to
+   (
+      rst_roster:type(),
+      btl_battle:type()
+   )
+   -> btl_battle:type().
+add_to (_Roster, Battle) ->
    Battle.
