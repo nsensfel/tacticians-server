@@ -43,14 +43,14 @@
 -spec next_valid_player
    (
       non_neg_integer(),
-      array:array(btl_player:type()),
+      orddict:orddict(non_neg_integer(), btl_player:type()),
       non_neg_integer(),
       non_neg_integer()
    ) -> non_neg_integer().
 next_valid_player (StartingPoint, _Players, _PlayersCount, StartingPoint) ->
    StartingPoint;
 next_valid_player (CandidateIX, Players, PlayersCount, StartingPoint) ->
-   Candidate = array:get(CandidateIX, Players),
+   Candidate = orddict:fetch(CandidateIX, Players),
 
    case btl_player:get_is_active(Candidate) of
       true -> CandidateIX;
@@ -82,11 +82,16 @@ get_number (PlayerTurn) -> PlayerTurn#player_turn.number.
 -spec get_player_ix (type()) -> non_neg_integer().
 get_player_ix (PlayerTurn) -> PlayerTurn#player_turn.player_ix.
 
--spec next (array:array(btl_player:type()), type()) -> type().
+-spec next
+   (
+      orddict:orddict(non_neg_integer(), btl_player:type()),
+      type()
+   )
+   -> type().
 next (Players, CurrentPlayerTurn) ->
    CurrentPlayerIX = CurrentPlayerTurn#player_turn.player_ix,
    CurrentTurnNumber = CurrentPlayerTurn#player_turn.number,
-   PlayersCount = array:size(Players),
+   PlayersCount = orddict:size(Players),
 
    NextPlayerIX =
       next_valid_player

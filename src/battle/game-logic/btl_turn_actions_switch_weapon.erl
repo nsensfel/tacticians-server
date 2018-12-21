@@ -54,7 +54,7 @@ handle (Update) ->
       ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         ataxic_sugar:update_array_cell
+         ataxic_sugar:update_orddict_element
          (
             CharacterIX,
             ataxic:update_field

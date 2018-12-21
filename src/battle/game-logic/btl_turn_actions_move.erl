@@ -29,17 +29,18 @@ get_path_cost_and_destination (Data, Path) ->
    Map = btl_battle:get_map(Battle),
 
    ForbiddenLocations =
-      array:foldl
+      orddict:fold
       (
          fun (IX, Char, Prev) ->
             IsAlive = btl_character:get_is_alive(Char),
             if
                (IX == CharacterIX) -> Prev;
                (not IsAlive) -> Prev;
-               true -> [btl_character:get_location(Char)|Prev]
+               true ->
+                  ordsets:add_element(btl_character:get_location(Char), Prev)
             end
          end,
-         [],
+         ordsets:new(),
          btl_battle:get_characters(Battle)
       ),
 
@@ -97,12 +98,12 @@ commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
       ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         ataxic_sugar:update_array_cell
+         ataxic_sugar:update_orddict_element
          (
             CharacterIX,
             ataxic:update_field
             (
-               btl_character:get_locatiupdate_field(),
+               btl_character:get_location_field(),
                ataxic:constant(NewLocation)
             )
          )

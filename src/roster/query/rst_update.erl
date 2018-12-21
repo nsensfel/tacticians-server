@@ -131,7 +131,7 @@ commit_update (QueryState, Input) ->
              {
                rst_roster:set_character(IX, Character, CurrentRoster),
                [
-                  ataxic_sugar:update_array_cell
+                  ataxic_sugar:update_orddict_element
                   (
                      IX,
                      ataxic:constant(Character)

@@ -20,43 +20,43 @@
 -spec mark_players_characters_as_defeated
    (
       non_neg_integer(),
-      array:array(btl_character:type())
-   ) -> {array:array(btl_character:type()), list(non_neg_integer())}.
-mark_players_characters_as_defeated (PlayerIX, Characters) ->
-   shr_array_util:mapiff
-   (
-      fun (Character) ->
-         (btl_character:get_player_index(Character) == PlayerIX)
-      end,
-      fun (Character) ->
-         btl_character:set_is_defeated(true, Character)
-      end,
-      Characters
-   ).
-
--spec add_db_query_to_mark_character_as_defeated
-   (
-      non_neg_integer(),
-      btl_character_turn_update:type()
+      orddict:orddict(non_neg_integer(), btl_character:type())
    )
-   -> btl_character_turn_update:type().
-add_db_query_to_mark_character_as_defeated (IX, Update) ->
-   btl_character_turn_update:add_to_db
+   ->
+   {
+      orddict:orddict(non_neg_integer(), btl_character:type()),
+      list(ataxic:basic())
+   }.
+mark_players_characters_as_defeated (PlayerIX, Characters) ->
+   orddict:fold
    (
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_array_cell
-         (
-            IX,
-            ataxic:update_field
-            (
-               btl_character:get_is_defeated_field(),
-               ataxic:constant(true)
-            )
-         )
-      ),
-      Update
+      fun (IX, Character, {Dict, Updates}) ->
+         case (btl_character:get_player_index(Character) == PlayerIX) of
+            false -> {Dict, Updates};
+            true ->
+               {
+                  orddict:store
+                  (
+                     IX,
+                     btl_character:set_is_defeated(true, Character),
+                     Dict
+                  ),
+                  [
+                     ataxic_sugar:update_orddict_element
+                     (
+                        IX,
+                        ataxic:update_field
+                        (
+                           btl_character:get_is_defeated_field(),
+                           ataxic:constant(true)
+                        )
+                     )
+                  ]
+               }
+         end
+      end,
+      {Characters, []},
+      Characters
    ).
 
 -spec handle_player_defeat
@@ -72,48 +72,59 @@ handle_player_defeat (PlayerIX, Update) ->
 
    %% FIXME [FUNCTION: battle][MEDIUM]: The controlled character might slip
    %% through.
-   {UpdatedCharacters, ModifiedIXs} =
+   {UpdatedCharacters, AtaxicUpdates} =
       mark_players_characters_as_defeated(PlayerIX, Characters),
 
-   S1Update =
-      lists:foldl
+   S0Battle = btl_battle:set_characters(UpdatedCharacters, Battle),
+   S1Battle =
+      btl_battle:set_player
       (
-         fun add_db_query_to_mark_character_as_defeated/2,
-         Update,
-         ModifiedIXs
+         PlayerIX,
+         btl_player:set_is_active
+         (
+            false,
+            btl_battle:get_player(PlayerIX, S0Battle)
+         ),
+         S0Battle
       ),
 
-   %% TODO [FUNCTION: battle][MEDIUM]: Battle.player[PlayerIX].is_active <-
-   %% false
-
-   UpdatedBattle = btl_battle:set_characters(UpdatedCharacters, Battle),
-   UpdatedData = btl_character_turn_data:set_battle(UpdatedBattle, Data),
-   S2Update = btl_character_turn_update:set_data(UpdatedData, S1Update),
+   UpdatedData = btl_character_turn_data:set_battle(S1Battle, Data),
+   S0Update = btl_character_turn_update:set_data(UpdatedData, Update),
 
    DBQuery =
-      ataxic:update_field
+      ataxic:sequence
       (
-         btl_battle:get_players_field(),
-         ataxic_sugar:update_array_cell
-         (
-            PlayerIX,
+         [
             ataxic:update_field
             (
-               btl_player:get_is_active_field(),
-               ataxic:constant(false)
+               btl_battle:get_players_field(),
+               ataxic_sugar:update_orddict_element
+               (
+                  PlayerIX,
+                  ataxic:update_field
+                  (
+                     btl_player:get_is_active_field(),
+                     ataxic:constant(false)
+                  )
+               )
+            ),
+            ataxic:update_field
+            (
+               btl_battle:get_characters_field(),
+               ataxic:sequence(AtaxicUpdates)
             )
-         )
+         ]
       ),
 
-   S3Update =
+   S1Update =
       btl_character_turn_update:add_to_timeline
       (
          btl_turn_result:new_player_lost(PlayerIX),
          DBQuery,
-         S2Update
+         S0Update
       ),
 
-   S3Update.
+   S1Update.
 
 
 -spec actually_handle_character_lost_health
@@ -133,16 +144,16 @@ actually_handle_character_lost_health (CharIX, Update) ->
       optional ->
          %% Let's not assume there is a commander
          StillHasAliveChar =
-            shr_array_util:any_indexed
+            lists:any
             (
-               fun (IX, Char) ->
+               fun ({IX, Char}) ->
                   (
                      (CharacterPlayerIX == btl_character:get_player_index(Char))
                      and (IX /= CharIX)
                      and btl_character:get_is_alive(Char)
                   )
                end,
-               Characters
+               orddict:to_list(Characters)
             ),
 
          case StillHasAliveChar of
@@ -154,17 +165,16 @@ actually_handle_character_lost_health (CharIX, Update) ->
 
       target ->
          StillHasAliveChar =
-            shr_array_util:any_indexed
+            lists:any
             (
-               fun (IX, Char) ->
+               fun ({IX, Char}) ->
                   (
                      (CharacterPlayerIX == btl_character:get_player_index(Char))
                      and (IX /= CharIX)
                      and btl_character:get_is_alive(Char)
-                     and (btl_character:get_rank(Char) == target)
                   )
                end,
-               Characters
+               orddict:to_list(Characters)
             ),
 
          case StillHasAliveChar of

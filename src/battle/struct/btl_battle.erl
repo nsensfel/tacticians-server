@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: binary().
+-type id() :: ataxia_id:type().
 
 -record
 (
@@ -12,10 +12,11 @@
       id :: id(),
       used_armor_ids :: ordsets:ordset(shr_armor:id()),
       used_weapon_ids :: ordsets:ordset(shr_weapon:id()),
+      used_portrait_ids :: ordsets:ordset(shr_portrait:id()),
       used_tile_ids :: ordsets:ordset(shr_tile:class_id()),
       map :: btl_map:type(),
-      characters :: array:array(btl_character:type()),
-      players :: array:array(btl_player:type()),
+      characters :: orddict:orddict(non_neg_integer(), btl_character:type()),
+      players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type()
    }
 ).
@@ -32,6 +33,7 @@
 (
    [
       get_id/1,
+      get_used_portrait_ids/1,
       get_used_weapon_ids/1,
       get_used_armor_ids/1,
       get_used_tile_ids/1,
@@ -43,13 +45,21 @@
       get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
 
+      set_id/2,
       set_map/2,
+      set_used_portrait_ids/2,
+      set_used_weapon_ids/2,
+      set_used_armor_ids/2,
       set_characters/2,
       set_character/3,
       set_players/2,
       set_player/3,
       set_current_player_turn/2,
 
+      get_id_field/0,
+      get_used_armor_ids_field/0,
+      get_used_weapon_ids_field/0,
+      get_used_portrait_ids_field/0,
       get_characters_field/0,
       get_players_field/0,
       get_current_player_turn_field/0
@@ -59,7 +69,7 @@
 -export
 (
    [
-      new/7
+      new/1
    ]
 ).
 
@@ -67,7 +77,7 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
-   Player = array:get(CurrentIndex, Players),
+   Player = orddict:fetch(CurrentIndex, Players),
    Timeline = btl_player:get_timeline(Player),
    NextIndex = ((CurrentIndex + 1) rem ArraySize),
    NextResult = (Timeline ++ Result),
@@ -79,12 +89,16 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
          get_all_timelines(NextResult, NextIndex, EndPoint, ArraySize, Players)
    end.
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_id (type()) -> id().
 get_id (Battle) -> Battle#battle.id.
+
+-spec get_used_portrait_ids (type()) -> ordsets:ordset(shr_portrait:id()).
+get_used_portrait_ids (Battle) -> Battle#battle.used_portrait_ids.
 
 -spec get_used_weapon_ids (type()) -> ordsets:ordset(shr_weapon:id()).
 get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
@@ -98,20 +112,28 @@ get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 -spec get_map (type()) -> btl_map:type().
 get_map (Battle) -> Battle#battle.map.
 
--spec get_characters (type()) -> array:array(btl_character:type()).
+-spec get_characters
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), btl_character:type()).
 get_characters (Battle) -> Battle#battle.characters.
 
 -spec get_character (non_neg_integer(), type()) -> btl_character:type().
 get_character (IX, Battle) ->
-   array:get(IX, Battle#battle.characters).
+   orddict:fetch(IX, Battle#battle.characters).
 
--spec get_players (type()) -> array:array(btl_player:type()).
+-spec get_players
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), btl_player:type()).
 get_players (Battle) ->
    Battle#battle.players.
 
 -spec get_player (non_neg_integer(), type()) -> btl_player:type().
 get_player (IX, Battle) ->
-   array:get(IX, Battle#battle.players).
+   orddict:fetch(IX, Battle#battle.players).
 
 -spec get_current_player_turn (type()) -> btl_player_turn:type().
 get_current_player_turn (Battle) ->
@@ -123,9 +145,16 @@ get_encoded_last_turns_effects (Battle) ->
    Players = Battle#battle.players,
    CurrentPlayerIX = btl_player_turn:get_player_ix(CurrentPlayerTurn),
 
-   PlayersCount = array:size(Players),
+   PlayersCount = orddict:size(Players),
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
+
+-spec set_id (id(), type()) -> type().
+set_id (ID, Battle) ->
+   Battle#battle
+   {
+      id = ID
+   }.
 
 -spec set_map (btl_map:type(), type()) -> type().
 set_map (Map, Battle) ->
@@ -134,7 +163,12 @@ set_map (Map, Battle) ->
       map = Map
    }.
 
--spec set_characters (array:array(btl_character:type()), type()) -> type().
+-spec set_characters
+   (
+      orddict:orddict(non_neg_integer(), btl_character:type()),
+      type()
+   )
+   -> type().
 set_characters (Characters, Battle) ->
    Battle#battle
    {
@@ -145,33 +179,62 @@ set_characters (Characters, Battle) ->
 set_character (IX, Character, Battle) ->
    Battle#battle
    {
-      characters =
-         array:set
-         (
-            IX,
-            Character,
-            Battle#battle.characters
-         )
+      characters = orddict:store(IX, Character, Battle#battle.characters)
    }.
 
--spec set_players (array:array(btl_player:type()), type()) -> type().
+-spec set_players
+   (
+      orddict:orddict(non_neg_integer(), btl_player:type()),
+      type()
+   )
+   -> type().
 set_players (Players, Battle) ->
    Battle#battle
    {
       players = Players
    }.
 
+-spec set_used_portrait_ids
+   (
+      ordsets:ordset(shr_portrait:id()),
+      type()
+   )
+   -> type().
+set_used_portrait_ids (UPIDs, Battle) ->
+   Battle#battle
+   {
+      used_portrait_ids = UPIDs
+   }.
+
+-spec set_used_weapon_ids
+   (
+      ordsets:ordset(shr_weapon:id()),
+      type()
+   )
+   -> type().
+set_used_weapon_ids (UPIDs, Battle) ->
+   Battle#battle
+   {
+      used_weapon_ids = UPIDs
+   }.
+
+-spec set_used_armor_ids
+   (
+      ordsets:ordset(shr_armor:id()),
+      type()
+   )
+   -> type().
+set_used_armor_ids (UPIDs, Battle) ->
+   Battle#battle
+   {
+      used_armor_ids = UPIDs
+   }.
+
 -spec set_player (non_neg_integer(), btl_player:type(), type()) -> type().
 set_player (IX, Player, Battle) ->
    Battle#battle
    {
-      players =
-         array:set
-         (
-            IX,
-            Player,
-            Battle#battle.players
-         )
+      players = orddict:store(IX, Player, Battle#battle.players)
    }.
 
 -spec set_current_player_turn (btl_player_turn:type(), type()) -> type().
@@ -181,33 +244,38 @@ set_current_player_turn (PlayerTurn, Battle) ->
       current_player_turn = PlayerTurn
    }.
 
--spec new
-   (
-      id(),
-      list(btl_player:type()),
-      btl_map:type(),
-      list(btl_character:type()),
-      ordsets:ordset(shr_weapon:id()),
-      ordsets:ordset(shr_armor:id()),
-      ordsets:ordset(shr_tile:class_id())
-   )
-   -> type().
-new (ID, PlayersAsList, Map, CharactersAsList, UWIDs, UAIDs, UTIDs) ->
+-spec new (btl_map:type()) -> type().
+new (Map) ->
+   EmptySet = ordsets:new(),
+   EmptyDict = orddict:new(),
+
    #battle
    {
-      id = ID,
-      used_weapon_ids = UWIDs,
-      used_armor_ids = UAIDs,
-      used_tile_ids = UTIDs,
+      id = ataxia_id:null(),
+      used_portrait_ids = EmptySet,
+      used_weapon_ids = EmptySet,
+      used_armor_ids = EmptySet,
+      used_tile_ids = btl_map:get_used_tile_ids(Map),
       map = Map,
-      characters = array:from_list(CharactersAsList),
-      players = array:from_list(PlayersAsList),
+      characters = EmptyDict,
+      players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0)
    }.
 
+-spec get_id_field () -> non_neg_integer().
+get_id_field () -> #battle.characters.
 
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.
+
+-spec get_used_portrait_ids_field () -> non_neg_integer().
+get_used_portrait_ids_field () -> #battle.used_portrait_ids.
+
+-spec get_used_weapon_ids_field () -> non_neg_integer().
+get_used_weapon_ids_field () -> #battle.used_weapon_ids.
+
+-spec get_used_armor_ids_field () -> non_neg_integer().
+get_used_armor_ids_field () -> #battle.used_armor_ids.
 
 -spec get_players_field () -> non_neg_integer().
 get_players_field () -> #battle.players.

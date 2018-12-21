@@ -50,7 +50,7 @@ reset_next_player_timeline (Battle) ->
       ataxic:update_field
       (
          btl_battle:get_players_field(),
-         ataxic_sugar:update_array_cell
+         ataxic_sugar:update_orddict_element
          (
             NextPlayerIX,
             ataxic:update_field
@@ -70,15 +70,36 @@ activate_next_players_characters (Battle, NextPlayer) ->
    NextPlayerIX = btl_player:get_index(NextPlayer),
    Characters = btl_battle:get_characters(Battle),
 
-   {UpdatedCharacters, ModifiedIXs} =
-      shr_array_util:mapiff
+   {UpdatedCharacters, AtaxicUpdates} =
+      orddict:fold
       (
-         fun (Character) ->
-            (btl_character:get_player_index(Character) == NextPlayerIX)
+         fun (IX, Character, {Prev, Updates}) ->
+            case (btl_character:get_player_index(Character) == NextPlayerIX) of
+               true ->
+                  {
+                     orddict:store
+                     (
+                        IX,
+                        btl_character:set_is_active(true, Character),
+                        Prev
+                     ),
+                     [
+                        ataxic_sugar:update_orddict_element
+                        (
+                           IX,
+                           ataxic:update_field
+                           (
+                              btl_character:get_is_active_field(),
+                              ataxic:constant(true)
+                           )
+                        )
+                     ]
+                  };
+
+               false -> {Prev, Updates}
+            end
          end,
-         fun (Character) ->
-            btl_character:set_is_active(true, Character)
-         end,
+         {Characters, []},
          Characters
       ),
 
@@ -86,24 +107,7 @@ activate_next_players_characters (Battle, NextPlayer) ->
       ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         ataxic:sequence
-         (
-            lists:map
-            (
-               fun (IX) ->
-                  ataxic_sugar:update_array_cell
-                  (
-                     IX,
-                     ataxic:update_field
-                     (
-                        btl_character:get_is_active_field(),
-                        ataxic:constant(true)
-                     )
-                  )
-               end,
-               ModifiedIXs
-            )
-         )
+         ataxic:sequence(AtaxicUpdates)
       ),
 
    UpdatedBattle = btl_battle:set_characters(UpdatedCharacters, Battle),
@@ -154,7 +158,16 @@ requires_update (Update) ->
    Battle = btl_character_turn_data:get_battle(Data),
    Characters = btl_battle:get_characters(Battle),
 
-   shr_array_util:none(fun btl_character:get_is_active/1, Characters).
+   (not
+      (lists:any
+         (
+            fun ({_IX, Char}) ->
+               btl_character:get_is_active(Char)
+            end,
+            orddict:to_list(Characters)
+         )
+      )
+   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

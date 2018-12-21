@@ -85,7 +85,7 @@ assert_user_owns_played_character (Data, Request) ->
    Players = btl_battle:get_players(Battle),
    Character = btl_character_turn_data:get_character(Data),
    CharacterPlayerIX = btl_character:get_player_index(Character),
-   CharacterPlayer = array:get(CharacterPlayerIX, Players),
+   CharacterPlayer = orddict:fetch(CharacterPlayerIX, Players),
    CharacterPlayerID = btl_player:get_id(CharacterPlayer),
 
    true = (PlayerID == CharacterPlayerID),
@@ -130,7 +130,7 @@ finalize_character (Update) ->
       ataxic:update_field
       (
          btl_battle:get_characters_field(),
-         ataxic_sugar:update_array_cell
+         ataxic_sugar:update_orddict_element
          (
             btl_character_turn_data:get_character_ix(Data),
             ataxic:update_field
@@ -182,7 +182,7 @@ update_timeline (Update) ->
       ataxic:update_field
       (
          btl_battle:get_players_field(),
-         ataxic_sugar:update_array_cell
+         ataxic_sugar:update_orddict_element
          (
             PlayerIX,
             ataxic:update_field

@@ -9,7 +9,7 @@
    {
       width :: integer(),
       height :: integer(),
-      tile_ids :: array:array(shr_tile:instance())
+      tile_ids :: shr_tile:instances_tuple()
    }
 ).
 
@@ -27,7 +27,8 @@
       get_width/1,
       get_height/1,
       get_tile_instances/1,
-      get_tile_instance/2
+      get_tile_instance/2,
+      get_used_tile_ids/1
    ]
 ).
 
@@ -35,20 +36,20 @@
 (
    [
       from_list/3,
-      from_array/3
+      from_instances_tuple/3
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec location_to_array_index
+-spec location_to_index
    (
       non_neg_integer(),
       btl_location:type()
    )
    -> ('error' | non_neg_integer()).
-location_to_array_index (ArrayWidth, {X, Y}) ->
+location_to_index (ArrayWidth, {X, Y}) ->
    if
       (X < 0) -> error;
       (Y < 0) -> error;
@@ -66,13 +67,13 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_instances (type()) -> array:array(shr_tile:instance()).
+-spec get_tile_instances (type()) -> shr_tile:instances_tuple().
 get_tile_instances (Map) -> Map#map.tile_ids.
 
 -spec get_tile_instance (btl_location:type(), type()) -> shr_tile:instance().
 get_tile_instance (Location, Map) ->
-   TileIX = location_to_array_index(Map#map.width, Location),
-   array:get(TileIX, Map#map.tile_ids).
+   TileIX = location_to_index(Map#map.width, Location),
+   element((TileIX + 1), Map#map.tile_ids).
 
 -spec from_list
    (
@@ -88,20 +89,38 @@ from_list (Width, Height, List) ->
    {
       width = Width,
       height = Height,
-      tile_ids = array:from_list(TileInstances)
+      tile_ids = list_to_tuple(TileInstances)
    }.
 
--spec from_array
+-spec from_instances_tuple
    (
       non_neg_integer(),
       non_neg_integer(),
-      array:array(shr_tile:instance())
+      shr_tile:instances_tuple()
    )
    -> type().
-from_array (Width, Height, TileInstances) ->
+from_instances_tuple (Width, Height, TileInstances) ->
    #map
    {
       width = Width,
       height = Height,
       tile_ids = TileInstances
    }.
+
+-spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:class_id()).
+get_used_tile_ids (Map) ->
+   UsedTileIDs =
+      lists:foldl
+      (
+         fun (TileInstance, CurrentTileIDs) ->
+            ordsets:add_element
+            (
+               shr_tile:extract_main_class_id(TileInstance),
+               CurrentTileIDs
+            )
+         end,
+         ordsets:new(),
+         tuple_to_list(Map#map.tile_ids)
+      ),
+
+   UsedTileIDs.

@@ -28,7 +28,7 @@ generate (Map) ->
             lists:map
             (
                fun shr_tile:instance_to_binary_list/1,
-               array:sparse_to_list(map_map:get_tile_instances(Map))
+               tuple_to_list(map_map:get_tile_instances(Map))
             )
          }
       ]

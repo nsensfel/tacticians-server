@@ -94,9 +94,12 @@ generate_reply (QueryState) ->
    RosterCharacters = rst_roster:get_characters(Roster),
    SetInventory = shr_set_inventory:generate(Inventory),
    EncodedRoster =
-      array:to_list
+      lists:map
       (
-         array:sparse_map(fun rst_add_char:generate/2, RosterCharacters)
+         fun ({IX, Char}) ->
+            rst_add_char:generate(IX, Char)
+         end,
+         orddict:to_list(RosterCharacters)
       ),
 
    Output = jiffy:encode([SetInventory|EncodedRoster]),

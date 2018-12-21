@@ -12,7 +12,7 @@
       owner :: binary(),
       width :: integer(),
       height :: integer(),
-      tile_instances :: array:array(shr_tile:instance())
+      tile_instances :: shr_tile:instances_tuple()
    }
 ).
 
@@ -56,13 +56,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec location_to_array_index
+-spec location_to_index
    (
       non_neg_integer(),
       map_location:type()
    )
    -> ('error' | non_neg_integer()).
-location_to_array_index (ArrayWidth, {X, Y}) ->
+location_to_index (ArrayWidth, {X, Y}) ->
    if
       (X < 0) -> error;
       (Y < 0) -> error;
@@ -83,13 +83,13 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_instances (type()) -> array:array(shr_tile:instance()).
+-spec get_tile_instances (type()) -> shr_tile:instances_tuple().
 get_tile_instances (Map) -> Map#map.tile_instances.
 
 -spec get_tile_instance (map_location:type(), type()) -> shr_tile:instance().
 get_tile_instance (Location, Map) ->
-   TileIX = location_to_array_index(Map#map.width, Location),
-   array:get(TileIX, Map#map.tile_instances).
+   TileIX = location_to_index(Map#map.width, Location),
+   element((TileIX + 1), Map#map.tile_instances).
 
 -spec get_width_field () -> non_neg_integer().
 get_width_field () -> #map.width.
@@ -116,7 +116,7 @@ from_list (Owner, Width, Height, List) ->
       owner = Owner,
       width = Width,
       height = Height,
-      tile_instances = array:from_list(TileInstances)
+      tile_instances = list_to_tuple(TileInstances)
    }.
 
 -spec update_from_list
@@ -134,7 +134,7 @@ update_from_list (Map, Width, Height, List) ->
    {
       width = Width,
       height = Height,
-      tile_instances = array:from_list(TileInstances)
+      tile_instances = list_to_tuple(TileInstances)
    }.
 
 -spec default (binary()) -> type().
@@ -146,6 +146,5 @@ default (Owner) ->
       owner = Owner,
       width = 32,
       height = 32,
-      tile_instances =
-         array:from_list(lists:duplicate(1024, DefaultTileInstance))
+      tile_instances = list_to_tuple(lists:duplicate(1024, DefaultTileInstance))
    }.

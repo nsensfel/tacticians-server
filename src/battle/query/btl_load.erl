@@ -85,13 +85,13 @@ generate_reply (QueryState, Input) ->
    Battle = QueryState#query_state.battle,
    Players = btl_battle:get_players(Battle),
 
-   PlayerIX =
-      shr_array_util:first
+   {value, {PlayerIX, _Player}} =
+      shr_lists_util:search
       (
-         fun (Player) ->
+         fun ({_PlayerIX, Player}) ->
             (btl_player:get_id(Player) == PlayerID)
          end,
-         Players
+         orddict:to_list(Players)
       ),
 
    true = (PlayerIX >= 0),
@@ -105,15 +105,21 @@ generate_reply (QueryState, Input) ->
    SetMap = btl_set_map:generate(btl_battle:get_map(Battle)),
 
    AddCharList =
-      array:sparse_to_list
+      lists:map
       (
-         array:map
-         (
-            fun (IX, Character) ->
-               btl_add_char:generate(IX, Character, PlayerIX)
-            end,
-            btl_battle:get_characters(Battle)
-         )
+         fun ({IX, Character}) ->
+            btl_add_char:generate(IX, Character, PlayerIX)
+         end,
+         orddict:to_list(btl_battle:get_characters(Battle))
+      ),
+
+   AddPortraitList =
+      lists:map
+      (
+         fun (PortraitID) ->
+            btl_add_portrait:generate(shr_portrait:from_id(PortraitID))
+         end,
+         ordsets:to_list(btl_battle:get_used_portrait_ids(Battle))
       ),
 
    AddWeaponList =
@@ -122,7 +128,7 @@ generate_reply (QueryState, Input) ->
          fun (WeaponID) ->
             btl_add_weapon:generate(shr_weapon:from_id(WeaponID))
          end,
-         btl_battle:get_used_weapon_ids(Battle)
+         ordsets:to_list(btl_battle:get_used_weapon_ids(Battle))
       ),
 
    AddArmorList =
@@ -131,7 +137,7 @@ generate_reply (QueryState, Input) ->
          fun (ArmorID) ->
             btl_add_armor:generate(shr_armor:from_id(ArmorID))
          end,
-         btl_battle:get_used_armor_ids(Battle)
+         ordsets:to_list(btl_battle:get_used_armor_ids(Battle))
       ),
 
    AddTileList =
@@ -140,16 +146,18 @@ generate_reply (QueryState, Input) ->
          fun (TileClassID) ->
             btl_add_tile:generate(shr_tile:from_class_id(TileClassID))
          end,
-         btl_battle:get_used_tile_ids(Battle)
+         ordsets:to_list(btl_battle:get_used_tile_ids(Battle))
       ),
 
    OutputList =
       (
          AddTileList
          ++ [SetTimeline, SetMap | AddWeaponList]
+         ++ AddPortraitList
          ++ AddArmorList
          ++ AddCharList
       ),
+
    Output = jiffy:encode(OutputList),
 
    Output.
