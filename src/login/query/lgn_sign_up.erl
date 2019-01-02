@@ -54,7 +54,7 @@ register_user (Input) ->
    Password = Input#input.password,
    Email = Input#input.email,
 
-   GeneratedPlayer = spe_player:generate(Username, Password, Email),
+   GeneratedPlayer = bnt_generate_player:attempt(Username, Password, Email),
 
    #query_state
    {

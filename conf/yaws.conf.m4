@@ -110,7 +110,7 @@ keepalive_timeout = 30000
   listen = 0.0.0.0
   docroot = __MAKEFILE_WWW_DIR
   auth_log = true
-  appmods = btl_character_turn btl_load map_load map_update lgn_sign_in lgn_sign_up lgn_recovery lgn_get_player_id rst_load rst_update plr_load plr_get_battles
+  appmods = btl_character_turn btl_load btl_join map_load map_update lgn_sign_in lgn_sign_up lgn_recovery lgn_get_player_id rst_load rst_update plr_load plr_get_battles
   start_mod = qry_handler
   partial_post_size = 1000000
 </server>

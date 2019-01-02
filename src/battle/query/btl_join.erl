@@ -16,20 +16,14 @@
       mode :: mode(),
       size :: non_neg_integer(),
       roster_ixs :: list(non_neg_integer()),
-      map_id :: string()
+      map_id :: ataxia_id:type()
    }
 ).
 
--record
-(
-   query_state,
-   {
-      battle :: btl_battle:type()
-   }
-).
 
 -type input() :: #input{}.
--type query_state() :: #query_state{}.
+-type defend_query_state() :: 'ok'.
+-type attack_query_state() :: 'ok'.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +42,7 @@ parse_input (Req) ->
    Mode =
       case maps:get(<<"m">>, JSONReqMap) of
          <<"a">> -> attack;
-         <<"b">> -> defend;
+         <<"d">> -> defend;
          V -> {invalid, V}
       end,
 
@@ -87,13 +81,15 @@ authenticate_user (Input) ->
       _ -> error
    end.
 
--spec handle_new_attack (input()) -> query_state().
-handle_new_attack (Input) ->
-   PlayerID = <<"">>,
+-spec handle_attack (input()) -> 'ok'.
+handle_attack (Input) ->
+   PlayerID = Input#input.player_id,
+   SelectedCharacterIXs = Input#input.roster_ixs,
    PlayerDBUser = ataxia_security:user_from_id(PlayerID),
-   PartySize = 8,
+   PartySize = length(SelectedCharacterIXs),
 
-   AvailableBattle =
+   % TODO: be less brutal if none is found.
+   {ok, AvailablePendingBattle, _ID} =
       ataxia_client:update_and_fetch_any
       (
          btl_pending,
@@ -125,34 +121,53 @@ handle_new_attack (Input) ->
          )
       ),
 
-   ...
+   bnt_join_battle:attempt
+   (
+      PlayerID,
+      SelectedCharacterIXs,
+      AvailablePendingBattle
+   ),
 
-
--spec fetch_data (input()) -> query_state().
-fetch_data (Input) ->
+   ok.
+-spec handle_defend (input()) -> 'ok'.
+handle_defend (Input) ->
    PlayerID = Input#input.player_id,
-   BattleID = Input#input.battle_id,
+   SelectedCharacterIXs = Input#input.roster_ixs,
+   MapID = Input#input.map_id,
 
-   Battle = shr_timed_cache:fetch(battle_db, PlayerID, BattleID),
+   bnt_join_battle:generate(PlayerID, MapID, SelectedCharacterIXs),
 
-   #query_state
-   {
-      battle = Battle
-   }.
+   ok.
 
+-spec fetch_attack_data (input()) -> attack_query_state().
+fetch_attack_data (_Input) -> ok. % TODO
 
--spec generate_reply(query_state(), input()) -> binary().
-generate_reply (QueryState, Input) ->
+-spec fetch_defend_data (input()) -> defend_query_state().
+fetch_defend_data (_Input) -> ok. % TODO
 
-   Output.
+-spec authorize_attack (attack_query_state(), input()) -> 'ok'.
+authorize_attack (_QueryState, _Input) -> ok. % TODO
+
+-spec authorize_defend (defend_query_state(), input()) -> 'ok'.
+authorize_defend (_QueryState, _Input) -> ok. % TODO
 
 -spec handle (binary()) -> binary().
 handle (Req) ->
    Input = parse_input(Req),
    case authenticate_user(Input) of
       ok ->
-         QueryState = fetch_data(Input),
-         generate_reply(QueryState, Input);
+         case Input#input.mode of
+            attack ->
+               QueryState = fetch_attack_data(Input),
+               ok = authorize_attack(QueryState, Input),
+               handle_attack(Input);
+
+            defend ->
+               QueryState = fetch_defend_data(Input),
+               ok = authorize_defend(QueryState, Input),
+               handle_defend(Input)
+         end,
+         jiffy:encode([shr_okay:generate()]);
 
       error -> jiffy:encode([shr_disconnected:generate()])
    end.

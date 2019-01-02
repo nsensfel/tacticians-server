@@ -1,4 +1,4 @@
--module(qry_shim).
+-module(btl_add_portrait).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -7,47 +7,23 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([fill_db/0]).
+-export([generate/1]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_player_0 () -> shr_player:type().
-generate_player_0 () ->
-   Player =
-      bnt_generate_player:attempt
-      (
-         <<"Player1">>,
-         <<"Kalimer0">>,
-         <<"Player1@tacticians.online">>
-      ),
-
-   bnt_grant_land:attempt(shr_player:get_id(Player)),
-
-   Player.
-
-
--spec generate_player_1 () -> shr_player:type().
-generate_player_1 () ->
-   Player =
-      bnt_generate_player:attempt
-      (
-         <<"Player2">>,
-         <<"Kalimer1">>,
-         <<"Player2@tacticians.online">>
-      ),
-
-   bnt_grant_land:attempt(shr_player:get_id(Player)),
-
-   Player.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec fill_db () -> 'ok'.
-fill_db () ->
-   _P0 = generate_player_0(),
-
-   _P1 = generate_player_1(),
-
-   ok.
+-spec generate (shr_portrait:type()) -> {list(any())}.
+generate (Portrait) ->
+   {
+      [
+         {<<"msg">>, <<"add_portrait">>},
+         {<<"id">>, shr_portrait:get_id(Portrait)},
+         {<<"nam">>, shr_portrait:get_name(Portrait)},
+         {<<"bid">>, shr_portrait:get_body_id(Portrait)},
+         {<<"iid">>, shr_portrait:get_icon_id(Portrait)}
+      ]
+   }.

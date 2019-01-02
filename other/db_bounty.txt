@@ -1,0 +1,18 @@
+Designing with a "it can crash at any point" mentality
++ can't combine DB queries in an atomic manner
+= Potential for partially completed tasks, "corrupting" the global DB.
+
+A solution could be having "bounty" entries, which work as follows:
+A process P0 needs to do tasks T0, then T1, then T2.
+P0 creates a bounty B0:
+{
+   not_before: 60s.
+   task: T0_T1_T2.
+   params: [{T0.id, T1.id, 20]
+}
+P0 adds B0 to the Bounty DB.
+P0 attempts T0, T1, and T2.
+P0 removes B0 from the Bounty DB.
+
+There are other processes trying to access available bounties (i.e. bounties
+for which the "not_before" has expired) to complete them.
