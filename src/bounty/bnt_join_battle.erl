@@ -44,7 +44,7 @@ update_ordset (New, Old) ->
 
 -spec get_equipment_ids
    (
-      orddict:orddict(non_neg_integer(), btl_character:type())
+      list(btl_character:type())
    )
    ->
    {
@@ -58,9 +58,9 @@ get_equipment_ids (Characters) ->
       UsedWeaponIDs,
       UsedArmorIDs
    } =
-      orddict:fold
+      lists:foldl
       (
-         fun (_IX, Character, {UPIDs, UWIDs, UAIDs}) ->
+         fun (Character, {UPIDs, UWIDs, UAIDs}) ->
             {MWpID, SWpID} = btl_character:get_weapon_ids(Character),
             AID = btl_character:get_armor_id(Character),
             PID = btl_character:get_portrait_id(Character),

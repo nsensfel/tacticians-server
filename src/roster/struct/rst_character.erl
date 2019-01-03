@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -record
 (
-   character,
+   rst_char,
    {
       name :: binary(),
       portrait_id :: shr_portrait:id(),
@@ -16,7 +16,7 @@
    }
 ).
 
--opaque type() :: #character{}.
+-opaque type() :: #rst_char{}.
 
 -export_type([type/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,62 +117,62 @@ validate_glyphs_on_board (_Glyphs, _GlyphBoard) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_name (type()) -> binary().
-get_name (Char) -> Char#character.name.
+get_name (Char) -> Char#rst_char.name.
 
 -spec get_portrait_id (type()) -> shr_portrait:id().
-get_portrait_id (Char) -> Char#character.portrait_id.
+get_portrait_id (Char) -> Char#rst_char.portrait_id.
 
 -spec get_weapon_ids (type()) -> {shr_weapon:id(), shr_weapon:id()}.
-get_weapon_ids (Char) -> Char#character.weapon_ids.
+get_weapon_ids (Char) -> Char#rst_char.weapon_ids.
 
 -spec get_armor_id (type()) -> shr_armor:id().
-get_armor_id (Char) -> Char#character.armor_id.
+get_armor_id (Char) -> Char#rst_char.armor_id.
 
 -spec get_glyph_ids (type()) -> list(shr_glyph:id()).
-get_glyph_ids (Char) -> Char#character.glyph_ids.
+get_glyph_ids (Char) -> Char#rst_char.glyph_ids.
 
 -spec get_glyph_board_id (type()) -> shr_glyph_board:id().
-get_glyph_board_id (Char) -> Char#character.glyph_board_id.
+get_glyph_board_id (Char) -> Char#rst_char.glyph_board_id.
 
 
 -spec set_name (binary(), type()) -> type().
 set_name (Name, Char) ->
-   Char#character
+   Char#rst_char
    {
       name = Name
    }.
 
 -spec set_portrait_id (shr_portrait:id(), type()) -> type().
 set_portrait_id (PortraitID, Char) ->
-   Char#character
+   Char#rst_char
    {
       portrait_id = PortraitID
    }.
 
 -spec set_armor_id (shr_armor:id(), type()) -> type().
 set_armor_id (ArmorID, Char) ->
-   Char#character
+   Char#rst_char
    {
       armor_id = ArmorID
    }.
 
 -spec set_weapon_ids ({shr_weapon:id(), shr_weapon:id()}, type()) -> type().
 set_weapon_ids (WeaponIDs, Char) ->
-   Char#character
+   Char#rst_char
    {
       weapon_ids = WeaponIDs
    }.
 
 -spec set_glyph_ids (list(shr_glyph:id()), type()) -> type().
 set_glyph_ids (GlyphIDs, Char) ->
-   Char#character
+   Char#rst_char
    {
       glyph_ids = GlyphIDs
    }.
 
 -spec set_glyph_board_id (shr_glyph_board:id(), type()) -> type().
 set_glyph_board_id (GlyphBoardID, Char) ->
-   Char#character
+   Char#rst_char
    {
       glyph_board_id = GlyphBoardID
    }.
@@ -180,7 +180,7 @@ set_glyph_board_id (GlyphBoardID, Char) ->
 -spec new () -> type().
 new () ->
    UnarmedID = shr_weapon:get_id(shr_weapon:none()),
-   #character
+   #rst_char
    {
       name = <<"Nameless">>,
       portrait_id = shr_portrait:get_id(shr_portrait:default()),
@@ -191,17 +191,17 @@ new () ->
    }.
 
 -spec get_name_field () -> non_neg_integer().
-get_name_field () -> #character.name.
+get_name_field () -> #rst_char.name.
 -spec get_portrait_id_field () -> non_neg_integer().
-get_portrait_id_field () -> #character.portrait_id.
+get_portrait_id_field () -> #rst_char.portrait_id.
 -spec get_armor_id_field () -> non_neg_integer().
-get_armor_id_field () -> #character.armor_id.
+get_armor_id_field () -> #rst_char.armor_id.
 -spec get_weapon_ids_field () -> non_neg_integer().
-get_weapon_ids_field () -> #character.weapon_ids.
+get_weapon_ids_field () -> #rst_char.weapon_ids.
 -spec get_glyph_ids_field () -> non_neg_integer().
-get_glyph_ids_field () -> #character.glyph_ids.
+get_glyph_ids_field () -> #rst_char.glyph_ids.
 -spec get_glyph_board_id_field () -> non_neg_integer().
-get_glyph_board_id_field () -> #character.glyph_board_id.
+get_glyph_board_id_field () -> #rst_char.glyph_board_id.
 
 -spec decode (map()) -> type().
 decode (JSONReqMap) ->
@@ -213,7 +213,7 @@ decode (JSONReqMap) ->
    GlyphsList = maps:get(<<"gls">>, JSONReqMap),
    GlyphBoard = maps:get(<<"gb">>, JSONReqMap),
 
-   #character
+   #rst_char
    {
       name = Name,
       portrait_id = Portrait,
@@ -225,13 +225,13 @@ decode (JSONReqMap) ->
 
 -spec validate (shr_inventory:type(), type()) -> ok.
 validate (Inventory, Character) ->
-   Glyphs = Character#character.glyph_ids,
-   GlyphBoard = Character#character.glyph_board_id,
+   Glyphs = Character#rst_char.glyph_ids,
+   GlyphBoard = Character#rst_char.glyph_board_id,
 
-   validate_name(Character#character.name),
-   validate_portrait_id(Inventory, Character#character.portrait_id),
-   validate_weapons(Inventory, Character#character.weapon_ids),
-   validate_armor(Inventory, Character#character.armor_id),
+   validate_name(Character#rst_char.name),
+   validate_portrait_id(Inventory, Character#rst_char.portrait_id),
+   validate_weapons(Inventory, Character#rst_char.weapon_ids),
+   validate_armor(Inventory, Character#rst_char.armor_id),
    validate_glyphs(Inventory, Glyphs),
    validate_glyph_board(Inventory, GlyphBoard),
    validate_glyphs_on_board(Glyphs, GlyphBoard),
