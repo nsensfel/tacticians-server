@@ -89,7 +89,7 @@ handle_attack (Input) ->
    PartySize = length(SelectedCharacterIXs),
 
    % TODO: be less brutal if none is found.
-   {ok, AvailablePendingBattle, _ID} =
+   {ok, AvailablePendingBattle, AvailablePendingBattleID} =
       ataxia_client:update_and_fetch_any
       (
          btl_pending,
@@ -125,6 +125,7 @@ handle_attack (Input) ->
    (
       PlayerID,
       SelectedCharacterIXs,
+      AvailablePendingBattleID,
       AvailablePendingBattle
    ),
 

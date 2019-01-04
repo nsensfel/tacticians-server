@@ -23,6 +23,7 @@
 ).
 
 %%%% Actual Interface
+% TODO: include all fetch operations of ataxia_client.
 -export
 (
    [

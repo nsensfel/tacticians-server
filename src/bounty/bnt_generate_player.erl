@@ -14,8 +14,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec reserve_login (binary(), binary()) -> 'ok'.
 reserve_login (UsernameLC, EmailLC) ->
-   ok = ataxia_client:reserve(login_db, UsernameLC),
-   ok = ataxia_client:reserve(login_db, EmailLC),
+   Anyone = ataxia_security:allow_any(),
+   ok = ataxia_client:reserve(login_db, Anyone, Anyone, UsernameLC),
+   ok = ataxia_client:reserve(login_db, Anyone, Anyone, EmailLC),
 
    ok.
 
@@ -109,6 +110,7 @@ generate_roster (PlayerID) ->
    )
    -> {shr_player:id(), shr_player:type()}.
 attempt (Username, Password, Email) ->
+   % FIXME: still requires a bounty.
    UsernameLC = string:lowercase(Username),
    EmailLC = string:lowercase(Email),
 
@@ -116,45 +118,32 @@ attempt (Username, Password, Email) ->
 
    Player = shr_player:new(Username, Password, Email),
 
-   JanitorOnlyPermission =
-      ataxia_security:allow_only(ataxia_security:janitor()),
+   AnyoneHasAccess = ataxia_security:allow_any(),
 
    {ok, PlayerID} =
-      ataxia_client:add
+      ataxia_client:reserve
       (
          player_db,
-         JanitorOnlyPermission,
-         JanitorOnlyPermission,
-         Player
+         AnyoneHasAccess,
+         AnyoneHasAccess
       ),
 
    shr_janitor:new(player_db, PlayerID),
 
    InvID = generate_inventory(PlayerID),
    RosterID = generate_roster(PlayerID),
+   S0Player =
+      shr_player:set_inventory_id
+      (
+         InvID,
+         shr_player:set_roster_id(RosterID, Player)
+      ),
 
    PlayerUpdateQueryOps =
       ataxic:sequence_meta
       (
          [
-            ataxic:update_value
-            (
-               ataxic:sequence
-               (
-                  [
-                     ataxic:update_field
-                     (
-                        shr_player:get_inventory_id_field(),
-                        ataxic:constant(InvID)
-                     ),
-                     ataxic:update_field
-                     (
-                        shr_player:get_roster_id_field(),
-                        ataxic:constant(RosterID)
-                     )
-                  ]
-               )
-            ),
+            ataxic:update_value(ataxic:constant(S0Player)),
             ataxic:update_read_permission
             (
                ataxic:constant
@@ -181,9 +170,9 @@ attempt (Username, Password, Email) ->
       ataxia_client:update
       (
          player_db,
-         ataxia_security:janitor(),
+         ataxia_security:user_from_id(PlayerID),
          PlayerUpdateQueryOps,
          PlayerID
       ),
 
-   {PlayerID, Player}.
+   {PlayerID, S0Player}.

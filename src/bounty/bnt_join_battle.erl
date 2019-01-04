@@ -3,11 +3,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-record
+(
+   bounty_data,
+   {
+      player_id :: shr_player:id(),
+      pending_battle_id :: btl_pending_battle:id(),
+      roster_ixs :: list(non_neg_integer()),
+      map_id :: map_map:id() % null if the bounty is to join.
+   }
+).
+-type bounty_data() :: #bounty_data{}.
+
+-type stage() :: integer().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/3, attempt/3]).
+-export([generate/3, attempt/4]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -381,59 +394,16 @@ get_roster_characters (PlayerID, SelectedRosterCharacterIXs) ->
       SelectedRosterCharacterIXs
    ).
 
-%%%% BATTLE CREATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_battle (shr_player:id(), map_map:id()) -> btl_battle:type().
-generate_battle (PlayerID, MapID) ->
-   Map =
-      shr_timed_cache:fetch
-      (
-         map_db,
-         ataxia_security:user_from_id(PlayerID),
-         MapID
-      ),
-   TileInstances = map_map:get_tile_instances(Map),
-   BattleMap =
-      btl_map:from_instances_tuple
-      (
-         map_map:get_width(Map),
-         map_map:get_height(Map),
-         TileInstances
-      ),
 
-   Battle = btl_battle:new(BattleMap),
-
-   Battle.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate
-   (
-      shr_player:id(),
-      map_map:id(),
-      list(non_neg_integer())
-   )
-   -> {btl_pending_battle:id(), btl_pending_battle:type()}.
-generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
-   Battle = generate_battle(PlayerID, MapID),
-   PendingBattle =
-      btl_pending_battle:new
-      (
-         % TODO: More options than 1 vs N.
-         (length(SelectedRosterCharacterIXs) * 2),
-         Battle
-      ),
-
-   attempt(PlayerID, SelectedRosterCharacterIXs, PendingBattle).
-
--spec attempt
+%%%% STAGE 0: UPDATING THE PENDING BATTLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec add_to_pending_battle
    (
       shr_player:id(),
       list(non_neg_integer()),
       btl_pending_battle:type()
    )
-   -> {btl_pending_battle:id(), btl_pending_battle:type()}.
-attempt (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
+   -> {btl_pending_battle:type(), ataxic:basic()}.
+add_to_pending_battle (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
    Battle = btl_pending_battle:get_battle(PendingBattle),
    RemainingSlots =
       (
@@ -473,10 +443,192 @@ attempt (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
          ]
       ),
 
-   {S1PendingBattle, Update},
+   {S1PendingBattle, Update}.
 
-   {ataxia_id:null(), S1PendingBattle}.
+%%%% STAGE -1: CREATING THE PENDING BATTLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec generate_pending_battle
+   (
+      shr_player:id(),
+      map_map:id(),
+      list(non_neg_integer())
+   ) -> btl_pending_battle:type().
+generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
+   Map =
+      shr_timed_cache:fetch
+      (
+         map_db,
+         ataxia_security:user_from_id(PlayerID),
+         MapID
+      ),
+   TileInstances = map_map:get_tile_instances(Map),
+   BattleMap =
+      btl_map:from_instances_tuple
+      (
+         map_map:get_width(Map),
+         map_map:get_height(Map),
+         TileInstances
+      ),
 
-   % TODO:
-   % if RemainingSlots = 0 -> del this, new Battle.
-   % Link either new Battle or current Pending Battle to player account.
+   Battle = btl_battle:new(BattleMap),
+
+   PendingBattle =
+      btl_pending_battle:new
+      (
+         % TODO: More options than 1 vs N.
+         (length(SelectedRosterCharacterIXs) * 2),
+         Battle
+      ),
+
+   {S0PendingBattle, _AtaxicUpdate} =
+      add_to_pending_battle
+      (
+         PlayerID,
+         SelectedRosterCharacterIXs,
+         PendingBattle
+      ),
+
+   S0PendingBattle.
+
+-spec stage (stage(), bounty_data()) -> 'ok'.
+stage (0, BountyData) ->
+   PlayerID = BountyData#bounty_data.player_id,
+   SelectedRosterCharacterIXs = BountyData#bounty_data.roster_ixs,
+   PendingBattleID = BountyData#bounty_data.pending_battle_id,
+   PlayerUser = ataxia_security:user_from_id(PlayerID),
+
+   % FIXME:
+   % This won't do... The Pending Battle might no longer be able to host this
+   % player. shr_timed_cache needs to be updated to include all of
+   % ataxia_client's fetch operations, and this call should a
+   % 'fetch_and_update' that temporary locks this battle. In addition, a new
+   % test for character capacity must be made.
+   PendingBattle =
+      shr_timed_cache:fetch(pending_battle_db, PlayerUser, PendingBattleID),
+
+   {S0PendingBattle, AtaxicUpdate} =
+      add_to_pending_battle
+      (
+         PlayerID,
+         SelectedRosterCharacterIXs,
+         PendingBattle
+      ),
+
+   ok =
+      ataxia_client:update
+      (
+         pending_battle_db,
+         PlayerUser,
+         AtaxicUpdate,
+         PendingBattleID
+      ),
+
+   shr_timed_cache:update
+   (
+      pending_battle_db,
+      PlayerUser,
+      PendingBattleID,
+      S0PendingBattle
+   ),
+
+   ok;
+
+stage (-1, BountyData) ->
+   PlayerID = BountyData#bounty_data.player_id,
+   SelectedRosterCharacterIXs = BountyData#bounty_data.roster_ixs,
+   PendingBattleID = BountyData#bounty_data.pending_battle_id,
+   MapID = BountyData#bounty_data.map_id,
+
+   NewPendingBattle =
+      generate_pending_battle(PlayerID, MapID, SelectedRosterCharacterIXs),
+
+   ok =
+      ataxia_client:update
+      (
+         pending_battle_db,
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:update_value(ataxic:constant(NewPendingBattle)),
+         PendingBattleID
+      ),
+
+   ok.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec generate
+   (
+      shr_player:id(),
+      map_map:id(),
+      list(non_neg_integer())
+   )
+   -> 'ok'.
+generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
+   PlayerUser = ataxia_security:user_from_id(PlayerID),
+   AnyoneAndMeAllowed =
+      ataxia_security:add_access(PlayerUser, ataxia_security:allow_any()),
+
+   {ok, NewPendingBattleID} =
+      ataxia_client:reserve
+      (
+         pending_battle_db,
+         AnyoneAndMeAllowed,
+         AnyoneAndMeAllowed
+      ),
+
+   BountyData =
+      {
+         PlayerID,
+         MapID,
+         SelectedRosterCharacterIXs,
+         NewPendingBattleID
+      },
+
+   % TODO: generate bounty.
+
+   stage(-1, BountyData).
+
+-spec attempt
+   (
+      shr_player:id(),
+      list(non_neg_integer()),
+      btl_pending_battle:id(),
+      btl_pending_battle:type()
+   )
+   -> 'ok'.
+attempt
+(
+   PlayerID,
+   SelectedRosterCharacterIXs,
+   PendingBattleID,
+   PendingBattle
+) ->
+   BountyData =
+      {
+         PlayerID,
+         PendingBattleID,
+         SelectedRosterCharacterIXs
+      },
+
+   % TODO: generate bounty.
+
+   PlayerUser = ataxia_security:user_from_id(PlayerID),
+
+   % Stage 0, optimized:
+   {_S0PendingBattle, AtaxicUpdate} =
+      add_to_pending_battle
+      (
+         PlayerID,
+         SelectedRosterCharacterIXs,
+         PendingBattle
+      ),
+
+   ok =
+      ataxia_client:update
+      (
+         pending_battle_db,
+         PlayerUser,
+         AtaxicUpdate,
+         PendingBattleID
+      ),
+
+   ok.
