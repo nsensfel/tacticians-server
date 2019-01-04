@@ -24,7 +24,7 @@ ERL ?= erl
 ERL_OPTS ?= -connect_all false -pa `find $(BIN_DIR) -type d`
 
 YAWS ?= yaws
-YAWS_OPTS ?= $(ERL_NAME_VS_SNAME) query_node -erlarg "$(ERL_OPTS)"
+YAWS_OPTS ?= $(ERL_NAME_VS_SNAME) query_node -erlarg '$(ERL_OPTS)'
 
 DIALYZER ?= dialyzer
 DIALYZER_OPTS ?=
@@ -111,7 +111,7 @@ run_db_node: build
 	$(ERL_EXEC) $(ERL_NAME_VS_SNAME) db_node -run db_node start
 
 run_query_node: build $(YAWS_CONFIG_FILE)
-	$(YAWS_EXEC) --conf $(YAWS_CONFIG_FILE)
+	$(YAWS_EXEC) --conf $(YAWS_CONFIG_FILE) 
 
 clean:
 	# Preprocessor
