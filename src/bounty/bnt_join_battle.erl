@@ -413,13 +413,12 @@ generate_battle (PlayerID, MapID) ->
       map_map:id(),
       list(non_neg_integer())
    )
-   -> btl_pending_battle:type().
+   -> {btl_pending_battle:id(), btl_pending_battle:type()}.
 generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
    Battle = generate_battle(PlayerID, MapID),
    PendingBattle =
       btl_pending_battle:new
       (
-         <<"">>,
          % TODO: More options than 1 vs N.
          (length(SelectedRosterCharacterIXs) * 2),
          Battle
@@ -433,7 +432,7 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
       list(non_neg_integer()),
       btl_pending_battle:type()
    )
-   -> btl_pending_battle:type().
+   -> {btl_pending_battle:id(), btl_pending_battle:type()}.
 attempt (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
    Battle = btl_pending_battle:get_battle(PendingBattle),
    RemainingSlots =
@@ -476,7 +475,7 @@ attempt (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
 
    {S1PendingBattle, Update},
 
-   S1PendingBattle.
+   {ataxia_id:null(), S1PendingBattle}.
 
    % TODO:
    % if RemainingSlots = 0 -> del this, new Battle.

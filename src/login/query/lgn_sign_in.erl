@@ -18,7 +18,7 @@
 (
    query_state,
    {
-      player_id :: binary(),
+      player_id :: shr_player:id(),
       player :: shr_player:type()
    }
 ).
@@ -122,8 +122,9 @@ commit_update (QueryState) ->
 -spec generate_reply(query_state()) -> binary().
 generate_reply (QueryState) ->
    Player = QueryState#query_state.player,
+   PlayerID = QueryState#query_state.player_id,
 
-   SetSession = lgn_set_session:generate(Player),
+   SetSession = lgn_set_session:generate(PlayerID, Player),
    Output = jiffy:encode([SetSession]),
 
    Output.

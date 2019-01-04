@@ -73,10 +73,11 @@ fetch_data (Input) ->
 
 
 -spec generate_reply(query_state(), input()) -> binary().
-generate_reply (QueryState, _Input) ->
+generate_reply (QueryState, Input) ->
    Player = QueryState#query_state.player,
+   PlayerID = Input#input.target_id,
 
-   Output = jiffy:encode([plr_set_player:generate(Player)]),
+   Output = jiffy:encode([plr_set_player:generate(PlayerID, Player)]),
 
    Output.
 

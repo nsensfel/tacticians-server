@@ -9,7 +9,6 @@
 (
    battle,
    {
-      id :: id(),
       used_armor_ids :: ordsets:ordset(shr_armor:id()),
       used_weapon_ids :: ordsets:ordset(shr_weapon:id()),
       used_portrait_ids :: ordsets:ordset(shr_portrait:id()),
@@ -32,7 +31,6 @@
 -export
 (
    [
-      get_id/1,
       get_used_portrait_ids/1,
       get_used_weapon_ids/1,
       get_used_armor_ids/1,
@@ -45,7 +43,6 @@
       get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
 
-      set_id/2,
       set_map/2,
       set_used_portrait_ids/2,
       set_used_weapon_ids/2,
@@ -56,7 +53,6 @@
       set_player/3,
       set_current_player_turn/2,
 
-      get_id_field/0,
       get_used_armor_ids_field/0,
       get_used_weapon_ids_field/0,
       get_used_portrait_ids_field/0,
@@ -94,9 +90,6 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (Battle) -> Battle#battle.id.
-
 -spec get_used_portrait_ids (type()) -> ordsets:ordset(shr_portrait:id()).
 get_used_portrait_ids (Battle) -> Battle#battle.used_portrait_ids.
 
@@ -148,13 +141,6 @@ get_encoded_last_turns_effects (Battle) ->
    PlayersCount = orddict:size(Players),
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
-
--spec set_id (id(), type()) -> type().
-set_id (ID, Battle) ->
-   Battle#battle
-   {
-      id = ID
-   }.
 
 -spec set_map (btl_map:type(), type()) -> type().
 set_map (Map, Battle) ->
@@ -251,7 +237,6 @@ new (Map) ->
 
    #battle
    {
-      id = ataxia_id:null(),
       used_portrait_ids = EmptySet,
       used_weapon_ids = EmptySet,
       used_armor_ids = EmptySet,
@@ -261,9 +246,6 @@ new (Map) ->
       players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0)
    }.
-
--spec get_id_field () -> non_neg_integer().
-get_id_field () -> #battle.characters.
 
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.

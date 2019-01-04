@@ -3,13 +3,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: binary().
+-type id() :: ataxia_id:type().
 
 -record
 (
    pending_battle,
    {
-      id :: id(),
       free_slots :: non_neg_integer(),
       battle :: btl_battle:type()
    }
@@ -29,7 +28,6 @@
 -export
 (
    [
-      get_id/1,
       get_battle/1,
       get_free_slots/1,
 
@@ -44,7 +42,7 @@
 -export
 (
    [
-      new/3
+      new/2
    ]
 ).
 
@@ -55,19 +53,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (id(), non_neg_integer(), btl_battle:type()) -> type().
-new (ID, FreeSlots, Battle) ->
+-spec new (non_neg_integer(), btl_battle:type()) -> type().
+new (FreeSlots, Battle) ->
    #pending_battle
    {
-      id = ID,
       free_slots = FreeSlots,
       battle = Battle
    }.
 
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (PBattle) -> PBattle#pending_battle.id.
-
 -spec get_battle (type()) -> btl_battle:type().
 get_battle (PBattle) -> PBattle#pending_battle.battle.
 

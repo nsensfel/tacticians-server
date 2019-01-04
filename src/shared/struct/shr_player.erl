@@ -3,13 +3,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: binary().
+-type id() :: ataxia_id:type().
 
 -record
 (
    player,
    {
-      id :: id(),
       username :: binary(),
       % {salt(crypto:strong_rand_bytes(128)), hash(sha384)}
       password :: {binary(), binary()},
@@ -35,7 +34,7 @@
 -export
 (
    [
-      new/4
+      new/3
    ]
 ).
 
@@ -43,7 +42,6 @@
 -export
 (
    [
-      get_id/1,
       get_username/1,
       get_password/1,
       get_token/1,
@@ -56,7 +54,6 @@
       get_inventory_id/1,
       get_roster_id/1,
 
-      set_id/2,
       set_username/2,
       set_password/2,
       new_token/1,
@@ -74,7 +71,6 @@
 -export
 (
    [
-      get_id_field/0,
       get_username_field/0,
       get_password_field/0,
       get_token_field/0,
@@ -113,13 +109,12 @@ secure_value (Salt, Val) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (binary(), binary(), binary(), binary()) -> type().
-new (ID, Username, Password, Email) ->
+-spec new (binary(), binary(), binary()) -> type().
+new (Username, Password, Email) ->
    EmptyBattleSlot = shr_battle_summary:none(),
    Result =
       #player
       {
-         id = ID,
          username = Username,
          password = {<<"">>, <<"">>},
          token = <<"">>,
@@ -160,8 +155,8 @@ new (ID, Username, Password, Email) ->
                EmptyBattleSlot,
                EmptyBattleSlot
             ],
-         inventory_id = <<"0">>,
-         roster_id = <<"0">>
+         inventory_id = ataxia_id:null(),
+         roster_id = ataxia_id:null()
       },
 
    S0Result = set_password(Password, Result),
@@ -171,9 +166,6 @@ new (ID, Username, Password, Email) ->
    S2Result.
 
 %%%% Accessors
--spec get_id (type()) -> id().
-get_id (Player) -> Player#player.id.
-
 -spec get_username (type()) -> binary().
 get_username (Player) -> Player#player.username.
 
@@ -206,9 +198,6 @@ get_roster_id (Player) -> Player#player.roster_id.
 
 -spec get_inventory_id (type()) -> binary().
 get_inventory_id (Player) -> Player#player.inventory_id.
-
--spec set_id (binary(), type()) -> type().
-set_id (Val, Player) -> Player#player{ id = Val }.
 
 -spec set_username (binary(), type()) -> type().
 set_username (Val, Player) -> Player#player{ username = Val }.
@@ -279,9 +268,6 @@ set_roster_id (RosterID, Player) -> Player#player{ roster_id = RosterID }.
 
 -spec set_inventory_id (binary(), type()) -> type().
 set_inventory_id (InvID, Player) -> Player#player{ inventory_id = InvID }.
-
--spec get_id_field () -> non_neg_integer().
-get_id_field () -> #player.id.
 
 -spec get_username_field () -> non_neg_integer().
 get_username_field () -> #player.username.

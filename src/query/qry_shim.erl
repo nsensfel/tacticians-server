@@ -14,7 +14,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_player_0 () -> shr_player:type().
 generate_player_0 () ->
-   Player =
+   {PlayerID, Player} =
       bnt_generate_player:attempt
       (
          <<"Player1">>,
@@ -22,14 +22,14 @@ generate_player_0 () ->
          <<"Player1@tacticians.online">>
       ),
 
-   bnt_grant_land:attempt(shr_player:get_id(Player)),
+   bnt_grant_land:attempt(PlayerID),
 
    Player.
 
 
 -spec generate_player_1 () -> shr_player:type().
 generate_player_1 () ->
-   Player =
+   {PlayerID, Player} =
       bnt_generate_player:attempt
       (
          <<"Player2">>,
@@ -37,7 +37,7 @@ generate_player_1 () ->
          <<"Player2@tacticians.online">>
       ),
 
-   bnt_grant_land:attempt(shr_player:get_id(Player)),
+   bnt_grant_land:attempt(PlayerID),
 
    Player.
 

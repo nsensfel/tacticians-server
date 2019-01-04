@@ -69,7 +69,7 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
 
    'ok'.
 
--spec generate_inventory (ataxia_id:type()) -> ataxia_id:type().
+-spec generate_inventory (shr_player:id()) -> shr_inventory:id().
 generate_inventory (PlayerID) ->
    Inventory = shr_inventory:new(PlayerID),
 
@@ -84,7 +84,7 @@ generate_inventory (PlayerID) ->
 
    InventoryID.
 
--spec generate_roster (ataxia_id:type()) -> ataxia_id:type().
+-spec generate_roster (shr_player:id()) -> rst_roster:id().
 generate_roster (PlayerID) ->
    Roster = rst_roster:new(PlayerID),
    {ok, RosterID} =
@@ -101,14 +101,20 @@ generate_roster (PlayerID) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec attempt (binary(), binary(), binary()) -> shr_player:type().
+-spec attempt
+   (
+      binary(),
+      binary(),
+      binary()
+   )
+   -> {shr_player:id(), shr_player:type()}.
 attempt (Username, Password, Email) ->
    UsernameLC = string:lowercase(Username),
    EmailLC = string:lowercase(Email),
 
    ok = reserve_login(UsernameLC, EmailLC),
 
-   Player = shr_player:new(<<"">>, Username, Password, Email),
+   Player = shr_player:new(Username, Password, Email),
 
    JanitorOnlyPermission =
       ataxia_security:allow_only(ataxia_security:janitor()),
@@ -136,11 +142,6 @@ attempt (Username, Password, Email) ->
                ataxic:sequence
                (
                   [
-                     ataxic:update_field
-                     (
-                        shr_player:get_id_field(),
-                        ataxic:constant(PlayerID)
-                     ),
                      ataxic:update_field
                      (
                         shr_player:get_inventory_id_field(),
@@ -185,7 +186,4 @@ attempt (Username, Password, Email) ->
          PlayerID
       ),
 
-
-   Result = shr_player:set_id(PlayerID, Player),
-
-   Result.
+   {PlayerID, Player}.

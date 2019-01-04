@@ -19,7 +19,8 @@
 (
    query_state,
    {
-      player :: shr_player:type()
+      player :: shr_player:type(),
+      player_id :: shr_player:id()
    }
 ).
 
@@ -54,18 +55,21 @@ register_user (Input) ->
    Password = Input#input.password,
    Email = Input#input.email,
 
-   GeneratedPlayer = bnt_generate_player:attempt(Username, Password, Email),
+   {GeneratedPlayerID, GeneratedPlayer} =
+      bnt_generate_player:attempt(Username, Password, Email),
 
    #query_state
    {
-      player = GeneratedPlayer
+      player = GeneratedPlayer,
+      player_id = GeneratedPlayerID
    }.
 
 -spec generate_reply(query_state()) -> binary().
 generate_reply (QueryState) ->
    Player = QueryState#query_state.player,
+   PlayerID = QueryState#query_state.player_id,
 
-   SetSession = lgn_set_session:generate(Player),
+   SetSession = lgn_set_session:generate(PlayerID, Player),
    Output = jiffy:encode([SetSession]),
 
    Output.
