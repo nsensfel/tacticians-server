@@ -15,7 +15,7 @@
 ).
 -type bounty_data() :: #bounty_data{}.
 
--type stage() :: integer().
+-type stage() :: -1..0.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -630,7 +630,7 @@ attempt
       (
          pending_battle_db,
          PlayerUser,
-         AtaxicUpdate,
+         ataxic:update_value(AtaxicUpdate),
          PendingBattleID
       ),
 

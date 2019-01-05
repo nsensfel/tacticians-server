@@ -134,18 +134,14 @@ debug_rebuild:
 $(DIALYZER_BASE_PLT_FILE):
 	$(DIALYZER_EXEC) --build_plt --apps erts kernel stdlib crypto jiffy mnesia \
 		--output_plt $@
-ifeq ($(wildcard $(DIALYZER_PLT_FILE)),)
+
 debug_run: $(DIALYZER_BASE_PLT_FILE)
 	$(MAKE) debug_rebuild
 	cp $< $(DIALYZER_PLT_FILE)
 	$(DIALYZER_EXEC) --add_to_plt --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)
-else
-debug_run:
-	$(MAKE) debug_rebuild
 	$(DIALYZER_EXEC) --check_plt --plt $(DIALYZER_PLT_FILE)
 	$(DIALYZER_EXEC) --get_warnings $(ERL_SRC_FILES) $(PREPROCESSED_ERL_SRC_FILES)\
 		--src --plt $(DIALYZER_PLT_FILE)
-endif
 
 $(PREPROCESSED_FILES): %: %.m4 .PHONY
 	$(M4_EXEC) -P $(MAKEFILE_TO_M4) $(PREPROCESSOR_CONFIG_FILES) $< > $@
