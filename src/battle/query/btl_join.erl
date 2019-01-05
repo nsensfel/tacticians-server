@@ -92,7 +92,7 @@ handle_attack (Input) ->
    {ok, AvailablePendingBattle, AvailablePendingBattleID} =
       ataxia_client:update_and_fetch_any
       (
-         btl_pending,
+         pending_battle_db,
          PlayerDBUser,
          ataxic:update_lock
          (

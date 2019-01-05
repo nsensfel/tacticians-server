@@ -28,6 +28,7 @@ start () ->
    Mnesia = ataxia_admin:new("/tmp/to_db_node.mnesia", []),
    ataxia_admin:start(Mnesia),
    ataxia_admin:add_db(battle_db, Mnesia),
+   ataxia_admin:add_db(pending_battle_db, Mnesia),
    ataxia_admin:add_db(login_db, Mnesia),
    ataxia_admin:add_db(map_db, Mnesia),
    ataxia_admin:add_db(player_db, Mnesia),

@@ -576,11 +576,12 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
       ),
 
    BountyData =
+      #bounty_data
       {
-         PlayerID,
-         MapID,
-         SelectedRosterCharacterIXs,
-         NewPendingBattleID
+         player_id = PlayerID,
+         map_id = MapID,
+         roster_ixs = SelectedRosterCharacterIXs,
+         pending_battle_id = NewPendingBattleID
       },
 
    % TODO: generate bounty.
@@ -603,10 +604,12 @@ attempt
    PendingBattle
 ) ->
    BountyData =
+      #bounty_data
       {
-         PlayerID,
-         PendingBattleID,
-         SelectedRosterCharacterIXs
+         player_id = PlayerID,
+         map_id = ataxia_id:null(),
+         roster_ixs = SelectedRosterCharacterIXs,
+         pending_battle_id = PendingBattleID
       },
 
    % TODO: generate bounty.
