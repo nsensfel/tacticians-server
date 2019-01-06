@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -record
 (
-   bounty_data,
+   bounty_params,
    {
       player_id :: shr_player:id(),
       pending_battle_id :: btl_pending_battle:id(),
@@ -13,7 +13,17 @@
       map_id :: map_map:id() % null if the bounty is to join.
    }
 ).
--type bounty_data() :: #bounty_data{}.
+
+-record
+(
+   bounty_data,
+   {
+      pending_battle :: btl_pending_battle:type()
+   }
+).
+
+-type bounty_params() :: #bounty_params{}.
+-type bounty_data() :: (#bounty_data{} | none).
 
 -type stage() :: -1..0.
 
@@ -451,7 +461,8 @@ add_to_pending_battle (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
       shr_player:id(),
       map_map:id(),
       list(non_neg_integer())
-   ) -> btl_pending_battle:type().
+   )
+   -> btl_pending_battle:type().
 generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
    Map =
       shr_timed_cache:fetch
@@ -489,21 +500,14 @@ generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 
    S0PendingBattle.
 
--spec stage (stage(), bounty_data()) -> 'ok'.
-stage (0, BountyData) ->
-   PlayerID = BountyData#bounty_data.player_id,
-   SelectedRosterCharacterIXs = BountyData#bounty_data.roster_ixs,
-   PendingBattleID = BountyData#bounty_data.pending_battle_id,
-   PlayerUser = ataxia_security:user_from_id(PlayerID),
+-spec stage (stage(), bounty_params(), bounty_data()) -> {'ok', bounty_data()}.
+stage (0, BountyParams, BountyData) when is_record(BountyData, bounty_data) ->
+   PlayerID = BountyParams#bounty_params.player_id,
+   SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
+   PendingBattleID = BountyParams#bounty_params.pending_battle_id,
+   PendingBattle = BountyData#bounty_data.pending_battle,
 
-   % FIXME:
-   % This won't do... The Pending Battle might no longer be able to host this
-   % player. shr_timed_cache needs to be updated to include all of
-   % ataxia_client's fetch operations, and this call should a
-   % 'fetch_and_update' that temporary locks this battle. In addition, a new
-   % test for character capacity must be made.
-   PendingBattle =
-      shr_timed_cache:fetch(pending_battle_db, PlayerUser, PendingBattleID),
+   PlayerUser = ataxia_security:user_from_id(PlayerID),
 
    {S0PendingBattle, AtaxicUpdate} =
       add_to_pending_battle
@@ -522,21 +526,19 @@ stage (0, BountyData) ->
          PendingBattleID
       ),
 
-   shr_timed_cache:update
-   (
-      pending_battle_db,
-      PlayerUser,
-      PendingBattleID,
-      S0PendingBattle
-   ),
+   {
+      ok,
+      BountyData#bounty_data
+      {
+         pending_battle = S0PendingBattle
+      }
+   };
 
-   ok;
-
-stage (-1, BountyData) ->
-   PlayerID = BountyData#bounty_data.player_id,
-   SelectedRosterCharacterIXs = BountyData#bounty_data.roster_ixs,
-   PendingBattleID = BountyData#bounty_data.pending_battle_id,
-   MapID = BountyData#bounty_data.map_id,
+stage (-1, BountyParams, none) ->
+   PlayerID = BountyParams#bounty_params.player_id,
+   SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
+   PendingBattleID = BountyParams#bounty_params.pending_battle_id,
+   MapID = BountyParams#bounty_params.map_id,
 
    NewPendingBattle =
       generate_pending_battle(PlayerID, MapID, SelectedRosterCharacterIXs),
@@ -550,18 +552,18 @@ stage (-1, BountyData) ->
          PendingBattleID
       ),
 
-   ok.
+   {
+      ok,
+      #bounty_data
+      {
+         pending_battle = NewPendingBattle
+      }
+   }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate
-   (
-      shr_player:id(),
-      map_map:id(),
-      list(non_neg_integer())
-   )
-   -> 'ok'.
+-spec generate (shr_player:id(), map_map:id(), list(non_neg_integer())) -> 'ok'.
 generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
    AnyoneAndMeAllowed =
@@ -575,8 +577,8 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
          AnyoneAndMeAllowed
       ),
 
-   BountyData =
-      #bounty_data
+   BountyParams =
+      #bounty_params
       {
          player_id = PlayerID,
          map_id = MapID,
@@ -586,7 +588,9 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 
    % TODO: generate bounty.
 
-   stage(-1, BountyData).
+   stage(-1, BountyParams, none),
+
+   ok.
 
 -spec attempt
    (
@@ -603,14 +607,14 @@ attempt
    PendingBattleID,
    PendingBattle
 ) ->
-   BountyData =
-      #bounty_data
-      {
-         player_id = PlayerID,
-         map_id = ataxia_id:null(),
-         roster_ixs = SelectedRosterCharacterIXs,
-         pending_battle_id = PendingBattleID
-      },
+%   BountyParams =
+%      #bounty_params
+%      {
+%         player_id = PlayerID,
+%         map_id = ataxia_id:null(),
+%         roster_ixs = SelectedRosterCharacterIXs,
+%         pending_battle_id = PendingBattleID
+%      },
 
    % TODO: generate bounty.
 

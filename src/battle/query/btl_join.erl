@@ -119,6 +119,7 @@ handle_attack (Input) ->
             ),
             ataxic:constant(PartySize)
          )
+         % missing: test that user isn't already a participant.
       ),
 
    bnt_join_battle:attempt
