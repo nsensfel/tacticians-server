@@ -3,11 +3,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-type category() :: (attack | defend | none).
+
 -record
 (
    battle_summary,
    {
-      id :: binary(),
+      id :: ataxia_id:type(),
+      category :: category(),
       name :: binary(),
       last_edit :: binary(),
       is_players_turn :: boolean()
@@ -16,7 +19,7 @@
 
 -opaque type() :: #battle_summary{}.
 
--export_type([type/0]).
+-export_type([type/0, category/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,6 +83,7 @@ new (ID, Name, Time, IsPlayersTurn) ->
    {
       id = ID,
       name = Name,
+      category = none,
       last_edit = Time,
       is_players_turn = IsPlayersTurn
    }.
@@ -90,6 +94,7 @@ none () ->
    {
       id = <<"">>,
       name = <<"">>,
+      category = none,
       last_edit = <<"">>,
       is_players_turn = false
    }.
@@ -133,10 +138,11 @@ get_last_edit_field () -> #battle_summary.last_edit.
 -spec get_is_players_turn_field () -> non_neg_integer().
 get_is_players_turn_field () -> #battle_summary.is_players_turn.
 
--spec encode (type()) -> {list(any())}.
-encode (BattleSummary) ->
+-spec encode ({non_neg_integer(), type()}) -> {list(any())}.
+encode ({IX, BattleSummary}) ->
    {
       [
+         {<<"ix">>, IX},
          {<<"id">>, BattleSummary#battle_summary.id},
          {<<"nme">>, BattleSummary#battle_summary.name},
          {<<"ldt">>, BattleSummary#battle_summary.last_edit},

@@ -39,9 +39,18 @@ attempt (OwnerID) ->
             shr_player:get_map_summaries_field(),
             ataxic:apply_function
             (
-               lists,
-               append,
-               [ataxic:constant([MapSummary]), ataxic:current_value()]
+               orddict,
+               store,
+               [
+                  ataxic:apply_function
+                  (
+                     orddict,
+                     size,
+                     [ataxic:current_value()]
+                  ),
+                  ataxic:constant([MapSummary]),
+                  ataxic:current_value()
+               ]
             )
          )
       ),

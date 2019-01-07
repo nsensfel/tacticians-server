@@ -92,10 +92,11 @@ get_id_field () -> #map_summary.id.
 -spec get_name_field () -> non_neg_integer().
 get_name_field () -> #map_summary.name.
 
--spec encode (type()) -> {list(any())}.
-encode (MapSummary) ->
+-spec encode ({non_neg_integer(), type()}) -> {list(any())}.
+encode ({IX, MapSummary}) ->
    {
       [
+         {<<"ix">>, IX},
          {<<"id">>, MapSummary#map_summary.id},
          {<<"nme">>, MapSummary#map_summary.name}
       ]

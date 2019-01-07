@@ -15,10 +15,10 @@
       token :: binary(), % salt(crypto:strong_rand_bytes(512))
       email :: binary(),
       last_active :: integer(),
-      maps :: list(shr_map_summary:type()),
-      campaigns :: list(shr_battle_summary:type()),
-      invasions :: list(shr_battle_summary:type()),
-      events :: list(shr_battle_summary:type()),
+      maps :: orddict:orddict(non_neg_integer(), shr_map_summary:type()),
+      campaigns :: orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
+      invasions :: orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
+      events :: orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
       roster_id :: binary(),
       inventory_id :: binary()
    }
@@ -112,6 +112,37 @@ secure_value (Salt, Val) ->
 -spec new (binary(), binary(), binary()) -> type().
 new (Username, Password, Email) ->
    EmptyBattleSlot = shr_battle_summary:none(),
+   SixEmptyBattleSlots =
+      orddict:from_list
+      (
+         [
+            {0, EmptyBattleSlot},
+            {1, EmptyBattleSlot},
+            {2, EmptyBattleSlot},
+            {3, EmptyBattleSlot},
+            {4, EmptyBattleSlot},
+            {5, EmptyBattleSlot}
+         ]
+      ),
+
+   NineEmptyBattleSlots =
+      orddict:store
+      (
+         6,
+         EmptyBattleSlot,
+         orddict:store
+         (
+            7,
+            EmptyBattleSlot,
+            orddict:store
+            (
+               8,
+               EmptyBattleSlot,
+               SixEmptyBattleSlots
+            )
+         )
+      ),
+
    Result =
       #player
       {
@@ -120,41 +151,10 @@ new (Username, Password, Email) ->
          token = <<"">>,
          email = Email,
          last_active = 0,
-         maps = [],
-         campaigns =
-            [
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot
-            ],
-         invasions =
-            [
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot
-            ],
-         events =
-            [
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-
-               EmptyBattleSlot,
-               EmptyBattleSlot,
-               EmptyBattleSlot
-            ],
+         maps = orddict:new(),
+         campaigns = SixEmptyBattleSlots,
+         invasions = NineEmptyBattleSlots,
+         events = SixEmptyBattleSlots,
          inventory_id = ataxia_id:null(),
          roster_id = ataxia_id:null()
       },
@@ -181,22 +181,38 @@ get_email (Player) -> Player#player.email.
 -spec get_last_active (type()) -> integer().
 get_last_active (Player) -> Player#player.last_active.
 
--spec get_map_summaries (type()) -> list(shr_map_summary:type()).
+-spec get_map_summaries
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), shr_map_summary:type()).
 get_map_summaries (Player) -> Player#player.maps.
 
--spec get_campaign_summaries (type()) -> list(shr_battle_summary:type()).
+-spec get_campaign_summaries
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), shr_battle_summary:type()).
 get_campaign_summaries (Player) -> Player#player.campaigns.
 
--spec get_invasion_summaries (type()) -> list(shr_battle_summary:type()).
+-spec get_invasion_summaries
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), shr_battle_summary:type()).
 get_invasion_summaries (Player) -> Player#player.invasions.
 
--spec get_event_summaries (type()) -> list(shr_battle_summary:type()).
+-spec get_event_summaries
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), shr_battle_summary:type()).
 get_event_summaries (Player) -> Player#player.events.
 
--spec get_roster_id (type()) -> binary().
+-spec get_roster_id (type()) -> ataxia_id:type().
 get_roster_id (Player) -> Player#player.roster_id.
 
--spec get_inventory_id (type()) -> binary().
+-spec get_inventory_id (type()) -> ataxia_id:type().
 get_inventory_id (Player) -> Player#player.inventory_id.
 
 -spec set_username (binary(), type()) -> type().
@@ -229,12 +245,17 @@ refresh_active (Player) ->
       last_active = erlang:system_time(second)
    }.
 
--spec set_map_summaries (list(shr_map_summary:type()), type()) -> type().
+-spec set_map_summaries
+   (
+      orddict:orddict(non_neg_integer(), shr_map_summary:type()),
+      type()
+   )
+   -> type().
 set_map_summaries (Maps, Player) -> Player#player{ maps = Maps }.
 
 -spec set_campaign_summaries
    (
-      list(shr_battle_summary:type()),
+      orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
       type()
    )
    -> type().
@@ -246,7 +267,7 @@ set_campaign_summaries (Campaigns, Player) ->
 
 -spec set_invasion_summaries
    (
-      list(shr_battle_summary:type()),
+      orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
       type()
    )
    -> type().
@@ -256,7 +277,12 @@ set_invasion_summaries (Invasions, Player) ->
       invasions = Invasions
    }.
 
--spec set_event_summaries (list(shr_battle_summary:type()), type()) -> type().
+-spec set_event_summaries
+   (
+      orddict:orddict(non_neg_integer(), shr_battle_summary:type()),
+      type()
+   )
+   -> type().
 set_event_summaries (Events, Player) ->
    Player#player
    {
