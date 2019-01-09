@@ -48,7 +48,7 @@ attempt (OwnerID) ->
                      size,
                      [ataxic:current_value()]
                   ),
-                  ataxic:constant([MapSummary]),
+                  ataxic:constant(MapSummary),
                   ataxic:current_value()
                ]
             )
