@@ -8,6 +8,9 @@
    bounty_params,
    {
       player_id :: shr_player:id(),
+      summary_ix :: non_neg_integer(),
+      summary_category :: shr_battle_summary:category(),
+      summary_mode :: shr_battle_summary:mode(),
       pending_battle_id :: btl_pending_battle:id(),
       roster_ixs :: list(non_neg_integer()),
       map_id :: map_map:id() % null if the bounty is to join.
@@ -25,12 +28,12 @@
 -type bounty_params() :: #bounty_params{}.
 -type bounty_data() :: (#bounty_data{} | none).
 
--type stage() :: -1..0.
+-type stage() :: -1..1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/3, attempt/4]).
+-export([generate/4, attempt/5]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -558,13 +561,44 @@ stage (-1, BountyParams, none) ->
       {
          pending_battle = NewPendingBattle
       }
+   };
+
+stage (1, BountyParams, none) ->
+   PlayerID = BountyParams#bounty_params.player_id,
+   SummaryIX = SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
+
+   NewPendingBattle =
+      generate_pending_battle(PlayerID, MapID, SelectedRosterCharacterIXs),
+
+   ok =
+      ataxia_client:update
+      (
+         pending_battle_db,
+         ataxia_security:user_from_id(PlayerID),
+         ataxic:update_value(ataxic:constant(NewPendingBattle)),
+         PendingBattleID
+      ),
+
+   {
+      ok,
+      #bounty_data
+      {
+         pending_battle = NewPendingBattle
+      }
    }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (shr_player:id(), map_map:id(), list(non_neg_integer())) -> 'ok'.
-generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
+-spec generate
+   (
+      shr_player:id(),
+      non_neg_integer(),
+      map_map:id(),
+      list(non_neg_integer())
+   )
+   -> 'ok'.
+generate (PlayerID, SummaryIX, MapID, SelectedRosterCharacterIXs) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
    AnyoneAndMeAllowed =
       ataxia_security:add_access(PlayerUser, ataxia_security:allow_any()),
@@ -581,6 +615,7 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
       #bounty_params
       {
          player_id = PlayerID,
+         summary_ix = SummaryIX,
          map_id = MapID,
          roster_ixs = SelectedRosterCharacterIXs,
          pending_battle_id = NewPendingBattleID
@@ -595,6 +630,7 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 -spec attempt
    (
       shr_player:id(),
+      non_neg_integer(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
       btl_pending_battle:type()
@@ -603,6 +639,7 @@ generate (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 attempt
 (
    PlayerID,
+   SummaryIX,
    SelectedRosterCharacterIXs,
    PendingBattleID,
    PendingBattle
@@ -611,6 +648,7 @@ attempt
 %      #bounty_params
 %      {
 %         player_id = PlayerID,
+%         summary_ix = SummaryIX,
 %         map_id = ataxia_id:null(),
 %         roster_ixs = SelectedRosterCharacterIXs,
 %         pending_battle_id = PendingBattleID

@@ -3,14 +3,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type category() :: (attack | defend | none).
+-type mode() :: (attack | defend | none).
+-type category() :: (event | invasion | campaign).
 
 -record
 (
    battle_summary,
    {
       id :: ataxia_id:type(),
-      category :: category(),
+      mode :: mode(),
       name :: binary(),
       last_edit :: binary(),
       is_players_turn :: boolean()
@@ -19,7 +20,7 @@
 
 -opaque type() :: #battle_summary{}.
 
--export_type([type/0, category/0]).
+-export_type([type/0, mode/0, category/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,7 +84,7 @@ new (ID, Name, Time, IsPlayersTurn) ->
    {
       id = ID,
       name = Name,
-      category = none,
+      mode = none,
       last_edit = Time,
       is_players_turn = IsPlayersTurn
    }.
@@ -94,7 +95,7 @@ none () ->
    {
       id = <<"">>,
       name = <<"">>,
-      category = none,
+      mode = none,
       last_edit = <<"">>,
       is_players_turn = false
    }.
