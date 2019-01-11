@@ -566,26 +566,7 @@ stage (-1, BountyParams, none) ->
 stage (1, BountyParams, none) ->
    PlayerID = BountyParams#bounty_params.player_id,
    SummaryIX = SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
-
-   NewPendingBattle =
-      generate_pending_battle(PlayerID, MapID, SelectedRosterCharacterIXs),
-
-   ok =
-      ataxia_client:update
-      (
-         pending_battle_db,
-         ataxia_security:user_from_id(PlayerID),
-         ataxic:update_value(ataxic:constant(NewPendingBattle)),
-         PendingBattleID
-      ),
-
-   {
-      ok,
-      #bounty_data
-      {
-         pending_battle = NewPendingBattle
-      }
-   }.
+   none.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
