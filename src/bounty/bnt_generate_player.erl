@@ -15,8 +15,8 @@
 -spec reserve_login (binary(), binary()) -> 'ok'.
 reserve_login (UsernameLC, EmailLC) ->
    Anyone = ataxia_security:allow_any(),
-   ok = ataxia_client:reserve(login_db, Anyone, Anyone, UsernameLC),
-   ok = ataxia_client:reserve(login_db, Anyone, Anyone, EmailLC),
+   ok = ataxia_client:reserve_at(login_db, Anyone, Anyone, UsernameLC),
+   ok = ataxia_client:reserve_at(login_db, Anyone, Anyone, EmailLC),
 
    ok.
 

@@ -138,7 +138,7 @@ $(DIALYZER_BASE_PLT_FILE):
 debug_run: $(DIALYZER_BASE_PLT_FILE)
 	$(MAKE) debug_rebuild
 	cp $< $(DIALYZER_PLT_FILE)
-	$(DIALYZER_EXEC) --add_to_plt --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)
+	$(DIALYZER_EXEC) --add_to_plt --get_warnings --plt $(DIALYZER_PLT_FILE) -r $(BIN_DIR)
 	$(DIALYZER_EXEC) --check_plt --plt $(DIALYZER_PLT_FILE)
 	$(DIALYZER_EXEC) --get_warnings $(ERL_SRC_FILES) $(PREPROCESSED_ERL_SRC_FILES)\
 		--src --plt $(DIALYZER_PLT_FILE)
