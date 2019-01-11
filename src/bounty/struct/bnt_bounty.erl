@@ -27,7 +27,7 @@
 (
    [
       generate/4,
-      execute/1
+      resolve/0
    ]
 ).
 
@@ -54,10 +54,11 @@
       ataxia_time:type(),
       job()
    )
-   -> 'ok'.
+   -> {'ok', ataxia_id:type()}.
 generate (User, NotBefore, Deadline, Job) ->
    Janitor = ataxia_security:janitor(),
    JanitorOnly = ataxia_security:allow_only(Janitor),
+   JanitorAndUser = ataxia_security:add_access(User, JanitorOnly),
 
    Bounty =
       {
@@ -66,22 +67,34 @@ generate (User, NotBefore, Deadline, Job) ->
          job = Job
       },
 
-   {ok, _BountyID} =
+   {ok, BountyID} =
       ataxia_client:add
       (
          bounty_db,
-         JanitorOnly,
-         JanitorOnly,
+         JanitorAndUser,
+         JanitorAndUser,
          ataxia_lock:locked(User, NotBefore),
          Bounty
       ),
 
-   ok.
+   {ok, BountyID}.
 
--spec execute (type()) -> any().
-execute (Bounty) ->
+-spec resolve () -> type().
+resolve () ->
+   Lock = ataxia_lock:locked(ataxia_security:admin(), 60),
+
+   {ok, BountyID, Bounty} =
+      ataxia_client:update_and_fetch_any
+      (
+         bounty_db,
+         ataxia_security:janitor(),
+         ataxic:update_lock(ataxic:constant(Lock)),
+         ataxic:constant(true)
+      ),
+
    {Module, Function, Params} = Bounty#bounty.job,
-   erlang:apply(Module, Function, Params).
+
+   erlang:apply(Module, Function, [BountyID|Params]).
 
 -spec get_deadline (type()) -> ataxia_time:type().
 get_deadline (Bounty) -> Bounty#bounty.deadline.
