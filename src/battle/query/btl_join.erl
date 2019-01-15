@@ -14,6 +14,7 @@
       player_id :: shr_player:id(),
       session_token :: binary(),
       mode :: mode(),
+      summary_ix :: non_neg_integer(),
       size :: non_neg_integer(),
       roster_ixs :: list(non_neg_integer()),
       map_id :: ataxia_id:type()
@@ -38,6 +39,7 @@ parse_input (Req) ->
    JSONReqMap = jiffy:decode(Req, [return_maps]),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
+   SummaryIX = maps:get(<<"six">>, JSONReqMap),
 
    Mode =
       case maps:get(<<"m">>, JSONReqMap) of
@@ -65,6 +67,7 @@ parse_input (Req) ->
       session_token = SessionToken,
       mode = Mode,
       size = Size,
+      summary_ix = SummaryIX,
       roster_ixs = Roster,
       map_id = MapID
    }.
@@ -85,6 +88,7 @@ authenticate_user (Input) ->
 handle_attack (Input) ->
    PlayerID = Input#input.player_id,
    SelectedCharacterIXs = Input#input.roster_ixs,
+   SummaryIX = Input#input.summary_ix,
    PlayerDBUser = ataxia_security:user_from_id(PlayerID),
    PartySize = length(SelectedCharacterIXs),
 
@@ -106,25 +110,46 @@ handle_attack (Input) ->
                ]
             )
          ),
-         ataxic:ge
+         ataxic:land
          (
-            ataxic:field
-            (
-               ataxia_entry:get_value_field(),
-               ataxic:field
+            [
+               ataxic:ge
                (
-                  btl_pending_battle:get_free_slots_field(),
-                  ataxic:current_value()
+                  ataxic:field
+                  (
+                     ataxia_entry:get_value_field(),
+                     ataxic:field
+                     (
+                        btl_pending_battle:get_free_slots_field(),
+                        ataxic:current_value()
+                     )
+                  ),
+                  ataxic:constant(PartySize)
+               ),
+               ataxic:neg
+               (
+                  ataxic:field
+                  (
+                     btl_pending_battle:get_player_ids_field(),
+                     ataxic:apply_function
+                     (
+                        lists,
+                        member,
+                        [
+                           ataxic:constant(PlayerID),
+                           ataxic:current_value()
+                        ]
+                     )
+                  )
                )
-            ),
-            ataxic:constant(PartySize)
+            ]
          )
-         % missing: test that user isn't already a participant.
       ),
 
    bnt_join_battle:attempt
    (
       PlayerID,
+      SummaryIX,
       SelectedCharacterIXs,
       AvailablePendingBattleID,
       AvailablePendingBattle
@@ -135,9 +160,10 @@ handle_attack (Input) ->
 handle_defend (Input) ->
    PlayerID = Input#input.player_id,
    SelectedCharacterIXs = Input#input.roster_ixs,
+   SummaryIX = Input#input.summary_ix,
    MapID = Input#input.map_id,
 
-   bnt_join_battle:generate(PlayerID, MapID, SelectedCharacterIXs),
+   bnt_join_battle:generate(PlayerID, SummaryIX, MapID, SelectedCharacterIXs),
 
    ok.
 

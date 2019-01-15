@@ -3,32 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--record
-(
-   bounty_params,
-   {
-      player_id :: shr_player:id(),
-      summary_ix :: non_neg_integer(),
-      summary_category :: shr_battle_summary:category(),
-      summary_mode :: shr_battle_summary:mode(),
-      pending_battle_id :: btl_pending_battle:id(),
-      roster_ixs :: list(non_neg_integer()),
-      map_id :: map_map:id() % null if the bounty is to join.
-   }
-).
-
--record
-(
-   bounty_data,
-   {
-      pending_battle :: btl_pending_battle:type()
-   }
-).
-
--type bounty_params() :: #bounty_params{}.
--type bounty_data() :: (#bounty_data{} | none).
-
--type stage() :: -1..1.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -412,11 +386,18 @@ get_roster_characters (PlayerID, SelectedRosterCharacterIXs) ->
 -spec add_to_pending_battle
    (
       shr_player:id(),
+      non_neg_integer(),
       list(non_neg_integer()),
       btl_pending_battle:type()
    )
    -> {btl_pending_battle:type(), ataxic:basic()}.
-add_to_pending_battle (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
+add_to_pending_battle
+(
+   PlayerID,
+   PlayerSumIX,
+   SelectedRosterCharacterIXs,
+   PendingBattle
+) ->
    Battle = btl_pending_battle:get_battle(PendingBattle),
    RemainingSlots =
       (
@@ -452,6 +433,16 @@ add_to_pending_battle (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
             (
                btl_pending_battle:get_free_slots_field(),
                ataxic:constant(RemainingSlots)
+            ),
+            ataxic:update_field
+            (
+               btl_pending_battle:get_player_ids_field(),
+               ataxic:list_cons(ataxic:constant(PlayerID))
+            ),
+            ataxic:update_field
+            (
+               btl_pending_battle:get_player_summary_ixs_field(),
+               ataxic:list_cons(ataxic:constant(PlayerSumIX))
             )
          ]
       ),
@@ -462,11 +453,18 @@ add_to_pending_battle (PlayerID, SelectedRosterCharacterIXs, PendingBattle) ->
 -spec generate_pending_battle
    (
       shr_player:id(),
+      non_neg_integer(),
       map_map:id(),
       list(non_neg_integer())
    )
    -> btl_pending_battle:type().
-generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
+generate_pending_battle
+(
+   PlayerID,
+   PlayerSumIX,
+   MapID,
+   SelectedRosterCharacterIXs
+) ->
    Map =
       shr_timed_cache:fetch
       (
@@ -497,6 +495,7 @@ generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
       add_to_pending_battle
       (
          PlayerID,
+         PlayerSumIX,
          SelectedRosterCharacterIXs,
          PendingBattle
       ),
@@ -506,18 +505,20 @@ generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 -spec repair_join_battle
    (
       shr_player:id(),
+      non_neg_integer(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
       btl_pending_battle:type()
    )
    -> {ok, btl_pending_battle:type()}.
-repair_join_battle (PlayerID, RosterCharIXs, PBattleID, PBattle) ->
+repair_join_battle (PlayerID, PlayerSumIX, RosterCharIXs, PBattleID, PBattle) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
 
    {S0PBattle, AtaxicUpdate} =
       add_to_pending_battle
       (
          PlayerID,
+         PlayerSumIX,
          RosterCharIXs,
          PBattle
       ),
@@ -536,13 +537,15 @@ repair_join_battle (PlayerID, RosterCharIXs, PBattleID, PBattle) ->
 -spec repair_create_battle
    (
       shr_player:id(),
+      non_neg_integer(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
       map_map:id()
    )
    -> {ok, btl_pending_battle:type()}.
-repair_create_battle (PlayerID, RosterCharIXs, PBattleID, MapID) ->
-   NewPendingBattle = generate_pending_battle(PlayerID, MapID, RosterCharIXs),
+repair_create_battle (PlayerID, PlayerSumIX, RosterCharIXs, PBattleID, MapID) ->
+   NewPendingBattle =
+      generate_pending_battle(PlayerID, PlayerSumIX, MapID, RosterCharIXs),
 
    ok =
       ataxia_client:update
@@ -561,25 +564,96 @@ repair_create_battle (PlayerID, RosterCharIXs, PBattleID, MapID) ->
       non_neg_integer(),
       btl_pending_battle:id()
    )
-   -> {ok, btl_pending_battle:type()}.
+   -> ok.
 repair_user_link (PlayerID, PBattleUserIX, PBattleID) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
+   BattleSummary =
+      shr_battle_summary:new(PBattleID, <<"Test Battle">>, <<"">>, false),
 
    ok =
-      ataxia_client:update_if
+      ataxia_client:update
       (
          player_db,
          PlayerUser,
          ataxic:update_value
          (
+            ataxic:update_field
+            (
+               shr_player:get_invasion_summaries_field(),
+               ataxic:apply_function
+               (
+                  orddict,
+                  store,
+                  [
+                     ataxic:constant(PBattleUserIX),
+                     ataxic:constant
+                     (
+                        BattleSummary
+                     ),
+                     ataxic:current_value()
+                  ]
+               )
+            )
          ),
+         PlayerID
+      ).
 
-      )
+-spec repair_generate_battle
+   (
+      btl_pending_battle:id(),
+      btl_pending_battle:type()
+   )
+   -> ok.
+repair_generate_battle (PBattleID, PBattle) ->
+   Battle = btl_pending_battle:get_battle(PBattle),
+   {ok, BattleID} = ataxia_client:reserve(battle_db, ataxia_security:janitor()),
 
-stage (1, BountyParams, none) ->
-   PlayerID = BountyParams#bounty_params.player_id,
-   SummaryIX = SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
-   none.
+   BattlePermission =
+      ataxia_security:allow
+      (
+         lists:map
+         (
+            fun ataxia_security:user_from_id/1,
+            btl_pending_battle:get_player_ids(PBattle)
+         )
+      ),
+
+   ok =
+      ataxia_client:update
+      (
+         pending_battle_db,
+         ataxia_security:admin(),
+         ataxic:update_value
+         (
+            ataxic:update_field
+            (
+               btl_pending_battle:get_battle_id_field(),
+               ataxic:constant(BattleID)
+            )
+         ),
+         PBattleID
+      ),
+
+   ok =
+      ataxia_client:update
+      (
+         battle_db,
+         ataxia_security:admin(),
+         ataxic:sequence_meta
+         (
+            [
+               ataxic:update_read_permission(ataxic:constant(BattlePermission)),
+               ataxic:update_write_permission
+               (
+                  ataxic:constant(BattlePermission)
+               ),
+               ataxic:update_value(ataxic:constant(Battle))
+            ]
+         ),
+         BattleID
+      ),
+
+   ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -592,12 +666,12 @@ stage (1, BountyParams, none) ->
       list(non_neg_integer())
    )
    -> 'ok'.
-generate (PlayerID, SummaryIX, MapID, SelectedRosterCharacterIXs) ->
+generate (PlayerID, SummaryIX, MapID, RosterCharIXs) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
    AnyoneAndMeAllowed =
       ataxia_security:add_access(PlayerUser, ataxia_security:allow_any()),
 
-   {ok, NewPendingBattleID} =
+   {ok, NewPBattleID} =
       ataxia_client:reserve
       (
          pending_battle_db,
@@ -605,21 +679,31 @@ generate (PlayerID, SummaryIX, MapID, SelectedRosterCharacterIXs) ->
          AnyoneAndMeAllowed
       ),
 
-   BountyParams =
-      #bounty_params
-      {
-         player_id = PlayerID,
-         summary_ix = SummaryIX,
-         map_id = MapID,
-         roster_ixs = SelectedRosterCharacterIXs,
-         pending_battle_id = NewPendingBattleID
-      },
+%   BountyParams =
+%      #bounty_params
+%      {
+%         player_id = PlayerID,
+%         summary_ix = SummaryIX,
+%         map_id = MapID,
+%         roster_ixs = RosterCharIXs,
+%         pending_battle_id = NewPBattleID
+%      },
 
    % TODO: generate bounty.
 
-   stage(-1, BountyParams, none),
+   repair_create_battle
+   (
+      PlayerID,
+      SummaryIX,
+      RosterCharIXs,
+      NewPBattleID,
+      MapID
+   ),
+
+   repair_user_link(PlayerID, SummaryIX, NewPBattleID),
 
    ok.
+
 
 -spec attempt
    (
@@ -653,10 +737,11 @@ attempt
    PlayerUser = ataxia_security:user_from_id(PlayerID),
 
    % Stage 0, optimized:
-   {_S0PendingBattle, AtaxicUpdate} =
+   {S0PendingBattle, AtaxicUpdate} =
       add_to_pending_battle
       (
          PlayerID,
+         SummaryIX,
          SelectedRosterCharacterIXs,
          PendingBattle
       ),
@@ -669,5 +754,12 @@ attempt
          ataxic:update_value(AtaxicUpdate),
          PendingBattleID
       ),
+
+   repair_user_link(PlayerID, SummaryIX, PendingBattleID),
+
+   case btl_pending_battle:get_free_slots(S0PendingBattle) of
+      0 -> repair_generate_battle(PendingBattleID, S0PendingBattle);
+      _ -> ok
+   end,
 
    ok.
