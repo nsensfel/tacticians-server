@@ -503,21 +503,23 @@ generate_pending_battle (PlayerID, MapID, SelectedRosterCharacterIXs) ->
 
    S0PendingBattle.
 
--spec stage (stage(), bounty_params(), bounty_data()) -> {'ok', bounty_data()}.
-stage (0, BountyParams, BountyData) when is_record(BountyData, bounty_data) ->
-   PlayerID = BountyParams#bounty_params.player_id,
-   SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
-   PendingBattleID = BountyParams#bounty_params.pending_battle_id,
-   PendingBattle = BountyData#bounty_data.pending_battle,
-
+-spec repair_join_battle
+   (
+      shr_player:id(),
+      list(non_neg_integer()),
+      btl_pending_battle:id(),
+      btl_pending_battle:type()
+   )
+   -> {ok, btl_pending_battle:type()}.
+repair_join_battle (PlayerID, RosterCharIXs, PBattleID, PBattle) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
 
-   {S0PendingBattle, AtaxicUpdate} =
+   {S0PBattle, AtaxicUpdate} =
       add_to_pending_battle
       (
          PlayerID,
-         SelectedRosterCharacterIXs,
-         PendingBattle
+         RosterCharIXs,
+         PBattle
       ),
 
    ok =
@@ -526,25 +528,21 @@ stage (0, BountyParams, BountyData) when is_record(BountyData, bounty_data) ->
          pending_battle_db,
          PlayerUser,
          AtaxicUpdate,
-         PendingBattleID
+         PBattleID
       ),
 
-   {
-      ok,
-      BountyData#bounty_data
-      {
-         pending_battle = S0PendingBattle
-      }
-   };
+   {ok, S0PBattle}.
 
-stage (-1, BountyParams, none) ->
-   PlayerID = BountyParams#bounty_params.player_id,
-   SelectedRosterCharacterIXs = BountyParams#bounty_params.roster_ixs,
-   PendingBattleID = BountyParams#bounty_params.pending_battle_id,
-   MapID = BountyParams#bounty_params.map_id,
-
-   NewPendingBattle =
-      generate_pending_battle(PlayerID, MapID, SelectedRosterCharacterIXs),
+-spec repair_create_battle
+   (
+      shr_player:id(),
+      list(non_neg_integer()),
+      btl_pending_battle:id(),
+      map_map:id()
+   )
+   -> {ok, btl_pending_battle:type()}.
+repair_create_battle (PlayerID, RosterCharIXs, PBattleID, MapID) ->
+   NewPendingBattle = generate_pending_battle(PlayerID, MapID, RosterCharIXs),
 
    ok =
       ataxia_client:update
@@ -552,16 +550,31 @@ stage (-1, BountyParams, none) ->
          pending_battle_db,
          ataxia_security:user_from_id(PlayerID),
          ataxic:update_value(ataxic:constant(NewPendingBattle)),
-         PendingBattleID
+         PBattleID
       ),
 
-   {
-      ok,
-      #bounty_data
-      {
-         pending_battle = NewPendingBattle
-      }
-   };
+   {ok, NewPendingBattle}.
+
+-spec repair_user_link
+   (
+      shr_player:id(),
+      non_neg_integer(),
+      btl_pending_battle:id()
+   )
+   -> {ok, btl_pending_battle:type()}.
+repair_user_link (PlayerID, PBattleUserIX, PBattleID) ->
+   PlayerUser = ataxia_security:user_from_id(PlayerID),
+
+   ok =
+      ataxia_client:update_if
+      (
+         player_db,
+         PlayerUser,
+         ataxic:update_value
+         (
+         ),
+
+      )
 
 stage (1, BountyParams, none) ->
    PlayerID = BountyParams#bounty_params.player_id,
