@@ -192,11 +192,32 @@ encode ({IX, BattleSummary}) ->
       [
          {<<"ix">>, IX},
          {<<"id">>, BattleSummary#battle_summary.id},
+         {
+            <<"mod">>,
+            (
+               case BattleSummary#battle_summary.mode of
+                  attack -> <<"a">>;
+                  defend -> <<"d">>;
+                  none -> <<"n">>
+               end
+            )
+         },
+         {
+            <<"cat">>,
+            (
+               case BattleSummary#battle_summary.category of
+                  invasion -> <<"i">>;
+                  event -> <<"e">>;
+                  campaign -> <<"c">>
+               end
+            )
+         },
          {<<"nme">>, BattleSummary#battle_summary.name},
          {
             <<"dln">>,
             ataxia_time:to_string(BattleSummary#battle_summary.deadline)
          },
-         {<<"ipt">>, BattleSummary#battle_summary.is_players_turn}
+         {<<"ipt">>, BattleSummary#battle_summary.is_players_turn},
+         {<<"ipd">>, BattleSummary#battle_summary.is_pending}
       ]
    }.
