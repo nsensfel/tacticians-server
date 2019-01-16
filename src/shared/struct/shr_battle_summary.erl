@@ -99,7 +99,7 @@ new (ID, Name, Mode, Category) ->
       category = Category,
       deadline = ataxia_time:never(),
       is_players_turn = false,
-      is_pending = false
+      is_pending = true
    }.
 
 -spec none () -> type().

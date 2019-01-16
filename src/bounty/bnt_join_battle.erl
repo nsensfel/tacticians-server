@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/4, attempt/5]).
+-export([generate/6, attempt/7]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -511,7 +511,14 @@ generate_pending_battle
       btl_pending_battle:type()
    )
    -> {ok, btl_pending_battle:type()}.
-repair_join_battle (PlayerID, PlayerSumIX, RosterCharIXs, PBattleID, PBattle) ->
+repair_join_battle
+(
+   PlayerID,
+   PlayerSumIX,
+   RosterCharIXs,
+   PBattleID,
+   PBattle
+) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
 
    {S0PBattle, AtaxicUpdate} =
@@ -561,14 +568,22 @@ repair_create_battle (PlayerID, PlayerSumIX, RosterCharIXs, PBattleID, MapID) ->
 -spec repair_user_link
    (
       shr_player:id(),
+      shr_battle_summary:mode(),
+      shr_battle_summary:category(),
       non_neg_integer(),
       btl_pending_battle:id()
    )
    -> ok.
-repair_user_link (PlayerID, PBattleUserIX, PBattleID) ->
+repair_user_link (PlayerID, Mode, Category, PBattleUserIX, PBattleID) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
    BattleSummary =
-      shr_battle_summary:new(PBattleID, <<"Test Battle">>, <<"">>, false),
+      shr_battle_summary:new
+      (
+         PBattleID,
+         <<"Test Battle">>,
+         Mode,
+         Category
+      ),
 
    ok =
       ataxia_client:update
@@ -579,7 +594,13 @@ repair_user_link (PlayerID, PBattleUserIX, PBattleID) ->
          (
             ataxic:update_field
             (
-               shr_player:get_invasion_summaries_field(),
+               (
+                  case Category of
+                     invasion -> shr_player:get_invasion_summaries_field();
+                     event -> shr_player:get_event_summaries_field();
+                     campaign -> shr_player:get_campaign_summaries_field()
+                  end
+               ),
                ataxic:apply_function
                (
                   orddict,
@@ -661,12 +682,14 @@ repair_generate_battle (PBattleID, PBattle) ->
 -spec generate
    (
       shr_player:id(),
+      shr_battle_summary:mode(),
+      shr_battle_summary:category(),
       non_neg_integer(),
       map_map:id(),
       list(non_neg_integer())
    )
    -> 'ok'.
-generate (PlayerID, SummaryIX, MapID, RosterCharIXs) ->
+generate (PlayerID, Mode, Category, SummaryIX, MapID, RosterCharIXs) ->
    PlayerUser = ataxia_security:user_from_id(PlayerID),
    AnyoneAndMeAllowed =
       ataxia_security:add_access(PlayerUser, ataxia_security:allow_any()),
@@ -700,7 +723,7 @@ generate (PlayerID, SummaryIX, MapID, RosterCharIXs) ->
       MapID
    ),
 
-   repair_user_link(PlayerID, SummaryIX, NewPBattleID),
+   repair_user_link(PlayerID, Mode, Category, SummaryIX, NewPBattleID),
 
    ok.
 
@@ -708,6 +731,8 @@ generate (PlayerID, SummaryIX, MapID, RosterCharIXs) ->
 -spec attempt
    (
       shr_player:id(),
+      shr_battle_summary:mode(),
+      shr_battle_summary:category(),
       non_neg_integer(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
@@ -717,6 +742,8 @@ generate (PlayerID, SummaryIX, MapID, RosterCharIXs) ->
 attempt
 (
    PlayerID,
+   Mode,
+   Category,
    SummaryIX,
    SelectedRosterCharacterIXs,
    PendingBattleID,
@@ -755,7 +782,7 @@ attempt
          PendingBattleID
       ),
 
-   repair_user_link(PlayerID, SummaryIX, PendingBattleID),
+   repair_user_link(PlayerID, Mode, Category, SummaryIX, PendingBattleID),
 
    case btl_pending_battle:get_free_slots(S0PendingBattle) of
       0 -> repair_generate_battle(PendingBattleID, S0PendingBattle);

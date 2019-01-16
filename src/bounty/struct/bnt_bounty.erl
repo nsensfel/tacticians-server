@@ -82,7 +82,7 @@ generate (User, NotBefore, Deadline, Job) ->
 
 -spec resolve () -> type().
 resolve () ->
-   Lock = ataxia_lock:locked(ataxia_security:admin(), ataxia_time:now()),
+   Lock = ataxia_lock:locked(ataxia_security:admin(), ataxia_time:in(60)),
 
    {ok, Bounty, BountyID} =
       ataxia_client:update_and_fetch_any
