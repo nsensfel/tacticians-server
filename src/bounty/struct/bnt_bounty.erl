@@ -61,6 +61,7 @@ generate (User, NotBefore, Deadline, Job) ->
    JanitorAndUser = ataxia_security:add_access(User, JanitorOnly),
 
    Bounty =
+      #bounty
       {
          deadline = Deadline,
          user = User,
@@ -81,9 +82,9 @@ generate (User, NotBefore, Deadline, Job) ->
 
 -spec resolve () -> type().
 resolve () ->
-   Lock = ataxia_lock:locked(ataxia_security:admin(), 60),
+   Lock = ataxia_lock:locked(ataxia_security:admin(), ataxia_time:now()),
 
-   {ok, BountyID, Bounty} =
+   {ok, Bounty, BountyID} =
       ataxia_client:update_and_fetch_any
       (
          bounty_db,
