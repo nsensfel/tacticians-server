@@ -238,14 +238,24 @@ handle_characters
 -spec add_player
    (
       shr_player:id(),
+      non_neg_integer(),
+      shr_battle_summary:category(),
       btl_battle:type()
    )
    -> {btl_battle:type(), non_neg_integer(), ataxic:basic()}.
-add_player (PlayerID, Battle) ->
+add_player (PlayerID, PlayerSummaryIX, PlayerSummaryCategory, Battle) ->
    Players = btl_battle:get_players(Battle),
 
    PlayerIX = orddict:size(Players),
-   NewPlayer = btl_player:new(PlayerIX, 0, PlayerID),
+   NewPlayer =
+      btl_player:new
+      (
+         PlayerIX,
+         0,
+         PlayerID,
+         PlayerSummaryIX,
+         PlayerSummaryCategory
+      ),
 
    NewPlayers = orddict:store(PlayerIX, NewPlayer, Players),
    S0Battle = btl_battle:set_players(NewPlayers, Battle),
@@ -387,6 +397,7 @@ get_roster_characters (PlayerID, SelectedRosterCharacterIXs) ->
    (
       shr_player:id(),
       non_neg_integer(),
+      shr_battle_summary:category(),
       list(non_neg_integer()),
       btl_pending_battle:type()
    )
@@ -395,6 +406,7 @@ add_to_pending_battle
 (
    PlayerID,
    PlayerSumIX,
+   PlayerSumCategory,
    SelectedRosterCharacterIXs,
    PendingBattle
 ) ->
@@ -406,7 +418,10 @@ add_to_pending_battle
       ),
 
    NewCharacters = get_roster_characters(PlayerID, SelectedRosterCharacterIXs),
-   {S0Battle, PlayerIX, BattleUpdate0} = add_player(PlayerID, Battle),
+
+   {S0Battle, PlayerIX, BattleUpdate0} =
+      add_player(PlayerID, PlayerSumIX, PlayerSumCategory, Battle),
+
    {S1Battle, BattleUpdate1} =
       add_characters(NewCharacters, PlayerIX, S0Battle),
 
@@ -466,6 +481,7 @@ add_to_pending_battle
    (
       shr_player:id(),
       non_neg_integer(),
+      shr_battle_summary:category(),
       map_map:id(),
       list(non_neg_integer())
    )
@@ -474,6 +490,7 @@ generate_pending_battle
 (
    PlayerID,
    PlayerSumIX,
+   PlayerSumCategory,
    MapID,
    SelectedRosterCharacterIXs
 ) ->
@@ -508,6 +525,7 @@ generate_pending_battle
       (
          PlayerID,
          PlayerSumIX,
+         PlayerSumCategory,
          SelectedRosterCharacterIXs,
          PendingBattle
       ),
@@ -518,6 +536,7 @@ generate_pending_battle
    (
       shr_player:id(),
       non_neg_integer(),
+      shr_battle_summary:category(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
       btl_pending_battle:type()
@@ -527,6 +546,7 @@ repair_join_battle
 (
    PlayerID,
    PlayerSumIX,
+   PlayerSumCategory,
    RosterCharIXs,
    PBattleID,
    PBattle
@@ -538,6 +558,7 @@ repair_join_battle
       (
          PlayerID,
          PlayerSumIX,
+         PlayerSumCategory,
          RosterCharIXs,
          PBattle
       ),
@@ -557,14 +578,30 @@ repair_join_battle
    (
       shr_player:id(),
       non_neg_integer(),
+      shr_battle_summary:category(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
       map_map:id()
    )
    -> {ok, btl_pending_battle:type()}.
-repair_create_battle (PlayerID, PlayerSumIX, RosterCharIXs, PBattleID, MapID) ->
+repair_create_battle
+(
+   PlayerID,
+   PlayerSumIX,
+   PlayerSumCategory,
+   RosterCharIXs,
+   PBattleID,
+   MapID
+) ->
    NewPendingBattle =
-      generate_pending_battle(PlayerID, PlayerSumIX, MapID, RosterCharIXs),
+      generate_pending_battle
+      (
+         PlayerID,
+         PlayerSumIX,
+         PlayerSumCategory,
+         MapID,
+         RosterCharIXs
+      ),
 
    ok =
       ataxia_client:update
@@ -636,7 +673,7 @@ repair_user_link (PlayerID, Mode, Category, PBattleUserIX, PBattleID) ->
       btl_pending_battle:id(),
       btl_pending_battle:type()
    )
-   -> ok.
+   -> {btl_battle:id(), btl_battle:type()}.
 repair_generate_battle (PBattleID, PBattle) ->
    Battle = btl_pending_battle:get_battle(PBattle),
    {ok, BattleID} = ataxia_client:reserve(battle_db, ataxia_security:janitor()),
@@ -686,6 +723,113 @@ repair_generate_battle (PBattleID, PBattle) ->
          BattleID
       ),
 
+   {BattleID, Battle}.
+
+-spec repair_battle_final_link_of_player
+   (
+      btl_battle:id(),
+      btl_player:type()
+   )
+   -> ok.
+repair_battle_final_link_of_player (BattleID, Player) ->
+   SummaryField =
+      (
+         case btl_player:get_summary_category(Player) of
+            invasion -> shr_player:get_invasion_summaries_field();
+            event -> shr_player:get_event_summaries_field();
+            campaign -> shr_player:get_campaign_summaries_field()
+         end
+      ),
+
+   SummaryIX = btl_player:get_summary_index(Player),
+
+   Update =
+      ataxic:update_value
+      (
+         ataxic:update_field
+         (
+            SummaryField,
+            ataxic:apply_function
+            (
+               orddict,
+               store,
+               [
+                  ataxic:constant(SummaryIX),
+                  ataxic:sequence
+                  (
+                     [
+                        ataxic:apply_function
+                        (
+                           orddict,
+                           fetch,
+                           [
+                              ataxic:constant(SummaryIX),
+                              ataxic:current_value()
+                           ]
+                        ),
+                        ataxic:update_field
+                        (
+                           shr_battle_summary:get_is_pending_field(),
+                           ataxic:constant(false)
+                        ),
+                        ataxic:update_field
+                        (
+                           shr_battle_summary:get_id_field(),
+                           ataxic:constant(BattleID)
+                        ),
+                        ataxic:update_field
+                        (
+                           shr_battle_summary:get_is_players_turn_field(),
+                           ataxic:constant(btl_player:get_index(Player) == 0)
+                        )
+                     ]
+                  ),
+                  ataxic:current_value()
+               ]
+            )
+         )
+      ),
+
+   ok =
+      ataxia_client:update
+      (
+         player_db,
+         ataxia_security:admin(),
+         Update,
+         btl_player:get_id(Player)
+      ),
+
+   ok.
+
+
+-spec repair_battle_final_links
+   (
+      btl_pending_battle:id(),
+      btl_battle:id(),
+      btl_battle:type()
+   )
+   -> ok.
+repair_battle_final_links (PendingBattleID, BattleID, Battle) ->
+
+   Players = btl_battle:get_players(Battle),
+
+   true =
+      lists:all
+      (
+         fun (Player) ->
+            (repair_battle_final_link_of_player(BattleID, Player) == ok)
+         end,
+         orddict:to_list(Players)
+      ),
+
+   ok =
+      ataxia_client:remove
+      (
+         pending_battle_db,
+         ataxia_security:admin(),
+         PendingBattleID
+      ),
+
    ok.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -730,6 +874,7 @@ generate (PlayerID, Mode, Category, SummaryIX, MapID, RosterCharIXs) ->
    (
       PlayerID,
       SummaryIX,
+      Category,
       RosterCharIXs,
       NewPBattleID,
       MapID
@@ -781,6 +926,7 @@ attempt
       (
          PlayerID,
          SummaryIX,
+         Category,
          SelectedRosterCharacterIXs,
          PendingBattle
       ),
@@ -797,7 +943,17 @@ attempt
    repair_user_link(PlayerID, Mode, Category, SummaryIX, PendingBattleID),
 
    case btl_pending_battle:get_free_slots(S0PendingBattle) of
-      0 -> repair_generate_battle(PendingBattleID, S0PendingBattle);
+      0 ->
+         {BattleID, Battle} =
+            repair_generate_battle(PendingBattleID, S0PendingBattle),
+         ok =
+            repair_battle_final_links
+            (
+               PendingBattleID,
+               BattleID,
+               Battle
+            );
+
       _ -> ok
    end,
 

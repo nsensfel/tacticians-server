@@ -12,7 +12,9 @@
       id :: shr_player:id(),
       character_ix :: non_neg_integer(),
       timeline :: list(any()),
-      is_active :: boolean()
+      is_active :: boolean(),
+      summary_ix :: non_neg_integer(),
+      summary_category :: shr_battle_summary:category()
    }
 ).
 
@@ -27,6 +29,8 @@
    [
       get_id/1,
       get_index/1,
+      get_summary_index/1,
+      get_summary_category/1,
       get_character_index/1,
       get_timeline/1,
 
@@ -44,7 +48,7 @@
 -export
 (
    [
-      new/3
+      new/5
    ]
 ).
 
@@ -60,6 +64,12 @@ get_id (Player) -> Player#player.id.
 
 -spec get_index (type()) -> non_neg_integer().
 get_index (Player) -> Player#player.ix.
+
+-spec get_summary_index (type()) -> non_neg_integer().
+get_summary_index (Player) -> Player#player.summary_ix.
+
+-spec get_summary_category (type()) -> shr_battle_summary:category().
+get_summary_category (Player) -> Player#player.summary_category.
 
 -spec get_character_index (type()) -> non_neg_integer().
 get_character_index (Player) -> Player#player.character_ix.
@@ -85,15 +95,24 @@ add_to_timeline (NewEvents, Player) ->
 -spec reset_timeline (type()) -> type().
 reset_timeline (Player) -> Player#player{ timeline = [] }.
 
--spec new (non_neg_integer(), non_neg_integer(), shr_player:id()) -> type().
-new (IX, CharacterIX, ID) ->
+-spec new
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      shr_player:id(),
+      non_neg_integer(),
+      shr_battle_summary:category()
+   ) -> type().
+new (IX, CharacterIX, ID, SummaryIX, SummaryCategory) ->
    #player
    {
       ix = IX,
       character_ix = CharacterIX,
       id = ID,
       is_active = true,
-      timeline = []
+      timeline = [],
+      summary_ix = SummaryIX,
+      summary_category = SummaryCategory
    }.
 
 -spec get_timeline_field () -> non_neg_integer().
