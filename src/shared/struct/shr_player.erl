@@ -106,43 +106,30 @@ secure_value (Salt, Val) ->
 
    HashedSaltedVal.
 
+-spec generate_battle_slots
+   (
+      non_neg_integer(),
+      shr_battle_summary:category(),
+      orddict:orddict(non_neg_integer(), shr_battle_summary:type())
+   )
+   -> orddict:orddict(non_neg_integer(), shr_battle_summary:type()).
+generate_battle_slots (0, _, Result) ->
+   Result;
+generate_battle_slots (PrevIX, Category, Result) ->
+   IX = (PrevIX - 1),
+
+   generate_battle_slots
+   (
+      IX,
+      Category,
+      orddict:store(IX, shr_battle_summary:none(Category), Result)
+   ).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (binary(), binary(), binary()) -> type().
 new (Username, Password, Email) ->
-   EmptyBattleSlot = shr_battle_summary:none(),
-   SixEmptyBattleSlots =
-      orddict:from_list
-      (
-         [
-            {0, EmptyBattleSlot},
-            {1, EmptyBattleSlot},
-            {2, EmptyBattleSlot},
-            {3, EmptyBattleSlot},
-            {4, EmptyBattleSlot},
-            {5, EmptyBattleSlot}
-         ]
-      ),
-
-   NineEmptyBattleSlots =
-      orddict:store
-      (
-         6,
-         EmptyBattleSlot,
-         orddict:store
-         (
-            7,
-            EmptyBattleSlot,
-            orddict:store
-            (
-               8,
-               EmptyBattleSlot,
-               SixEmptyBattleSlots
-            )
-         )
-      ),
-
    Result =
       #player
       {
@@ -152,9 +139,9 @@ new (Username, Password, Email) ->
          email = Email,
          last_active = 0,
          maps = orddict:new(),
-         campaigns = SixEmptyBattleSlots,
-         invasions = NineEmptyBattleSlots,
-         events = SixEmptyBattleSlots,
+         campaigns = generate_battle_slots(6, campaign, orddict:new()),
+         invasions = generate_battle_slots(9, invasion, orddict:new()),
+         events = generate_battle_slots(6, event, orddict:new()),
          inventory_id = ataxia_id:null(),
          roster_id = ataxia_id:null()
       },

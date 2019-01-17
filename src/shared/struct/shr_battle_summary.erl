@@ -31,7 +31,8 @@
 (
    [
       new/4,
-      none/0
+      none/1,
+      none/2
    ]
 ).
 
@@ -102,14 +103,17 @@ new (ID, Name, Mode, Category) ->
       is_pending = true
    }.
 
--spec none () -> type().
-none () ->
+-spec none (category()) -> type().
+none (Category) -> none(none, Category).
+
+-spec none (mode(), category()) -> type().
+none (Mode, Category) ->
    #battle_summary
    {
       id = ataxia_id:null(),
       name = <<"">>,
-      mode = none,
-      category = event,
+      mode = Mode,
+      category = Category,
       deadline = ataxia_time:never(),
       is_players_turn = false,
       is_pending = false

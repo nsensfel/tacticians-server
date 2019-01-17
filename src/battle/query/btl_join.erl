@@ -167,6 +167,8 @@ handle_attack (Input) ->
       AvailablePendingBattle
    ),
 
+   shr_timed_cache:invalidate(player_db, any, PlayerID),
+
    ok.
 -spec handle_defend (input()) -> 'ok'.
 handle_defend (Input) ->
@@ -186,6 +188,8 @@ handle_defend (Input) ->
       MapID,
       SelectedCharacterIXs
    ),
+
+   shr_timed_cache:invalidate(player_db, any, PlayerID),
 
    ok.
 
