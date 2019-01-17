@@ -246,7 +246,7 @@ new
       armor_id = ArmorID,
       location = Location,
       current_health = shr_statistics:get_health(CurrentStatistics),
-      is_active = false,
+      is_active = (PlayerIX == 0),
       is_defeated = false,
       permanent_omnimods = PermanentOmnimods
    }.
