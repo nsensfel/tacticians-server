@@ -608,7 +608,14 @@ repair_create_battle
       (
          pending_battle_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:update_value(ataxic:constant(NewPendingBattle)),
+         ataxic:sequence_meta
+         (
+            [
+               ataxic:update_value(ataxic:constant(NewPendingBattle)),
+               ataxic:update_read_permission(ataxia_security:allow_any()),
+               ataxic:update_write_permission(ataxia_security:allow_any())
+            ]
+         ),
          PBattleID
       ),
 
