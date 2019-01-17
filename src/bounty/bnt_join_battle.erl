@@ -305,7 +305,7 @@ add_characters (RosterCharacters, PlayerIX, Battle) ->
          update_ordset(UsedPortraitIDs, OldPortraitIDs)
       ),
 
-   OldWeaponIDs = btl_battle:get_used_portrait_ids(Battle),
+   OldWeaponIDs = btl_battle:get_used_weapon_ids(Battle),
    WeaponIDsUpdate =
       ataxic:update_field
       (
