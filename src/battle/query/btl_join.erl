@@ -41,14 +41,14 @@ parse_input (Req) ->
    SummaryIX = maps:get(<<"six">>, JSONReqMap),
 
    Mode =
-      case maps:get(<<"m">>, JSONReqMap) of
+      case maps:get(<<"mod">>, JSONReqMap) of
          <<"a">> -> attack;
          <<"d">> -> defend;
          _ -> none
       end,
 
    Category =
-      case maps:get(<<"c">>, JSONReqMap) of
+      case maps:get(<<"cat">>, JSONReqMap) of
          <<"e">> -> event;
          <<"i">> -> invasion;
          _ -> quest
