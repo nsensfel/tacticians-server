@@ -9,6 +9,7 @@ multiplayer turn-based strategy game.
 * GNU make
 * Jiffy (JSON NIFs for Erlang)
 * Tacticians Online - Data
+* Ataxia
 * Yaws
 * m4
 
