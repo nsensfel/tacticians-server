@@ -221,7 +221,7 @@ handle (Req) ->
                ok = authorize_defend(QueryState, Input),
                handle_defend(Input)
          end,
-         jiffy:encode([shr_okay:generate()]);
+         jiffy:encode([shr_goto:generate(<<"main-menu/">>)]);
 
       error -> jiffy:encode([shr_disconnected:generate()])
    end.
