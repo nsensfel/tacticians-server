@@ -5,6 +5,9 @@
 -define(BATTLE_ID_FIELD, <<"bid">>).
 -define(CHAR_IX_FIELD, <<"cix">>).
 -define(ACTIONS_FIELD, <<"act">>).
+-define(ACTIONS_MOVE_FIELD, <<"mov">>).
+-define(ACTIONS_WPS_FIELD, <<"wps">>).
+-define(ACTIONS_ATK_FIELD, <<"tar">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,6 +52,34 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec decode_actions (map()) -> list(btl_battle_action:type()).
+decode_actions (Act) ->
+   S0Result = [],
+   S1Result =
+      case
+         btl_battle_action:maybe_decode_move(maps:get(?ACTIONS_MOVE_FIELD, Act))
+      of
+         [] -> S0Result;
+         [Move] -> [Move|S0Result]
+      end,
+
+   S2Result =
+      case
+         btl_battle_action:maybe_decode_atk(maps:get(?ACTIONS_ATK_FIELD, Act))
+      of
+         [] -> S1Result;
+         [Atk] -> [Atk|S1Result]
+      end,
+
+   S3Result =
+      case
+         btl_battle_action:maybe_decode_move(maps:get(?ACTIONS_WPS_FIELD, Act))
+      of
+         [] -> S2Result;
+         [Wps] -> [Wps|S2Result]
+      end,
+
+   S3Result.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -57,7 +88,7 @@
 decode (Map) ->
    CharacterIX = maps:get(?CHAR_IX_FIELD, Map),
    EncodedActions = maps:get(?ACTIONS_FIELD, Map),
-   Actions = lists:map(fun btl_battle_action:decode/1, EncodedActions),
+   Actions = decode_actions(EncodedActions),
 
    #type
    {
