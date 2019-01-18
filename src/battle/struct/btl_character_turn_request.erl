@@ -6,8 +6,8 @@
 -define(CHAR_IX_FIELD, <<"cix">>).
 -define(ACTIONS_FIELD, <<"act">>).
 -define(ACTIONS_MOVE_FIELD, <<"mov">>).
--define(ACTIONS_WPS_FIELD, <<"wps">>).
--define(ACTIONS_ATK_FIELD, <<"tar">>).
+-define(ACTIONS_WEAPON_SWITCH_FIELD, <<"wps">>).
+-define(ACTIONS_ATTACK_FIELD, <<"tar">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +65,10 @@ decode_actions (Act) ->
 
    S2Result =
       case
-         btl_battle_action:maybe_decode_atk(maps:get(?ACTIONS_ATK_FIELD, Act))
+         btl_battle_action:maybe_decode_attack
+         (
+            maps:get(?ACTIONS_ATTACK_FIELD, Act)
+         )
       of
          [] -> S1Result;
          [Atk] -> [Atk|S1Result]
@@ -73,13 +76,16 @@ decode_actions (Act) ->
 
    S3Result =
       case
-         btl_battle_action:maybe_decode_move(maps:get(?ACTIONS_WPS_FIELD, Act))
+         btl_battle_action:maybe_decode_weapon_switch
+         (
+            maps:get(?ACTIONS_WEAPON_SWITCH_FIELD, Act)
+         )
       of
          [] -> S2Result;
          [Wps] -> [Wps|S2Result]
       end,
 
-   S3Result.
+   lists:reverse(S3Result).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

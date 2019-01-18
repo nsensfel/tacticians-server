@@ -37,7 +37,9 @@
 -export
 (
    [
-      decode/1,
+      maybe_decode_move/1,
+      maybe_decode_weapon_switch/1,
+      maybe_decode_attack/1,
       can_follow/2
    ]
 ).
@@ -54,35 +56,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode_mov_action (map()) -> type().
-decode_mov_action (JSONMap) ->
-   PathInBinary = maps:get(<<"p">>, JSONMap),
-   Path = lists:map(fun btl_direction:decode/1, PathInBinary),
-
-   #move { path = Path }.
-
--spec decode_atk_action (map()) -> type().
-decode_atk_action (JSONMap) ->
-   TargetIX = maps:get(<<"tix">>, JSONMap),
-
-   #attack { target_ix = TargetIX }.
-
--spec decode_swp_action (map()) -> type().
-decode_swp_action (_JSONMap) ->
-   #switch_weapon{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode (map()) -> type().
-decode (EncodedAction) ->
-   JSONActionMap = EncodedAction, %jiffy:decode(EncodedAction, [return_maps]),
-   ActionType = maps:get(<<"t">>, JSONActionMap),
-   case ActionType of
-      <<"mov">> -> decode_mov_action(JSONActionMap);
-      <<"atk">> -> decode_atk_action(JSONActionMap);
-      <<"swp">> -> decode_swp_action(JSONActionMap)
-   end.
+-spec maybe_decode_move (list(btl_direction:type())) -> list(type()).
+maybe_decode_move ([]) -> [];
+maybe_decode_move (PathInBinary) ->
+   Path = lists:map(fun btl_direction:decode/1, PathInBinary),
+
+   [#move { path = Path }].
+
+-spec maybe_decode_attack (integer()) -> list(type()).
+maybe_decode_attack (TargetIX) when (TargetIX < 0) -> [];
+maybe_decode_attack (TargetIX) -> [#attack { target_ix = TargetIX }].
+
+-spec maybe_decode_weapon_switch (boolean()) -> list(type()).
+maybe_decode_weapon_switch (false) -> [];
+maybe_decode_weapon_switch (true) -> [#switch_weapon{}].
 
 -spec can_follow (category(), category()) -> boolean().
 can_follow (nothing, attack) -> true;

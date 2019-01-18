@@ -612,8 +612,14 @@ repair_create_battle
          (
             [
                ataxic:update_value(ataxic:constant(NewPendingBattle)),
-               ataxic:update_read_permission(ataxia_security:allow_any()),
-               ataxic:update_write_permission(ataxia_security:allow_any())
+               ataxic:update_read_permission
+               (
+                  ataxic:constant(ataxia_security:allow_any())
+               ),
+               ataxic:update_write_permission
+               (
+                  ataxic:constant(ataxia_security:allow_any())
+               )
             ]
          ),
          PBattleID
@@ -823,7 +829,7 @@ repair_battle_final_links (PendingBattleID, BattleID, Battle) ->
    true =
       lists:all
       (
-         fun (Player) ->
+         fun ({_, Player}) ->
             (repair_battle_final_link_of_player(BattleID, Player) == ok)
          end,
          orddict:to_list(Players)
