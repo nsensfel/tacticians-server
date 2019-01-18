@@ -60,7 +60,7 @@ handle (Update) ->
             ataxic:update_field
             (
                btl_character:get_weapons_field(),
-               UpdatedWeaponIDs
+               ataxic:constant(UpdatedWeaponIDs)
             )
          )
       ),

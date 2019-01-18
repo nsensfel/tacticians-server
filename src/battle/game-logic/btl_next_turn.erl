@@ -92,7 +92,7 @@ activate_next_players_characters (Battle, NextPlayer) ->
                               btl_character:get_is_active_field(),
                               ataxic:constant(true)
                            )
-                        )
+                        )|Updates
                      ]
                   };
 
