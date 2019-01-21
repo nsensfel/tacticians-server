@@ -16,7 +16,11 @@
 reserve_login (UsernameLC, EmailLC) ->
    Anyone = ataxia_security:allow_any(),
    ok = ataxia_client:reserve_at(login_db, Anyone, Anyone, UsernameLC),
-   ok = ataxia_client:reserve_at(login_db, Anyone, Anyone, EmailLC),
+
+   case EmailLC of
+      <<"">> -> ok;
+      _ -> ok = ataxia_client:reserve_at(login_db, Anyone, Anyone, EmailLC)
+   end,
 
    ok.
 
@@ -59,14 +63,19 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
          UsernameLC
       ),
 
-   ok =
-      ataxia_client:update
-      (
-         login_db,
-         ataxia_security:janitor(),
-         LoginUpdateQueryOps,
-         EmailLC
-      ),
+   case EmailLC of
+      <<"">> -> ok;
+      _ ->
+         ok =
+            ataxia_client:update
+            (
+               login_db,
+               ataxia_security:janitor(),
+               LoginUpdateQueryOps,
+               EmailLC
+            )
+   end,
+
 
    'ok'.
 
