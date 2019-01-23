@@ -3,8 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../../../include/yaws_api.hrl").
-
 -type decoded_character() :: {non_neg_integer(), rst_character:type()}.
 
 -record
@@ -48,9 +46,9 @@ decode_character_list (EncodedCharactersList) ->
       EncodedCharactersList
    ).
 
--spec parse_input (binary()) -> input().
-parse_input (Req) ->
-   JSONReqMap = jiffy:decode(Req, [return_maps]),
+-spec parse_input (shr_query:type()) -> input().
+parse_input (Query) ->
+   JSONReqMap = shr_query:get_params(Query),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
    EncodedCharacterList = maps:get(<<"rst">>, JSONReqMap),
@@ -174,9 +172,9 @@ commit_update (QueryState, Input) ->
 generate_reply () ->
    jiffy:encode([shr_okay:generate()]).
 
--spec handle (binary()) -> binary().
-handle (Req) ->
-   Input = parse_input(Req),
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   Input = parse_input(Query),
    case authenticate_user(Input) of
       {ok, Player} ->
          shr_security:lock_queries(Input#input.player_id),
@@ -196,5 +194,5 @@ out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      handle(A#arg.clidata)
+      handle(shr_query:new(A))
    }.

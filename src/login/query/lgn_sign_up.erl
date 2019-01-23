@@ -3,8 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../../../include/yaws_api.hrl").
-
 -record
 (
    input,
@@ -35,9 +33,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec parse_input (binary()) -> input().
-parse_input (Req) ->
-   JSONReqMap = jiffy:decode(Req, [return_maps]),
+-spec parse_input (shr_query:type()) -> input().
+parse_input (Query) ->
+   JSONReqMap = shr_query:get_params(Query),
    Username = maps:get(<<"usr">>, JSONReqMap),
    Password = maps:get(<<"pwd">>, JSONReqMap),
    Email = maps:get(<<"eml">>, JSONReqMap),
@@ -74,9 +72,9 @@ generate_reply (QueryState) ->
 
    Output.
 
--spec handle (binary()) -> binary().
-handle (Req) ->
-   Input = parse_input(Req),
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   Input = parse_input(Query),
    %% TODO [SECURITY][LOW]: validate input size.
    QueryState = register_user(Input),
    generate_reply(QueryState).
@@ -88,5 +86,5 @@ out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      handle(A#arg.clidata)
+      handle(shr_query:new(A))
    }.

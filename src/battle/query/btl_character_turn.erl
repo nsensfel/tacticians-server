@@ -18,11 +18,9 @@
 
 
 %%%% REQUEST DECODING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode_request (binary()) -> btl_character_turn_request:type().
-decode_request (BinaryRequest) ->
-   JSONMap = jiffy:decode(BinaryRequest, [return_maps]),
-
-   btl_character_turn_request:decode(JSONMap).
+-spec decode_request (shr_query:type()) -> btl_character_turn_request:type().
+decode_request (Query) ->
+   btl_character_turn_request:decode(shr_query:get_params(Query)).
 
 %%%% USER AUTHENTICATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec authenticate_user (btl_character_turn_request:type()) -> ('ok' | 'error').
@@ -240,9 +238,9 @@ generate_reply (Update) ->
    jiffy:encode([TurnResultReply]).
 
 %%%% MAIN LOGIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec handle (binary()) -> binary().
-handle (EncodedRequest) ->
-   Request = decode_request(EncodedRequest),
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   Request = decode_request(Query),
    case authenticate_user(Request) of
       ok ->
          PlayerID = btl_character_turn_request:get_player_id(Request),
@@ -268,5 +266,5 @@ out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      handle(A#arg.clidata)
+      handle(shr_query:new(A))
    }.

@@ -3,8 +3,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("../../../include/yaws_api.hrl").
-
 -record
 (
    input,
@@ -34,9 +32,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec parse_input (binary()) -> input().
-parse_input (Req) ->
-   JSONReqMap = jiffy:decode(Req, [return_maps]),
+-spec parse_input (shr_query:type()) -> input().
+parse_input (Query) ->
+   JSONReqMap = shr_query:get_params(Query),
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
    TargetID = maps:get(<<"id">>, JSONReqMap),
@@ -81,9 +79,9 @@ generate_reply (QueryState, Input) ->
 
    Output.
 
--spec handle (binary()) -> binary().
-handle (Req) ->
-   Input = parse_input(Req),
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   Input = parse_input(Query),
    case authenticate_user(Input) of
       ok ->
          shr_security:lock_queries(Input#input.player_id),
@@ -101,5 +99,5 @@ out(A) ->
    {
       content,
       "application/json; charset=UTF-8",
-      handle(A#arg.clidata)
+      handle(shr_query:new(A))
    }.
