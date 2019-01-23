@@ -16,6 +16,48 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec cross
+   (
+      btl_map:type(),
+      list(btl_location:type()),
+      list(btl_direction:enum()),
+      non_neg_integer(),
+      btl_location:type()
+   )
+   -> {btl_location:type(), non_neg_integer()}.
+cross (_Map, _ForbiddenLocations, [], Cost, Location) ->
+   {Location, Cost};
+cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
+   NextLocation = btl_location:apply_direction(Step, Location),
+   NextTileInstance = btl_map:get_tile_instance(NextLocation, Map),
+   NextTileClassID = shr_tile:extract_main_class_id(NextTileInstance),
+   NextTile = shr_tile:from_class_id(NextTileClassID),
+   NextCost = (Cost + shr_tile:get_cost(NextTile)),
+   IsForbidden =
+      lists:foldl
+      (
+         fun (ForbiddenLocation, Prev) ->
+            (Prev or (NextLocation == ForbiddenLocation))
+         end,
+         false,
+         ForbiddenLocations
+      ),
+
+   IsForbidden = false,
+
+   cross(Map, ForbiddenLocations, NextSteps, NextCost, NextLocation).
+
+-spec cross
+   (
+      btl_map:type(),
+      list(btl_location:type()),
+      list(btl_direction:enum()),
+      btl_location:type()
+   )
+   -> {btl_location:type(), non_neg_integer()}.
+cross (Map, ForbiddenLocations, Path, Location) ->
+   cross(Map, ForbiddenLocations, Path, 0, Location).
+
 -spec get_path_cost_and_destination
    (
       btl_character_turn_data:type(),
@@ -45,7 +87,7 @@ get_path_cost_and_destination (Data, Path) ->
       ),
 
    {NewLocation, Cost} =
-      btl_movement:cross
+      cross
       (
          Map,
          ForbiddenLocations,
@@ -89,7 +131,11 @@ commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
 
    S0Update = btl_character_turn_update:set_data(S1Data, Update),
    S1Update =
-      btl_turn_actions:handle_max_health_changes(PreviousCurrentData, S0Update),
+      btl_turn_actions_stats_change:handle_max_health_changes
+      (
+         PreviousCurrentData,
+         S0Update
+      ),
 
    TimelineItem =
       btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),

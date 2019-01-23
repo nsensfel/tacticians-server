@@ -42,7 +42,7 @@ handle (Update) ->
 
    S0Update = btl_character_turn_update:set_data(S1Data, Update),
    S1Update =
-      btl_turn_actions:handle_max_health_changes
+      btl_turn_actions_stats_change:handle_max_health_changes
       (
          CharacterCurrentData,
          S0Update

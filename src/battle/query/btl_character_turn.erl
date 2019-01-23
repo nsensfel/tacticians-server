@@ -113,54 +113,8 @@ assert_user_permissions (Data, Request) ->
    ok.
 
 %%%% QUERY LOGIC HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec finalize_character
-   (
-      btl_character_turn_update:type()
-   )
-   -> btl_character_turn_update:type().
-finalize_character (Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Character = btl_character_turn_data:get_character(Data),
 
-   DisabledCharacter = btl_character:set_is_active(false, Character),
-   UpdatedData = btl_character_turn_data:set_character(DisabledCharacter, Data),
-   FinalizedData = btl_character_turn_data:clean_battle(UpdatedData),
-
-   DBQuery =
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_orddict_element
-         (
-            btl_character_turn_data:get_character_ix(Data),
-            ataxic:update_field
-            (
-               btl_character:get_is_active_field(),
-               ataxic:constant(false)
-            )
-         )
-      ),
-
-   S0Update = btl_character_turn_update:set_data(FinalizedData, Update),
-   S1Update = btl_character_turn_update:add_to_db(DBQuery, S0Update),
-
-   S1Update.
-
--spec handle_actions
-   (
-      btl_character_turn_data:type(),
-      btl_character_turn_request:type()
-   )
-   -> btl_character_turn_update:type().
-handle_actions (Data, Request) ->
-   Actions = btl_character_turn_request:get_actions(Request),
-
-   EmptyUpdate = btl_character_turn_update:new(Data),
-   PostActionsUpdate =
-      lists:foldl(fun btl_turn_actions:handle/2, EmptyUpdate, Actions),
-
-   finalize_character(PostActionsUpdate).
-
+%%%% TODO: move this elsewhere
 -spec update_timeline
    (
       btl_character_turn_update:type()
@@ -214,7 +168,7 @@ update_timeline (Update) ->
    )
    -> btl_character_turn_update:type().
 update_data (Data, Request) ->
-   PostActionsUpdate = handle_actions(Data, Request),
+   PostActionsUpdate = btl_turn_actions:apply_requested_actions(Data, Request),
    PostCharacterTurnUpdate = update_timeline(PostActionsUpdate),
 
    btl_next_turn:update_if_needed(PostCharacterTurnUpdate).
@@ -276,15 +230,6 @@ commit_update (Update, Request) ->
 
    ok.
 
-%%%% USER DISCONNECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec disconnect_user (btl_character_turn_request:type()) -> 'ok'.
-disconnect_user (Request) ->
-   PlayerID = btl_character_turn_request:get_player_id(Request),
-
-   shr_security:unlock_queries(PlayerID),
-
-   ok.
-
 %%%% REPLY GENERATION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_reply (btl_character_turn_update:type()) -> binary().
 generate_reply (Update) ->
@@ -301,12 +246,16 @@ handle (EncodedRequest) ->
    case authenticate_user(Request) of
       ok ->
          PlayerID = btl_character_turn_request:get_player_id(Request),
+
          shr_security:lock_queries(PlayerID),
+
          Data = fetch_data(Request),
          assert_user_permissions(Data, Request),
          Update = update_data(Data, Request),
          commit_update(Update, Request),
-         disconnect_user(Request),
+
+         shr_security:unlock_queries(PlayerID),
+
          generate_reply(Update);
 
       error -> jiffy:encode([shr_disconnected:generate()])

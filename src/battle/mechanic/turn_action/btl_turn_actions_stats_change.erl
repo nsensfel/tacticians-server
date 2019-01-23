@@ -1,4 +1,5 @@
--module(btl_turn_actions).
+-module(btl_turn_actions_stats_change).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,7 +10,6 @@
 -export
 (
    [
-      handle/2,
       handle_max_health_changes/2
    ]
 ).
@@ -61,23 +61,9 @@ mod_current_health (CurrentMaxHealth, PreviousMaxHealth, Update) ->
 
    S1Update.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec handle
-(
-   btl_battle_action:type(),
-   btl_character_turn_update:type()
-)
--> btl_character_turn_update:type().
-handle (BattleAction, Update) ->
-   case btl_battle_action:get_category(BattleAction) of
-      move -> btl_turn_actions_move:handle(BattleAction, Update);
-      switch_weapon -> btl_turn_actions_switch_weapon:handle(Update);
-      attack -> btl_turn_actions_attack:handle(BattleAction, Update)
-   end.
-
 -spec handle_max_health_changes
    (
       btl_character_current_data:type(),
