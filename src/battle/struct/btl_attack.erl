@@ -30,7 +30,7 @@
 (
    [
       get_sequence/3,
-      get_description_of/3,
+      get_description_of/5,
       apply_to_healths/3
    ]
 ).
@@ -48,28 +48,73 @@
 -spec roll_precision
    (
       shr_statistics:type(),
-      shr_statistics:type()
+      shr_statistics:type(),
+      integer(),
+      integer()
    )
-   -> precision().
-roll_precision (AttackerStatistics, DefenderStatistics) ->
+   -> {precision(), integer(), integer()}.
+roll_precision
+(
+   AttackerStatistics,
+   DefenderStatistics,
+   AttackerLuck,
+   DefenderLuck
+) ->
    DefenderDodges = shr_statistics:get_dodges(DefenderStatistics),
    AttackerAccuracy = shr_statistics:get_accuracy(AttackerStatistics),
    MissChance = max(0, (DefenderDodges - AttackerAccuracy)),
-   case shr_roll:percentage() of
-      X when (X =< MissChance) -> misses;
-      X when (X =< (MissChance * 2)) -> grazes;
-      _ -> hits
-   end.
 
--spec roll_critical_hit (shr_statistics:type()) -> boolean().
-roll_critical_hit (AttackerStatistics) ->
+   {Roll, _IsSuccess, NewDefenderLuck, NewAttackerLuck} =
+      shr_roll:conflict_with_luck
+      (
+         MissChance,
+         DefenderLuck,
+         AttackerLuck
+      ),
+
+   {
+      case Roll of
+         X when (X =< MissChance) -> misses;
+         X when (X =< (MissChance * 2)) -> grazes;
+         _ -> hits
+      end,
+      NewAttackerLuck,
+      NewDefenderLuck
+   }.
+
+-spec roll_critical_hit
+   (
+      shr_statistics:type(),
+      integer()
+   )
+   -> {boolean(), integer()}.
+roll_critical_hit (AttackerStatistics, AttackerLuck) ->
    CriticalHitChance = shr_statistics:get_critical_hits(AttackerStatistics),
-   (shr_roll:percentage() =< CriticalHitChance).
+   {_Roll, IsSuccess, NewLuck} =
+      shr_roll:percentage_with_luck
+      (
+         CriticalHitChance,
+         AttackerLuck
+      ),
 
--spec roll_parry (shr_statistics:type()) -> boolean().
-roll_parry (DefenderStatistics) ->
+   {IsSuccess, NewLuck}.
+
+-spec roll_parry
+   (
+      shr_statistics:type(),
+      integer()
+   )
+   -> {boolean(), integer()}.
+roll_parry (DefenderStatistics, DefenderLuck) ->
    DefenderParryChance = shr_statistics:get_parries(DefenderStatistics),
-   (shr_roll:percentage() =< DefenderParryChance).
+   {_Roll, IsSuccess, NewLuck} =
+      shr_roll:percentage_with_luck
+      (
+         DefenderParryChance,
+         DefenderLuck
+      ),
+
+   {IsSuccess, NewLuck}.
 
 -spec get_damage
    (
@@ -111,18 +156,37 @@ get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
       order(),
       btl_character_current_data:type(),
       btl_character_current_data:type(),
-      boolean()
+      boolean(),
+      integer(),
+      integer()
    )
-   -> type().
-effect_of_attack (Order, AtkCurrData, DefCurrData, CanParry) ->
+   -> {type(), integer(), integer()}.
+effect_of_attack
+(
+   Order,
+   AtkCurrData,
+   DefCurrData,
+   CanParry,
+   AttackerLuck,
+   DefenderLuck
+) ->
    DefStats = btl_character_current_data:get_statistics(DefCurrData),
 
-   ParryIsSuccessful = (CanParry and roll_parry(DefStats)),
+   {ParryIsSuccessful, S0DefLuck} =
+      case CanParry of
+         true -> roll_parry(DefStats, DefenderLuck);
+         false -> {false, DefenderLuck}
+      end,
 
-   {ActualAtkData, ActualDefData} =
+   {
+      ActualAtkData,
+      ActualDefData,
+      ActualAtkLuck,
+      ActualDefLuck
+   } =
       case ParryIsSuccessful of
-         true -> {DefCurrData, AtkCurrData};
-         false -> {AtkCurrData, DefCurrData}
+         true -> {DefCurrData, AtkCurrData, S0DefLuck, AttackerLuck};
+         false -> {AtkCurrData, DefCurrData, AttackerLuck, S0DefLuck}
       end,
 
    ActualAtkStats = btl_character_current_data:get_statistics(ActualAtkData),
@@ -130,8 +194,18 @@ effect_of_attack (Order, AtkCurrData, DefCurrData, CanParry) ->
    ActualDefStats = btl_character_current_data:get_statistics(ActualDefData),
    ActualDefOmni = btl_character_current_data:get_omnimods(ActualDefData),
 
-   Precision = roll_precision(ActualAtkStats, ActualDefStats),
-   IsCritical = roll_critical_hit(ActualAtkStats),
+   {Precision, S0ActualAtkLuck, S0ActualDefLuck} =
+      roll_precision
+      (
+         ActualAtkStats,
+         ActualDefStats,
+         ActualAtkLuck,
+         ActualDefLuck
+      ),
+
+   {IsCritical, S1ActualAtkLuck} =
+      roll_critical_hit(ActualAtkStats, S0ActualAtkLuck),
+
    AtkDamageModifier = shr_statistics:get_damage_modifier(ActualAtkStats),
    Damage =
       get_damage
@@ -143,13 +217,23 @@ effect_of_attack (Order, AtkCurrData, DefCurrData, CanParry) ->
          ActualDefOmni
       ),
 
-   #attack
+   {FinalAttackerLuck, FinalDefenderLuck} =
+      case ParryIsSuccessful of
+         true -> {S0ActualDefLuck, S1ActualAtkLuck};
+         false -> {S1ActualAtkLuck, S0ActualDefLuck}
+      end,
+
    {
-      order = Order,
-      precision = Precision,
-      is_critical = IsCritical,
-      is_parry = ParryIsSuccessful,
-      damage = Damage
+      #attack
+      {
+         order = Order,
+         precision = Precision,
+         is_critical = IsCritical,
+         is_parry = ParryIsSuccessful,
+         damage = Damage
+      },
+      FinalAttackerLuck,
+      FinalDefenderLuck
    }.
 
 -spec encode_order (order()) -> binary().
@@ -170,25 +254,76 @@ encode_precision (misses) -> <<"m">>.
    (
       step(),
       btl_character_current_data:type(),
-      btl_character_current_data:type()
+      btl_character_current_data:type(),
+      integer(),
+      integer()
    )
-   -> maybe_type().
-get_description_of ({first, CanParry}, AtkCurrData, DefCurrData) ->
-   effect_of_attack(first, AtkCurrData, DefCurrData, CanParry);
-get_description_of ({second, CanParry}, AtkCurrData, DefCurrData) ->
+   -> {maybe_type(), integer(), integer()}.
+get_description_of
+(
+   {first, CanParry},
+   AtkCurrData,
+   DefCurrData,
+   AtkLuck,
+   DefLuck
+) ->
+   effect_of_attack
+   (
+      first,
+      AtkCurrData,
+      DefCurrData,
+      CanParry,
+      AtkLuck,
+      DefLuck
+   );
+get_description_of
+(
+   {second, CanParry},
+   AtkCurrData,
+   DefCurrData,
+   AtkLuck,
+   DefLuck
+) ->
    AtkStats = btl_character_current_data:get_statistics(AtkCurrData),
-   AttackerDoubleAttackChange =
+   AttackerDoubleAttackChance =
       shr_statistics:get_double_hits(AtkStats),
+   {_Roll, IsSuccessful, NewAtkLuck} =
+      shr_roll:percentage_with_luck(AttackerDoubleAttackChance, AtkLuck),
 
-   case shr_roll:percentage() of
-      X when (X =< AttackerDoubleAttackChange) ->
-         effect_of_attack(second, AtkCurrData, DefCurrData, CanParry);
+   case IsSuccessful of
+      true ->
+         effect_of_attack
+         (
+            second,
+            AtkCurrData,
+            DefCurrData,
+            CanParry,
+            NewAtkLuck,
+            DefLuck
+         );
 
-      _ ->
-         nothing
+      _ -> {nothing, NewAtkLuck, DefLuck}
    end;
-get_description_of ({counter, CanParry}, AtkCurrData, DefCurrData) ->
-   effect_of_attack(counter, DefCurrData, AtkCurrData, CanParry).
+get_description_of
+(
+   {counter, CanParry},
+   AtkCurrData,
+   DefCurrData,
+   AtkLuck,
+   DefLuck
+) ->
+   {Effect, NewDefLuck, NewAtkLuck} =
+      effect_of_attack
+      (
+         counter,
+         DefCurrData,
+         AtkCurrData,
+         CanParry,
+         DefLuck,
+         AtkLuck
+      ),
+   {Effect, NewAtkLuck, NewDefLuck}.
+
 
 -spec apply_to_healths
    (

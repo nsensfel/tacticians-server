@@ -22,17 +22,29 @@
       non_neg_integer(),
       btl_character_current_data:type(),
       non_neg_integer(),
-      list(btl_attack:step())
+      list(btl_attack:step()),
+      integer(),
+      integer()
    )
-   -> {list(btl_attack:type()), non_neg_integer(), non_neg_integer()}.
+   ->
+   {
+      list(btl_attack:type()),
+      non_neg_integer(),
+      non_neg_integer(),
+      integer(),
+      integer()
+   }.
 handle_attack_sequence
 (
    CharacterCurrentData,
    CharacterCurrentHealth,
    TargetCurrentData,
    TargetCurrentHealth,
-   AttackSequence
+   AttackSequence,
+   AttackerLuck,
+   DefenderLuck
 ) ->
+   % TODO lists:foldl over AttackSequence to take luck into account.
    AttackPlannedEffects =
       lists:map
       (
@@ -41,7 +53,9 @@ handle_attack_sequence
             (
                AttackStep,
                CharacterCurrentData,
-               TargetCurrentData
+               TargetCurrentData,
+               AttackerLuck,
+               DefenderLuck
             )
          end,
          AttackSequence
@@ -119,25 +133,46 @@ handle (BattleAction, Update) ->
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
    CharacterCurrentData =
       btl_character_turn_data:get_character_current_data(Data),
+   AttackingPlayer =
+      btl_battle:get_player(btl_character:get_player_ix(Character), Battle),
+   AttackingPlayerLuck = btl_player:get_luck(AttackingPlayer),
+
 
    Map = btl_battle:get_map(Battle),
    TargetIX = btl_battle_action:get_target_ix(BattleAction),
    TargetCharacter = btl_battle:get_character(TargetIX, Battle),
    TargetCurrentData = btl_character_current_data:new(TargetCharacter, Map),
+   DefendingPlayer =
+      btl_battle:get_player
+      (
+         btl_character:get_player_ix(TargetCharacter),
+         Battle
+      ),
+   DefendingPlayerLuck = btl_player:get_luck(DefendingPlayer),
 
    true = btl_character:get_is_alive(TargetCharacter),
 
    AttackSequence = get_attack_sequence(Character, TargetCharacter),
 
-   {AttackEffects, RemainingAttackerHealth, RemainingDefenderHealth} =
+   {
+      AttackEffects,
+      RemainingAttackerHealth,
+      RemainingDefenderHealth,
+      _NewAttackerLuck,
+      _NewDefenderLuck
+   } =
       handle_attack_sequence
       (
          CharacterCurrentData,
          btl_character:get_current_health(Character),
          TargetCurrentData,
          btl_character:get_current_health(TargetCharacter),
-         AttackSequence
+         AttackSequence,
+         AttackingPlayerLuck,
+         DefendingPlayerLuck
       ),
+
+   % TODO: update lucks...
 
    UpdatedCharacter =
       btl_character:set_current_health(RemainingAttackerHealth, Character),
