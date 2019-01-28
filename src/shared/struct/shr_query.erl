@@ -10,7 +10,8 @@
    query,
    {
       ip :: binary(),
-      params :: map:map(binary(), any())
+      params :: map(),
+      url_params :: dict:dict(binary(), any())
    }
 ).
 
@@ -26,7 +27,8 @@
    [
       new/1,
       get_ip/1,
-      get_params/1
+      get_params/1,
+      get_url_params/1
    ]
 ).
 
@@ -45,11 +47,25 @@ new (YawsArg) ->
    #query
    {
       ip = IP,
-      params = jiffy:decode(YawsArg#arg.clidata, [return_maps])
+      params = jiffy:decode(YawsArg#arg.clidata, [return_maps]),
+      url_params =
+         dict:from_list
+         (
+            lists:map
+            (
+               fun ({K, V}) ->
+                  {list_to_binary(K), list_to_binary(V)}
+               end,
+               yaws_api:parse_query(YawsArg)
+            )
+         )
    }.
 
 -spec get_ip (type()) -> binary().
 get_ip (Query) -> Query#query.ip.
 
--spec get_params (type()) -> map:map(binary(), any()).
+-spec get_params (type()) -> map().
 get_params (Query) -> Query#query.params.
+
+-spec get_url_params (type()) -> dict:dict(binary(), any()).
+get_url_params (Query) -> Query#query.url_params.

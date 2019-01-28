@@ -16,15 +16,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 -spec handle_attack_sequence
    (
       btl_character_current_data:type(),
       non_neg_integer(),
       btl_character_current_data:type(),
       non_neg_integer(),
-      list(btl_attack:step()),
       integer(),
-      integer()
+      integer(),
+      list(btl_attack:step()),
+      list(btl_attack:type())
    )
    ->
    {
@@ -36,61 +38,73 @@
    }.
 handle_attack_sequence
 (
-   CharacterCurrentData,
+   _CharacterCurrentData,
    CharacterCurrentHealth,
-   TargetCurrentData,
+   _TargetCurrentData,
    TargetCurrentHealth,
-   AttackSequence,
    AttackerLuck,
-   DefenderLuck
+   DefenderLuck,
+   AttackSequence,
+   Result
+)
+when
+(
+   (CharacterCurrentHealth == 0)
+   or (TargetCurrentHealth == 0)
+   or (AttackSequence == [])
 ) ->
-   % TODO lists:foldl over AttackSequence to take luck into account.
-   AttackPlannedEffects =
-      lists:map
+   {
+      lists:reverse(Result),
+      CharacterCurrentHealth,
+      TargetCurrentHealth,
+      AttackerLuck,
+      DefenderLuck
+   };
+handle_attack_sequence
+(
+   CharacterCurrentData,
+   AttackerHealth,
+   TargetCurrentData,
+   DefenderHealth,
+   AttackerLuck,
+   DefenderLuck,
+   [NextAttack | AttackSequence],
+   Result
+) ->
+   {AttackEffect, NewAttackerLuck, NewDefenderLuck} =
+      btl_attack:get_description_of
       (
-         fun (AttackStep) ->
-            btl_attack:get_description_of
-            (
-               AttackStep,
-               CharacterCurrentData,
-               TargetCurrentData,
-               AttackerLuck,
-               DefenderLuck
-            )
-         end,
-         AttackSequence
+         NextAttack,
+         CharacterCurrentData,
+         TargetCurrentData,
+         AttackerLuck,
+         DefenderLuck
       ),
 
-   lists:foldl
-   (
-      fun
+   {AttackResult, NewAttackerHealth, NewDefenderHealth} =
+      btl_attack:apply_to_healths
       (
-         AttackEffectCandidate,
-         {AttackValidEffects, AttackerHealth, DefenderHealth}
-      ) ->
-         {AttackResult, NewAttackerHealth, NewDefenderHealth} =
-            btl_attack:apply_to_healths
-            (
-               AttackEffectCandidate,
-               AttackerHealth,
-               DefenderHealth
-            ),
-         case AttackResult of
-            nothing -> {AttackValidEffects, AttackerHealth, DefenderHealth};
-            _ ->
-               {
-                  (AttackValidEffects ++ [AttackResult]),
-                  NewAttackerHealth,
-                  NewDefenderHealth
-               }
-         end
+         AttackEffect,
+         AttackerHealth,
+         DefenderHealth
+      ),
+
+   NextResult =
+      case AttackResult of
+         nothing -> Result;
+         _ -> [AttackResult|Result]
       end,
-      {
-         [],
-         CharacterCurrentHealth,
-         TargetCurrentHealth
-      },
-      AttackPlannedEffects
+
+   handle_attack_sequence
+   (
+      CharacterCurrentData,
+      NewAttackerHealth,
+      TargetCurrentData,
+      NewDefenderHealth,
+      NewAttackerLuck,
+      NewDefenderLuck,
+      AttackSequence,
+      NextResult
    ).
 
 -spec get_attack_sequence
@@ -115,8 +129,6 @@ get_attack_sequence (Character, TargetCharacter) ->
 
    btl_attack:get_sequence(Range, AttackingWeapon, DefendingWeapon).
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,21 +145,16 @@ handle (BattleAction, Update) ->
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
    CharacterCurrentData =
       btl_character_turn_data:get_character_current_data(Data),
-   AttackingPlayer =
-      btl_battle:get_player(btl_character:get_player_ix(Character), Battle),
+   AttackingPlayerIX = btl_character:get_player_index(Character),
+   AttackingPlayer = btl_battle:get_player(AttackingPlayerIX, Battle),
    AttackingPlayerLuck = btl_player:get_luck(AttackingPlayer),
-
 
    Map = btl_battle:get_map(Battle),
    TargetIX = btl_battle_action:get_target_ix(BattleAction),
    TargetCharacter = btl_battle:get_character(TargetIX, Battle),
    TargetCurrentData = btl_character_current_data:new(TargetCharacter, Map),
-   DefendingPlayer =
-      btl_battle:get_player
-      (
-         btl_character:get_player_ix(TargetCharacter),
-         Battle
-      ),
+   DefendingPlayerIX = btl_character:get_player_index(TargetCharacter),
+   DefendingPlayer = btl_battle:get_player(DefendingPlayerIX, Battle),
    DefendingPlayerLuck = btl_player:get_luck(DefendingPlayer),
 
    true = btl_character:get_is_alive(TargetCharacter),
@@ -158,8 +165,8 @@ handle (BattleAction, Update) ->
       AttackEffects,
       RemainingAttackerHealth,
       RemainingDefenderHealth,
-      _NewAttackerLuck,
-      _NewDefenderLuck
+      NewAttackerLuck,
+      NewDefenderLuck
    } =
       handle_attack_sequence
       (
@@ -167,26 +174,39 @@ handle (BattleAction, Update) ->
          btl_character:get_current_health(Character),
          TargetCurrentData,
          btl_character:get_current_health(TargetCharacter),
-         AttackSequence,
          AttackingPlayerLuck,
-         DefendingPlayerLuck
+         DefendingPlayerLuck,
+         AttackSequence,
+         []
       ),
 
    % TODO: update lucks...
+   NextAttackingPlayer = btl_player:set_luck(NewAttackerLuck, AttackingPlayer),
+   NextDefendingPlayer = btl_player:set_luck(NewDefenderLuck, DefendingPlayer),
 
    UpdatedCharacter =
       btl_character:set_current_health(RemainingAttackerHealth, Character),
 
    UpdatedBattle =
-      btl_battle:set_character
+      btl_battle:set_player
       (
-         TargetIX,
-         btl_character:set_current_health
+         DefendingPlayerIX,
+         NextDefendingPlayer,
+         btl_battle:set_player
          (
-            RemainingDefenderHealth,
-            TargetCharacter
-         ),
-         Battle
+            AttackingPlayerIX,
+            NextAttackingPlayer,
+            btl_battle:set_character
+            (
+               TargetIX,
+               btl_character:set_current_health
+               (
+                  RemainingDefenderHealth,
+                  TargetCharacter
+               ),
+               Battle
+            )
+         )
       ),
 
    S0Data = btl_character_turn_data:set_battle(UpdatedBattle, Data),
@@ -230,6 +250,35 @@ handle (BattleAction, Update) ->
          )
       ),
 
+   DBQuery2 =
+      ataxic:update_field
+      (
+         btl_battle:get_players_field(),
+         ataxic:sequence
+         (
+            [
+               ataxic_sugar:update_orddict_element
+               (
+                  DefendingPlayerIX,
+                  ataxic:update_field
+                  (
+                     btl_player:get_luck_field(),
+                     ataxic:constant(NewDefenderLuck)
+                  )
+               ),
+               ataxic_sugar:update_orddict_element
+               (
+                  AttackingPlayerIX,
+                  ataxic:update_field
+                  (
+                     btl_player:get_luck_field(),
+                     ataxic:constant(NewAttackerLuck)
+                  )
+               )
+            ]
+         )
+      ),
+
    S0Update =
       btl_character_turn_update:add_to_timeline
       (
@@ -239,22 +288,23 @@ handle (BattleAction, Update) ->
       ),
 
    S1Update = btl_character_turn_update:add_to_db(DBQuery1, S0Update),
-   S2Update = btl_character_turn_update:set_data(S1Data, S1Update),
-
-   S3Update =
-      btl_victory:handle_character_lost_health
-      (
-         CharacterIX,
-         RemainingAttackerHealth,
-         S2Update
-      ),
+   S2Update = btl_character_turn_update:add_to_db(DBQuery2, S1Update),
+   S3Update = btl_character_turn_update:set_data(S1Data, S2Update),
 
    S4Update =
       btl_victory:handle_character_lost_health
       (
-         TargetIX,
-         RemainingDefenderHealth,
+         CharacterIX,
+         RemainingAttackerHealth,
          S3Update
       ),
 
-   S4Update.
+   S5Update =
+      btl_victory:handle_character_lost_health
+      (
+         TargetIX,
+         RemainingDefenderHealth,
+         S4Update
+      ),
+
+   S5Update.

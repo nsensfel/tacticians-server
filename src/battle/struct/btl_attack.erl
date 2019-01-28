@@ -91,11 +91,7 @@ roll_precision
 roll_critical_hit (AttackerStatistics, AttackerLuck) ->
    CriticalHitChance = shr_statistics:get_critical_hits(AttackerStatistics),
    {_Roll, IsSuccess, NewLuck} =
-      shr_roll:percentage_with_luck
-      (
-         CriticalHitChance,
-         AttackerLuck
-      ),
+      shr_roll:percentage_with_luck(CriticalHitChance, AttackerLuck),
 
    {IsSuccess, NewLuck}.
 
@@ -108,11 +104,7 @@ roll_critical_hit (AttackerStatistics, AttackerLuck) ->
 roll_parry (DefenderStatistics, DefenderLuck) ->
    DefenderParryChance = shr_statistics:get_parries(DefenderStatistics),
    {_Roll, IsSuccess, NewLuck} =
-      shr_roll:percentage_with_luck
-      (
-         DefenderParryChance,
-         DefenderLuck
-      ),
+      shr_roll:percentage_with_luck(DefenderParryChance, DefenderLuck),
 
    {IsSuccess, NewLuck}.
 

@@ -44,8 +44,9 @@ generate_reply (QueryState) ->
 
    Output.
 
--spec handle (binary()) -> binary().
-handle (PlayerID) ->
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   PlayerID = dict:fetch(<<"pid">>, shr_query:get_url_params(Query)),
    QueryState = fetch_data(PlayerID),
    generate_reply(QueryState).
 
@@ -53,10 +54,8 @@ handle (PlayerID) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out(A) ->
-   {ok, PlayerIDTXT} = yaws_api:queryvar(A, "pid"),
-   PlayerID = list_to_binary(PlayerIDTXT),
    {
       content,
       "application/json; charset=UTF-8",
-      handle(PlayerID)
+      handle(shr_query:new(A))
    }.

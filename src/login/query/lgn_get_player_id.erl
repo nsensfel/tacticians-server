@@ -26,8 +26,9 @@ generate_reply (PlayerID) ->
 
    Output.
 
--spec handle (binary()) -> binary().
-handle (UsernameOrEmail) ->
+-spec handle (shr_query:type()) -> binary().
+handle (Query) ->
+   UsernameOrEmail = dict:fetch(<<"name">>, shr_query:get_url_params(Query)),
    PlayerID = fetch_data(UsernameOrEmail),
    generate_reply(PlayerID).
 
@@ -35,10 +36,8 @@ handle (UsernameOrEmail) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out(A) ->
-   {ok, UsernameOrEmailTXT} = yaws_api:queryvar(A, "name"),
-   UsernameOrEmail = list_to_binary(UsernameOrEmailTXT),
    {
       content,
       "application/json; charset=UTF-8",
-      handle(UsernameOrEmail)
+      handle(shr_query:new(A))
    }.
