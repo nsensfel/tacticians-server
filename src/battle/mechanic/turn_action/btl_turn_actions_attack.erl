@@ -180,7 +180,6 @@ handle (BattleAction, Update) ->
          []
       ),
 
-   % TODO: update lucks...
    NextAttackingPlayer = btl_player:set_luck(NewAttackerLuck, AttackingPlayer),
    NextDefendingPlayer = btl_player:set_luck(NewDefenderLuck, DefendingPlayer),
 

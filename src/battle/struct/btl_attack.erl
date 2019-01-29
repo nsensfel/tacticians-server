@@ -49,7 +49,6 @@
    (
       shr_statistics:type(),
       shr_statistics:type(),
-      integer(),
       integer()
    )
    -> {precision(), integer(), integer()}.
@@ -57,20 +56,14 @@ roll_precision
 (
    AttackerStatistics,
    DefenderStatistics,
-   AttackerLuck,
    DefenderLuck
 ) ->
    DefenderDodges = shr_statistics:get_dodges(DefenderStatistics),
    AttackerAccuracy = shr_statistics:get_accuracy(AttackerStatistics),
    MissChance = max(0, (DefenderDodges - AttackerAccuracy)),
 
-   {Roll, _IsSuccess, NewDefenderLuck, NewAttackerLuck} =
-      shr_roll:conflict_with_luck
-      (
-         MissChance,
-         DefenderLuck,
-         AttackerLuck
-      ),
+   {Roll, _IsSuccess, PositiveModifier, NegativeModifier} =
+      shr_roll:percentage_with_luck(MissChance, DefenderLuck),
 
    {
       case Roll of
@@ -78,8 +71,8 @@ roll_precision
          X when (X =< (MissChance * 2)) -> grazes;
          _ -> hits
       end,
-      NewAttackerLuck,
-      NewDefenderLuck
+      PositiveModifier,
+      NegativeModifier
    }.
 
 -spec roll_critical_hit
@@ -87,26 +80,26 @@ roll_precision
       shr_statistics:type(),
       integer()
    )
-   -> {boolean(), integer()}.
+   -> {boolean(), integer(), integer()}.
 roll_critical_hit (AttackerStatistics, AttackerLuck) ->
    CriticalHitChance = shr_statistics:get_critical_hits(AttackerStatistics),
-   {_Roll, IsSuccess, NewLuck} =
+   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(CriticalHitChance, AttackerLuck),
 
-   {IsSuccess, NewLuck}.
+   {IsSuccess, PositiveModifier, NegativeModifier}.
 
 -spec roll_parry
    (
       shr_statistics:type(),
       integer()
    )
-   -> {boolean(), integer()}.
+   -> {boolean(), integer(), integer()}.
 roll_parry (DefenderStatistics, DefenderLuck) ->
    DefenderParryChance = shr_statistics:get_parries(DefenderStatistics),
-   {_Roll, IsSuccess, NewLuck} =
+   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(DefenderParryChance, DefenderLuck),
 
-   {IsSuccess, NewLuck}.
+   {IsSuccess, PositiveModifier, NegativeModifier}.
 
 -spec get_damage
    (
@@ -164,11 +157,14 @@ effect_of_attack
 ) ->
    DefStats = btl_character_current_data:get_statistics(DefCurrData),
 
-   {ParryIsSuccessful, S0DefLuck} =
+   {ParryIsSuccessful, PositiveModifier, NegativeModifier} =
       case CanParry of
          true -> roll_parry(DefStats, DefenderLuck);
-         false -> {false, DefenderLuck}
+         false -> {false, 0}
       end,
+
+   S0DefenderLuck = (DefenderLuck + PositiveModifier),
+   S0AttackerLuck = (AttackerLuck + NegativeModifier),
 
    {
       ActualAtkData,
@@ -177,8 +173,8 @@ effect_of_attack
       ActualDefLuck
    } =
       case ParryIsSuccessful of
-         true -> {DefCurrData, AtkCurrData, S0DefLuck, AttackerLuck};
-         false -> {AtkCurrData, DefCurrData, AttackerLuck, S0DefLuck}
+         true -> {DefCurrData, AtkCurrData, S0DefenderLuck, S0AttackerLuck};
+         false -> {AtkCurrData, DefCurrData, S0AttackerLuck, S0DefenderLuck}
       end,
 
    ActualAtkStats = btl_character_current_data:get_statistics(ActualAtkData),
@@ -186,17 +182,23 @@ effect_of_attack
    ActualDefStats = btl_character_current_data:get_statistics(ActualDefData),
    ActualDefOmni = btl_character_current_data:get_omnimods(ActualDefData),
 
-   {Precision, S0ActualAtkLuck, S0ActualDefLuck} =
+   {Precision, S0PositiveModifier, S0NegativeModifier} =
       roll_precision
       (
          ActualAtkStats,
          ActualDefStats,
-         ActualAtkLuck,
          ActualDefLuck
       ),
 
-   {IsCritical, S1ActualAtkLuck} =
+   % Precision roll is actually the defender attempting to evade.
+   S0ActualDefLuck = (ActualDefLuck + S0PositiveModifier),
+   S0ActualAtkLuck = (ActualAtkLuck + S0NegativeModifier),
+
+   {IsCritical, S1PositiveModifier, S1NegativeModifier} =
       roll_critical_hit(ActualAtkStats, S0ActualAtkLuck),
+
+   S1ActualAtkLuck = (S0ActualAtkLuck + S1PositiveModifier),
+   S1ActualDefLuck = (S0ActualDefLuck + S1NegativeModifier),
 
    AtkDamageModifier = shr_statistics:get_damage_modifier(ActualAtkStats),
    Damage =
@@ -211,8 +213,8 @@ effect_of_attack
 
    {FinalAttackerLuck, FinalDefenderLuck} =
       case ParryIsSuccessful of
-         true -> {S0ActualDefLuck, S1ActualAtkLuck};
-         false -> {S1ActualAtkLuck, S0ActualDefLuck}
+         true -> {S1ActualDefLuck, S1ActualAtkLuck};
+         false -> {S1ActualAtkLuck, S1ActualDefLuck}
       end,
 
    {
@@ -279,8 +281,11 @@ get_description_of
    AtkStats = btl_character_current_data:get_statistics(AtkCurrData),
    AttackerDoubleAttackChance =
       shr_statistics:get_double_hits(AtkStats),
-   {_Roll, IsSuccessful, NewAtkLuck} =
+   {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(AttackerDoubleAttackChance, AtkLuck),
+
+   NewAtkLuck = (AtkLuck + PositiveModifier),
+   NewDefLuck = (DefLuck + NegativeModifier),
 
    case IsSuccessful of
       true ->
@@ -291,10 +296,10 @@ get_description_of
             DefCurrData,
             CanParry,
             NewAtkLuck,
-            DefLuck
+            NewDefLuck
          );
 
-      _ -> {nothing, NewAtkLuck, DefLuck}
+      _ -> {nothing, NewAtkLuck, NewDefLuck}
    end;
 get_description_of
 (

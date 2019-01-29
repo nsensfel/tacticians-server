@@ -12,14 +12,30 @@
    [
       percentage/0,
       between/2,
-      percentage_with_luck/2,
-      conflict_with_luck/3
+      percentage_with_luck/2
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-spec calculate_costs (boolean(), 0..100, 0..100) -> integer().
+calculate_costs (true, Roll, Chance) when (Chance > 50) ->
+   % Succeeded, was likely to succeed.
+   % Only pay what was used.
+   max(0, (Roll - Chance));
+calculate_costs (true, _Roll, Chance) when (Chance =< 50) ->
+   % Succeeded, was unlikely to succeed.
+   % Pay a lot!
+   (Chance - 55);
+calculate_costs (false, _Roll, Chance) when (Chance > 50) ->
+   % Failure due to bad roll.
+   % Was likely to succeed, you get a lot!
+   (Chance - 45);
+calculate_costs (_, _, _) ->
+   % Failure on unlikely roll. Not costs.
+   0.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,70 +54,16 @@ percentage () ->
       non_neg_integer(),
       integer()
    )
-   -> {0..100, boolean(), integer()}.
-percentage_with_luck (Target, Luck) ->
-   BaseRoll = percentage(),
-   ModedRoll = max(0, min((BaseRoll - Luck), 100)),
-   IsSuccess = (ModedRoll =< Target),
-
-   NewLuck =
-      case {IsSuccess, (Target > 50)} of
-         {true, true} ->
-            % Succeeded, was likely to succeed.
-            % Only pay what was used.
-            MissingPoints = max(0, (BaseRoll - Target)),
-            (Luck - MissingPoints);
-
-         {true, false} ->
-            % Succeeded, was unlikely to succeed.
-            % Pay a lot!
-            MissingPoints = (55 - Target),
-            (Luck - MissingPoints);
-
-         {false, true} ->
-            % Failure due to bad roll.
-            % Was likely to succeed, you get a lot!
-            OwedPoints = (Target - 45),
-            (Luck + OwedPoints);
-
-         _ -> Luck
-      end,
-
-   {ModedRoll, IsSuccess, NewLuck}.
-
--spec conflict_with_luck
-   (
-      non_neg_integer(),
-      integer(),
-      integer()
-   )
    -> {0..100, boolean(), integer(), integer()}.
-conflict_with_luck (Target, LuckA, LuckB) ->
-   BaseRoll = percentage(),
-   ModedRoll = max(0, min((BaseRoll - (LuckA - LuckB)), 100)),
-   IsSuccess = (ModedRoll =< Target),
+percentage_with_luck (Chance, Luck) ->
+   Roll = percentage(),
+   ModedChance = max(0, min((Chance + Luck), 100)),
+   ModedRoll = max(0, min((Roll - Luck), 100)),
+   IsSuccess = (Roll =< ModedChance),
 
-   {NewLuckA, NewLuckB} =
-      case {IsSuccess, (Target > 50)} of
-         {true, true} ->
-            % Succeeded, was likely to succeed.
-            % Only pay what was used.
-            MissingPoints = max(0, (BaseRoll - Target)),
-            {(LuckA - MissingPoints), LuckB};
-
-         {true, false} ->
-            % Succeeded, was unlikely to succeed.
-            % Pay a lot!
-            MissingPoints = (55 - Target),
-            {(LuckA - MissingPoints), (LuckB + MissingPoints)};
-
-         {false, true} ->
-            % Failure due to bad roll.
-            % Was likely to succeed, you get a lot!
-            OwedPoints = (Target - 45),
-            {(LuckA + OwedPoints), (LuckB - OwedPoints)};
-
-         _ -> {LuckA, LuckB}
-      end,
-
-   {ModedRoll, IsSuccess, NewLuckA, NewLuckB}.
+   {
+      ModedRoll,
+      IsSuccess,
+      calculate_costs(IsSuccess, Roll, Chance),
+      (-1 * calculate_costs(IsSuccess, Roll, ModedChance))
+   }.
