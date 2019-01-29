@@ -71,5 +71,5 @@ percentage_with_luck (Chance, Luck) ->
       ModedRoll,
       IsSuccess,
       (BadLuckBonus + calculate_costs(IsSuccess, Roll, Chance)),
-      (-1 * calculate_costs(IsSuccess, Roll, ModedChance))
+      calculate_costs((not IsSuccess), (100 - Roll), (100 - ModedChance))
    }.

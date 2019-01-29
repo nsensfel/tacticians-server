@@ -160,7 +160,7 @@ effect_of_attack
    {ParryIsSuccessful, PositiveModifier, NegativeModifier} =
       case CanParry of
          true -> roll_parry(DefStats, DefenderLuck);
-         false -> {false, 0}
+         false -> {false, 0, 0}
       end,
 
    S0DefenderLuck = (DefenderLuck + PositiveModifier),
