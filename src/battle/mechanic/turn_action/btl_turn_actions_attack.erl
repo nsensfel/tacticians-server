@@ -180,8 +180,25 @@ handle (BattleAction, Update) ->
          []
       ),
 
-   NextAttackingPlayer = btl_player:set_luck(NewAttackerLuck, AttackingPlayer),
-   NextDefendingPlayer = btl_player:set_luck(NewDefenderLuck, DefendingPlayer),
+   S0NewAttackerLuck =
+      case {(NewAttackerLuck =< -2), (NewAttackerLuck >= 2)}  of
+         {true, _} -> (NewAttackerLuck + 2);
+         {_, true} -> (NewAttackerLuck - 2);
+         _ -> 0
+      end,
+
+   S0NewDefenderLuck =
+      case {(NewDefenderLuck =< -2), (NewDefenderLuck >= 2)}  of
+         {true, _} -> (NewDefenderLuck + 2);
+         {_, true} -> (NewDefenderLuck - 2);
+         _ -> 0
+      end,
+
+   NextAttackingPlayer =
+      btl_player:set_luck(S0NewAttackerLuck, AttackingPlayer),
+
+   NextDefendingPlayer =
+      btl_player:set_luck(S0NewDefenderLuck, DefendingPlayer),
 
    UpdatedCharacter =
       btl_character:set_current_health(RemainingAttackerHealth, Character),
@@ -262,7 +279,7 @@ handle (BattleAction, Update) ->
                   ataxic:update_field
                   (
                      btl_player:get_luck_field(),
-                     ataxic:constant(NewDefenderLuck)
+                     ataxic:constant(S0NewDefenderLuck)
                   )
                ),
                ataxic_sugar:update_orddict_element
@@ -271,7 +288,7 @@ handle (BattleAction, Update) ->
                   ataxic:update_field
                   (
                      btl_player:get_luck_field(),
-                     ataxic:constant(NewAttackerLuck)
+                     ataxic:constant(S0NewAttackerLuck)
                   )
                )
             ]

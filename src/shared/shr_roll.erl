@@ -61,15 +61,9 @@ percentage_with_luck (Chance, Luck) ->
    ModedRoll = max(0, min((Roll - Luck), 100)),
    IsSuccess = (Roll =< ModedChance),
 
-   BadLuckBonus =
-      case (Luck < 0) of
-         true -> 1;
-         false -> 0
-      end,
-
    {
       ModedRoll,
       IsSuccess,
-      (BadLuckBonus + calculate_costs(IsSuccess, Roll, Chance)),
+      calculate_costs(IsSuccess, Roll, Chance),
       calculate_costs((not IsSuccess), (100 - Roll), (100 - ModedChance))
    }.
