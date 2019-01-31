@@ -11,6 +11,7 @@
    {
       id :: id(),
       name :: binary(),
+      is_primary :: boolean(),
       range_min:: non_neg_integer(),
       range_max :: non_neg_integer(),
       omnimods :: shr_omnimods:type()
@@ -70,6 +71,7 @@ get_omnimods (Wp) -> Wp#weapon.omnimods.
 -spec from_id (id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/weapon/global.m4.conf)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/weapon/basic.m4d)m4_dnl
+m4_include(__MAKEFILE_DATA_DIR/weapon/secondary.m4d)m4_dnl
 from_id (_) ->
    none().
 
