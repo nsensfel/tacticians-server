@@ -28,7 +28,9 @@
    {
       attacker_ix :: non_neg_integer(),
       defender_ix :: non_neg_integer(),
-      sequence :: list(btl_attack:type())
+      sequence :: list(btl_attack:type()),
+      attacker_luck :: integer(),
+      defender_luck :: integer()
    }
 ).
 
@@ -78,7 +80,7 @@
       new_player_turn_started/1,
       new_character_switched_weapons/1,
       new_character_moved/3,
-      new_character_attacked/3
+      new_character_attacked/5
    ]
 ).
 
@@ -131,15 +133,26 @@ new_character_moved (CharacterIX, Path, NewLocation) ->
    (
       non_neg_integer(),
       non_neg_integer(),
-      list(btl_attack:type())
+      list(btl_attack:type()),
+      integer(),
+      integer()
    )
    -> type().
-new_character_attacked (AttackerIX, DefenderIX, AttackSequence) ->
+new_character_attacked
+(
+   AttackerIX,
+   DefenderIX,
+   AttackSequence,
+   AttackerLuck,
+   DefenderLuck
+) ->
    #attacked
    {
       attacker_ix = AttackerIX,
       defender_ix = DefenderIX,
-      sequence = AttackSequence
+      sequence = AttackSequence,
+      attacker_luck = AttackerLuck,
+      defender_luck = DefenderLuck
    }.
 
 -spec encode (type()) -> {list(any())}.
@@ -172,6 +185,8 @@ encode (TurnResult) when is_record(TurnResult, attacked) ->
    AttackerIX = TurnResult#attacked.attacker_ix,
    DefenderIX = TurnResult#attacked.defender_ix,
    Sequence = TurnResult#attacked.sequence,
+   AttackerLuck = TurnResult#attacked.attacker_luck,
+   DefenderLuck = TurnResult#attacked.defender_luck,
 
    EncodedSequence = lists:map(fun btl_attack:encode/1, Sequence),
 
@@ -180,7 +195,9 @@ encode (TurnResult) when is_record(TurnResult, attacked) ->
          {<<"t">>, <<"atk">>},
          {<<"aix">>, AttackerIX},
          {<<"dix">>, DefenderIX},
-         {<<"seq">>, EncodedSequence}
+         {<<"seq">>, EncodedSequence},
+         {<<"alk">>, AttackerLuck},
+         {<<"dlk">>, DefenderLuck}
       ]
    };
 encode (TurnResult) when is_record(TurnResult, player_won) ->

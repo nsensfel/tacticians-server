@@ -233,7 +233,9 @@ handle (BattleAction, Update) ->
       (
          CharacterIX,
          TargetIX,
-         AttackEffects
+         AttackEffects,
+         S0NewAttackerLuck,
+         S0NewDefenderLuck
       ),
 
    DBQuery0 =
