@@ -14,12 +14,14 @@
       precision :: precision(),
       is_critical :: boolean(),
       is_parry :: boolean(),
-      damage :: non_neg_integer()
+      damage :: non_neg_integer(),
+      attacker_luck_mod :: integer(),
+      defender_luck_mod :: integer()
    }
 ).
 
 -opaque type() :: #attack{}.
--type maybe_type() :: ('nothing' | type()).
+-type maybe_type() :: ({'nothing', integer(), integer()} | type()).
 -opaque step() :: {order(), boolean()}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,7 +33,7 @@
    [
       get_sequence/3,
       get_description_of/5,
-      apply_to_healths/3
+      apply_to_healths_and_lucks/5
    ]
 ).
 
@@ -145,7 +147,7 @@ get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
       integer(),
       integer()
    )
-   -> {type(), integer(), integer()}.
+   -> type().
 effect_of_attack
 (
    Order,
@@ -157,14 +159,11 @@ effect_of_attack
 ) ->
    DefStats = btl_character_current_data:get_statistics(DefCurrData),
 
-   {ParryIsSuccessful, PositiveModifier, NegativeModifier} =
+   {ParryIsSuccessful, ParryPositiveLuckMod, ParryNegativeLuckMod} =
       case CanParry of
          true -> roll_parry(DefStats, DefenderLuck);
          false -> {false, 0, 0}
       end,
-
-   S0DefenderLuck = (DefenderLuck + PositiveModifier),
-   S0AttackerLuck = (AttackerLuck + NegativeModifier),
 
    {
       ActualAtkData,
@@ -173,8 +172,8 @@ effect_of_attack
       ActualDefLuck
    } =
       case ParryIsSuccessful of
-         true -> {DefCurrData, AtkCurrData, S0DefenderLuck, S0AttackerLuck};
-         false -> {AtkCurrData, DefCurrData, S0AttackerLuck, S0DefenderLuck}
+         true -> {DefCurrData, AtkCurrData, DefenderLuck, AttackerLuck};
+         false -> {AtkCurrData, DefCurrData, AttackerLuck, DefenderLuck}
       end,
 
    ActualAtkStats = btl_character_current_data:get_statistics(ActualAtkData),
@@ -182,7 +181,7 @@ effect_of_attack
    ActualDefStats = btl_character_current_data:get_statistics(ActualDefData),
    ActualDefOmni = btl_character_current_data:get_omnimods(ActualDefData),
 
-   {Precision, S0PositiveModifier, S0NegativeModifier} =
+   {Precision, PrecisionPositiveLuckMod, PrecisionNegativeLuckMod} =
       roll_precision
       (
          ActualAtkStats,
@@ -190,15 +189,9 @@ effect_of_attack
          ActualDefLuck
       ),
 
-   % Precision roll is actually the defender attempting to evade.
-   S0ActualDefLuck = (ActualDefLuck + S0PositiveModifier),
-   S0ActualAtkLuck = (ActualAtkLuck + S0NegativeModifier),
 
-   {IsCritical, S1PositiveModifier, S1NegativeModifier} =
-      roll_critical_hit(ActualAtkStats, S0ActualAtkLuck),
-
-   S1ActualAtkLuck = (S0ActualAtkLuck + S1PositiveModifier),
-   S1ActualDefLuck = (S0ActualDefLuck + S1NegativeModifier),
+   {IsCritical, CriticalPositiveLuckMod, CriticalNegativeLuckMod} =
+      roll_critical_hit(ActualAtkStats, ActualAtkLuck),
 
    AtkDamageModifier = shr_statistics:get_damage_modifier(ActualAtkStats),
    Damage =
@@ -211,23 +204,94 @@ effect_of_attack
          ActualDefOmni
       ),
 
-   {FinalAttackerLuck, FinalDefenderLuck} =
-      case ParryIsSuccessful of
-         true -> {S1ActualDefLuck, S1ActualAtkLuck};
-         false -> {S1ActualAtkLuck, S1ActualDefLuck}
+   {FinalAttackerLuckMod, FinalDefenderLuckMod} =
+      case {ParryIsSuccessful, Precision} of
+         {true, misses} ->
+            {
+               (
+                  % Attacker wasn't the one parrying
+                  ParryNegativeLuckMod
+                  % Attacker was the one evading
+                  + PrecisionPositiveLuckMod
+                  % miss -> no critical hit luck modifier
+               ),
+               (
+                  % Defender was the one parrying
+                  ParryPositiveLuckMod
+                  % Defender wasn't the one evading
+                  + PrecisionNegativeLuckMod
+                  % miss -> no critical hit luck modifier
+               )
+            };
+
+         {true, _} ->
+            {
+               (
+                  % Attacker wasn't the one parrying
+                  ParryNegativeLuckMod
+                  % Attacker was the one evading
+                  + PrecisionPositiveLuckMod
+                  % Attacker wasn't the one doing a critical
+                  + CriticalNegativeLuckMod
+               ),
+               (
+                  % Defender was the one parrying
+                  ParryPositiveLuckMod
+                  % Defender wasn't the one evading
+                  + PrecisionNegativeLuckMod
+                  % Defender was the one doing a critical
+                  + CriticalPositiveLuckMod
+               )
+            };
+
+         {false, misses} ->
+            {
+               (
+                  % Attacker wasn't the one parrying
+                  ParryNegativeLuckMod
+                  % Defender was the one evading
+                  + PrecisionNegativeLuckMod
+                  % miss -> no critical hit luck modifier
+               ),
+               (
+                  % Defender was the one parrying
+                  ParryPositiveLuckMod
+                  % Defender was the one evading
+                  + PrecisionPositiveLuckMod
+                  % miss -> no critical hit luck modifier
+               )
+            };
+
+         {false, _} ->
+            {
+               (
+                  % Attacker wasn't the one parrying
+                  ParryNegativeLuckMod
+                  % Attacker wasn't the one evading
+                  + PrecisionNegativeLuckMod
+                  % Attacker was the one doing a critical
+                  + CriticalPositiveLuckMod
+               ),
+               (
+                  % Defender was the one parrying
+                  ParryPositiveLuckMod
+                  % Defender was the one evading
+                  + PrecisionPositiveLuckMod
+                  % Defender wasn't the one doing a critical
+                  + CriticalNegativeLuckMod
+               )
+            }
       end,
 
+   #attack
    {
-      #attack
-      {
-         order = Order,
-         precision = Precision,
-         is_critical = IsCritical,
-         is_parry = ParryIsSuccessful,
-         damage = Damage
-      },
-      FinalAttackerLuck,
-      FinalDefenderLuck
+      order = Order,
+      precision = Precision,
+      is_critical = IsCritical,
+      is_parry = ParryIsSuccessful,
+      damage = Damage,
+      attacker_luck_mod = FinalAttackerLuckMod,
+      defender_luck_mod = FinalDefenderLuckMod
    }.
 
 -spec encode_order (order()) -> binary().
@@ -252,7 +316,7 @@ encode_precision (misses) -> <<"m">>.
       integer(),
       integer()
    )
-   -> {maybe_type(), integer(), integer()}.
+   -> maybe_type().
 get_description_of
 (
    {first, CanParry},
@@ -289,17 +353,26 @@ get_description_of
 
    case IsSuccessful of
       true ->
-         effect_of_attack
-         (
-            second,
-            AtkCurrData,
-            DefCurrData,
-            CanParry,
-            NewAtkLuck,
-            NewDefLuck
-         );
+         Result =
+            effect_of_attack
+            (
+               second,
+               AtkCurrData,
+               DefCurrData,
+               CanParry,
+               NewAtkLuck,
+               NewDefLuck
+            ),
 
-      _ -> {nothing, NewAtkLuck, NewDefLuck}
+         Result#attack
+         {
+            attacker_luck_mod =
+               (Result#attack.attacker_luck_mod + PositiveModifier),
+            defender_luck_mod =
+               (Result#attack.defender_luck_mod + NegativeModifier)
+         };
+
+      _ -> {nothing, PositiveModifier, NegativeModifier}
    end;
 get_description_of
 (
@@ -309,50 +382,74 @@ get_description_of
    AtkLuck,
    DefLuck
 ) ->
-   {Effect, NewDefLuck, NewAtkLuck} =
-      effect_of_attack
-      (
-         counter,
-         DefCurrData,
-         AtkCurrData,
-         CanParry,
-         DefLuck,
-         AtkLuck
-      ),
-   {Effect, NewAtkLuck, NewDefLuck}.
+   effect_of_attack
+   (
+      counter,
+      DefCurrData,
+      AtkCurrData,
+      CanParry,
+      DefLuck,
+      AtkLuck
+   ).
 
-
--spec apply_to_healths
+-spec apply_to_healths_and_lucks
    (
       maybe_type(),
       non_neg_integer(),
-      non_neg_integer()
+      integer(),
+      non_neg_integer(),
+      integer()
    )
-   -> {maybe_type(), non_neg_integer(), non_neg_integer()}.
-apply_to_healths
-(
-   nothing,
-   AttackerHealth,
-   DefenderHealth
-) ->
-   {nothing, AttackerHealth, DefenderHealth};
-apply_to_healths
+   ->
+   {
+      maybe_type(),
+      non_neg_integer(),
+      integer(),
+      non_neg_integer(),
+      integer()
+   }.
+apply_to_healths_and_lucks
 (
    _Attack,
    AttackerHealth,
-   DefenderHealth
+   AttackerLuck,
+   DefenderHealth,
+   DefenderLuck
 )
 when
 (
    (AttackerHealth =< 0)
    or (DefenderHealth =< 0)
 ) ->
-   {nothing, AttackerHealth, DefenderHealth};
-apply_to_healths
+   {
+      {nothing, 0, 0},
+      AttackerHealth,
+      AttackerLuck,
+      DefenderHealth,
+      DefenderLuck
+   };
+apply_to_healths_and_lucks
+(
+   {nothing, AttackerLuckMod, DefenderLuckMod},
+   AttackerHealth,
+   AttackerLuck,
+   DefenderHealth,
+   DefenderLuck
+) ->
+   {
+      {nothing, AttackerLuckMod, DefenderLuckMod},
+      AttackerHealth,
+      (AttackerLuck + AttackerLuckMod),
+      DefenderHealth,
+      (DefenderLuck + DefenderLuckMod)
+   };
+apply_to_healths_and_lucks
 (
    Attack,
    AttackerHealth,
-   DefenderHealth
+   AttackerLuck,
+   DefenderHealth,
+   DefenderLuck
 )
 when
 (
@@ -371,13 +468,17 @@ when
    {
       Attack,
       AttackerHealth,
-      (DefenderHealth - Damage)
+      (AttackerLuck + Attack#attack.attacker_luck_mod),
+      (DefenderHealth - Damage),
+      (DefenderLuck + Attack#attack.defender_luck_mod)
    };
-apply_to_healths
+apply_to_healths_and_lucks
 (
    Attack,
    AttackerHealth,
-   DefenderHealth
+   AttackerLuck,
+   DefenderHealth,
+   DefenderLuck
 )
 when
 (
@@ -396,7 +497,9 @@ when
    {
       Attack,
       (AttackerHealth - Damage),
-      DefenderHealth
+      (AttackerLuck + Attack#attack.attacker_luck_mod),
+      DefenderHealth,
+      (DefenderLuck + Attack#attack.defender_luck_mod)
    }.
 
 -spec get_sequence

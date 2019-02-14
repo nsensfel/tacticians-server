@@ -71,7 +71,7 @@ handle_attack_sequence
    [NextAttack | AttackSequence],
    Result
 ) ->
-   {AttackEffect, NewAttackerLuck, NewDefenderLuck} =
+   AttackEffect =
       btl_attack:get_description_of
       (
          NextAttack,
@@ -81,17 +81,25 @@ handle_attack_sequence
          DefenderLuck
       ),
 
-   {AttackResult, NewAttackerHealth, NewDefenderHealth} =
-      btl_attack:apply_to_healths
+   {
+      AttackResult,
+      NewAttackerHealth,
+      NewAttackerLuck,
+      NewDefenderHealth,
+      NewDefenderLuck
+   } =
+      btl_attack:apply_to_healths_and_lucks
       (
          AttackEffect,
          AttackerHealth,
-         DefenderHealth
+         AttackerLuck,
+         DefenderHealth,
+         DefenderLuck
       ),
 
    NextResult =
       case AttackResult of
-         nothing -> Result;
+         {nothing, _, _} -> Result;
          _ -> [AttackResult|Result]
       end,
 
