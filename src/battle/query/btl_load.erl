@@ -111,6 +111,15 @@ generate_reply (QueryState, Input) ->
          orddict:to_list(btl_battle:get_characters(Battle))
       ),
 
+   AddPlayerList =
+      lists:map
+      (
+         fun ({IX, Player}) ->
+            btl_add_player:generate(IX, Player)
+         end,
+         orddict:to_list(btl_battle:get_players(Battle))
+      ),
+
    AddPortraitList =
       lists:map
       (
@@ -153,6 +162,7 @@ generate_reply (QueryState, Input) ->
          ++ [SetTimeline, SetMap | AddWeaponList]
          ++ AddPortraitList
          ++ AddArmorList
+         ++ AddPlayerList
          ++ AddCharList
       ),
 
