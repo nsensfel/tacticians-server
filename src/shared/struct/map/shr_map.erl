@@ -12,7 +12,8 @@
       owner :: shr_player:id(),
       width :: non_neg_integer(),
       height :: non_neg_integer(),
-      tile_instances :: shr_tile:instances_tuple()
+      tile_instances :: shr_tile:instances_tuple(),
+      markers :: shr_map_marker:collection()
    }
 ).
 
@@ -32,6 +33,8 @@
       get_height/1,
       get_tile_instances/1,
       get_tile_instance/2,
+      get_markers/1,
+      get_marker/2,
 
       get_used_tile_ids/1
    ]
@@ -43,6 +46,7 @@
    [
       get_width_field/0,
       get_height_field/0,
+      get_markers_field/0,
       get_tile_instances_field/0
    ]
 ).
@@ -51,7 +55,7 @@
 -export
 (
    [
-      update_from_list/4,
+      update_from_list/5,
       default/1
    ]
 ).
@@ -94,12 +98,27 @@ get_tile_instance (Location, Map) ->
    TileIX = location_to_index(Map#map.width, Location),
    element((TileIX + 1), Map#map.tile_instances).
 
+-spec get_markers (type()) -> shr_map_marker:collection().
+get_markers (Map) -> Map#map.markers.
+
+-spec get_marker
+   (
+      shr_map_marker:name(),
+      type()
+   )
+   -> ('not_found' | {'ok', shr_map_marker:type()}).
+get_marker (Name, Map) ->
+   shr_map_marker:get(Name, Map#map.markers).
+
 %%%% Fields
 -spec get_width_field () -> non_neg_integer().
 get_width_field () -> #map.width.
 
 -spec get_height_field () -> non_neg_integer().
 get_height_field () -> #map.height.
+
+-spec get_markers_field () -> non_neg_integer().
+get_markers_field () -> #map.markers.
 
 -spec get_tile_instances_field () -> non_neg_integer().
 get_tile_instances_field () -> #map.tile_instances.
@@ -128,16 +147,18 @@ get_used_tile_ids (Map) ->
       type(),
       non_neg_integer(),
       non_neg_integer(),
+      shr_map_marker:collection(),
       list(list(binary()))
    )
    -> type().
-update_from_list (Map, Width, Height, List) ->
+update_from_list (Map, Width, Height, Markers, List) ->
    TileInstances = lists:map(fun shr_tile:instance_from_binary_list/1, List),
 
    Map#map
    {
       width = Width,
       height = Height,
+      markers = Markers,
       tile_instances = list_to_tuple(TileInstances)
    }.
 
@@ -150,5 +171,6 @@ default (Owner) ->
       owner = Owner,
       width = 32,
       height = 32,
+      markers = shr_map_marker:empty_collection(),
       tile_instances = list_to_tuple(lists:duplicate(1024, DefaultTileInstance))
    }.
