@@ -12,7 +12,7 @@
       owner :: shr_player:id(),
       width :: non_neg_integer(),
       height :: non_neg_integer(),
-      tile_instances :: shr_tile:instances_tuple(),
+      tile_instances :: shr_array_tuple:array_tuple(shr_tile_instance:type()),
       markers :: shr_map_marker:collection()
    }
 ).
@@ -90,7 +90,11 @@ get_width (Map) -> Map#map.width.
 -spec get_height (type()) -> non_neg_integer().
 get_height (Map) -> Map#map.height.
 
--spec get_tile_instances (type()) -> shr_tile:instances_tuple().
+-spec get_tile_instances
+   (
+      type()
+   )
+   -> shr_array_tuple:array_tuple(shr_tile_instance:type()).
 get_tile_instances (Map) -> Map#map.tile_instances.
 
 -spec get_tile_instance (shr_location:type(), type()) -> shr_tile:instance().
