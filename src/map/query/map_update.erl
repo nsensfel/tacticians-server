@@ -12,7 +12,7 @@
       map_id :: binary(),
       w :: non_neg_integer(),
       h :: non_neg_integer(),
-      t :: list(list(binary()))
+      t :: list(map())
    }
 ).
 
@@ -49,15 +49,6 @@ parse_input (Query) ->
    true = (MapWidth > 0),
    true = (MapHeight > 0),
    true = (length(MapContent) == (MapWidth * MapHeight)),
-   true =
-      lists:all
-      (
-         fun (T) ->
-            [_M|[_V|B]] = T,
-            ((length(B) rem 2) == 0)
-         end,
-         MapContent
-      ),
 
    #input
    {

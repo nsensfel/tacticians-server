@@ -30,8 +30,8 @@ cross (_Map, _ForbiddenLocations, [], Cost, Location) ->
 cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
    NextLocation = shr_location:apply_direction(Step, Location),
    NextTileInstance = shr_map:get_tile_instance(NextLocation, Map),
-   NextTileClassID = shr_tile:extract_main_class_id(NextTileInstance),
-   NextTile = shr_tile:from_class_id(NextTileClassID),
+   NextTileClassID = shr_tile_instance:get_tile_id(NextTileInstance),
+   NextTile = shr_tile:from_id(NextTileClassID),
    NextCost = (Cost + shr_tile:get_cost(NextTile)),
    IsForbidden =
       lists:foldl

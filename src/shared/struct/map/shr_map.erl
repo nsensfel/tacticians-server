@@ -97,7 +97,12 @@ get_height (Map) -> Map#map.height.
    -> shr_array_tuple:array_tuple(shr_tile_instance:type()).
 get_tile_instances (Map) -> Map#map.tile_instances.
 
--spec get_tile_instance (shr_location:type(), type()) -> shr_tile:instance().
+-spec get_tile_instance
+   (
+      shr_location:type(),
+      type()
+   )
+   -> shr_tile_instance:type().
 get_tile_instance (Location, Map) ->
    TileIX = location_to_index(Map#map.width, Location),
    element((TileIX + 1), Map#map.tile_instances).
@@ -128,7 +133,7 @@ get_markers_field () -> #map.markers.
 get_tile_instances_field () -> #map.tile_instances.
 
 %%%% Utility
--spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:class_id()).
+-spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
 get_used_tile_ids (Map) ->
    UsedTileIDs =
       lists:foldl
@@ -136,7 +141,7 @@ get_used_tile_ids (Map) ->
          fun (TileInstance, CurrentTileIDs) ->
             ordsets:add_element
             (
-               shr_tile:extract_main_class_id(TileInstance),
+               shr_tile_instance:get_tile_id(TileInstance),
                CurrentTileIDs
             )
          end,
@@ -152,11 +157,11 @@ get_used_tile_ids (Map) ->
       non_neg_integer(),
       non_neg_integer(),
       shr_map_marker:collection(),
-      list(list(binary()))
+      list(map())
    )
    -> type().
 update_from_list (Map, Width, Height, Markers, List) ->
-   TileInstances = lists:map(fun shr_tile:instance_from_binary_list/1, List),
+   TileInstances = lists:map(fun shr_tile_instance:decode/1, List),
 
    Map#map
    {
@@ -168,7 +173,7 @@ update_from_list (Map, Width, Height, Markers, List) ->
 
 -spec default (binary()) -> type().
 default (Owner) ->
-   DefaultTileInstance = shr_tile:default_tile_instance(),
+   DefaultTileInstance = shr_tile_instance:default(),
 
    #map
    {

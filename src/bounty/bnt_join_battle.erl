@@ -116,9 +116,9 @@ find_random_location (Map, ForbiddenLocations) ->
 
       _ ->
          Tile =
-            shr_tile:from_class_id
+            shr_tile:from_id
             (
-               shr_tile:extract_main_class_id
+               shr_tile_instance:get_tile_id
                (
                   shr_map:get_tile_instance(Candidate, Map)
                )

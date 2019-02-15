@@ -48,8 +48,8 @@
    -> shr_omnimods:type().
 location_to_omnimods (Location, Map) ->
    TileInstance = shr_map:get_tile_instance(Location, Map),
-   TileClassID = shr_tile:extract_main_class_id(TileInstance),
-   Tile = shr_tile:from_class_id(TileClassID),
+   TileClassID = shr_tile_instance:get_tile_id(TileInstance),
+   Tile = shr_tile:from_id(TileClassID),
 
    shr_tile:get_omnimods(Tile).
 

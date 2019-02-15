@@ -100,7 +100,12 @@ generate_reply (QueryState, Input) ->
          btl_battle:get_encoded_last_turns_effects(Battle)
       ),
 
-   SetMap = shr_set_map:generate(btl_battle:get_map(Battle)),
+   SetMap =
+      shr_set_map:generate
+      (
+         fun (_TriggerName) -> false end,
+         btl_battle:get_map(Battle)
+      ),
 
    AddCharList =
       lists:map
@@ -151,7 +156,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (TileClassID) ->
-            btl_add_tile:generate(shr_tile:from_class_id(TileClassID))
+            btl_add_tile:generate(shr_tile:from_id(TileClassID))
          end,
          ordsets:to_list(btl_battle:get_used_tile_ids(Battle))
       ),

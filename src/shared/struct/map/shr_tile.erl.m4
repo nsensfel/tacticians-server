@@ -57,7 +57,7 @@ from_id(_) ->
 -spec cost_when_oob () -> non_neg_integer().
 cost_when_oob () -> __TILE_COST_WHEN_OOB.
 
--spec get_id (type()) -> class_id().
+-spec get_id (type()) -> id().
 get_id (Tile) -> Tile#tile.id.
 
 -spec get_cost (type()) -> non_neg_integer().

@@ -21,7 +21,7 @@ generate (Tile) ->
    {
       [
          {<<"msg">>, <<"add_tile">>},
-         {<<"id">>, shr_tile:get_class_id(Tile)},
+         {<<"id">>, shr_tile:get_id(Tile)},
          {<<"nam">>, shr_tile:get_name(Tile)},
          {<<"ct">>, shr_tile:get_cost(Tile)},
          {<<"omni">>, shr_omnimods:encode(shr_tile:get_omnimods(Tile))}

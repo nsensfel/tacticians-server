@@ -4,23 +4,24 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type display_data() :: list(binary()).
+-type trigger_name() :: binary().
 
 -opaque type() ::
    {
       shr_tile:id(),
       shr_tile:variant_id(),
       display_data(),
-      list(shr_map_trigger:id())
+      list(trigger_name())
    }.
 
--export_type([type/0, border/0]).
+-export_type([type/0, trigger_name/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -export
 (
    [
-      encode/1,
+      encode/2,
       decode/1,
       default/0,
       error/0
@@ -48,11 +49,10 @@ get_tile_id ({TileID, _, _, _}) -> TileID.
 -spec get_variant_id (type()) -> shr_tile:variant_id().
 get_variant_id ({_, VariantID, _, _}) -> VariantID.
 
--spec decode (list(binary())) -> type().
+-spec decode (map()) -> type().
 decode (Map) ->
    L = maps:get(<<"b">>, Map),
-   T = maps:get(<<"t">>, Map),
-
+   Triggers = maps:get(<<"t">>, Map),
 
    [TileID|[VariantID|DisplayData]] = L,
 
@@ -62,10 +62,19 @@ decode (Map) ->
          _ -> []
       end,
 
-   {TileID, VariantID, S0DisplayData, T}.
+   {TileID, VariantID, S0DisplayData, Triggers}.
 
--spec encode (instance()) -> list(binary()).
-encode (I) -> I.
+-spec encode (fun ((trigger_name()) -> boolean()), type()) -> {list(any())}.
+encode (VisibilityFun, {TileID, VariantID, DisplayData, Triggers}) ->
+   {
+      [
+         {<<"b">>, [TileID|[VariantID|DisplayData]]},
+         {<<"t">>, lists:filter(VisibilityFun, Triggers)}
+      ]
+   }.
 
 -spec default () -> type().
-default () -> [<<"1">>, <<"0">>].
+default () -> {<<"1">>, <<"0">>, [], []}.
+
+-spec error () -> type().
+error () -> {<<"0">>, <<"0">>, [], []}.

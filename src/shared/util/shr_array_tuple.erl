@@ -1,8 +1,8 @@
 -module(shr_array_tuple).
 % My solution to https://stackoverflow.com/questions/53877197/are-there-erlang-arrays-with-a-defined-representation
 
--opaque array_tuple() :: tuple().
--opaque array_tuple(_Type) :: tuple().
+-type array_tuple() :: tuple().
+-type array_tuple(_Type) :: tuple().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

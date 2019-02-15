@@ -12,7 +12,7 @@
       used_armor_ids :: ordsets:ordset(shr_armor:id()),
       used_weapon_ids :: ordsets:ordset(shr_weapon:id()),
       used_portrait_ids :: ordsets:ordset(shr_portrait:id()),
-      used_tile_ids :: ordsets:ordset(shr_tile:class_id()),
+      used_tile_ids :: ordsets:ordset(shr_tile:id()),
       map :: shr_map:type(),
       characters :: orddict:orddict(non_neg_integer(), btl_character:type()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
@@ -99,7 +99,7 @@ get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
 -spec get_used_armor_ids (type()) -> ordsets:ordset(shr_armor:id()).
 get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
 
--spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:class_id()).
+-spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
 get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 
 -spec get_map (type()) -> shr_map:type().
