@@ -17,7 +17,7 @@
 (
    query_state,
    {
-      map :: map_map:type()
+      map :: shr_map:type()
    }
 ).
 
@@ -80,7 +80,7 @@ fetch_data (Input) ->
 generate_reply (QueryState) ->
    Map = QueryState#query_state.map,
 
-   SetMap = map_set_map:generate(Map),
+   SetMap = shr_set_map:generate(Map),
    Output = jiffy:encode([SetMap]),
 
    Output.

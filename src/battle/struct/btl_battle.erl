@@ -13,7 +13,7 @@
       used_weapon_ids :: ordsets:ordset(shr_weapon:id()),
       used_portrait_ids :: ordsets:ordset(shr_portrait:id()),
       used_tile_ids :: ordsets:ordset(shr_tile:class_id()),
-      map :: btl_map:type(),
+      map :: shr_map:type(),
       characters :: orddict:orddict(non_neg_integer(), btl_character:type()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type()
@@ -102,7 +102,7 @@ get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
 -spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:class_id()).
 get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
 
--spec get_map (type()) -> btl_map:type().
+-spec get_map (type()) -> shr_map:type().
 get_map (Battle) -> Battle#battle.map.
 
 -spec get_characters
@@ -142,7 +142,7 @@ get_encoded_last_turns_effects (Battle) ->
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
 
--spec set_map (btl_map:type(), type()) -> type().
+-spec set_map (shr_map:type(), type()) -> type().
 set_map (Map, Battle) ->
    Battle#battle
    {
@@ -230,7 +230,7 @@ set_current_player_turn (PlayerTurn, Battle) ->
       current_player_turn = PlayerTurn
    }.
 
--spec new (btl_map:type()) -> type().
+-spec new (shr_map:type()) -> type().
 new (Map) ->
    EmptySet = ordsets:new(),
    EmptyDict = orddict:new(),
@@ -240,7 +240,7 @@ new (Map) ->
       used_portrait_ids = EmptySet,
       used_weapon_ids = EmptySet,
       used_armor_ids = EmptySet,
-      used_tile_ids = btl_map:get_used_tile_ids(Map),
+      used_tile_ids = shr_map:get_used_tile_ids(Map),
       map = Map,
       characters = EmptyDict,
       players = EmptyDict,

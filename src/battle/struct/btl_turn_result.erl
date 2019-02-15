@@ -17,8 +17,8 @@
    moved,
    {
       character_ix :: non_neg_integer(),
-      path :: list(btl_direction:enum()),
-      new_location :: btl_location:type()
+      path :: list(shr_direction:enum()),
+      new_location :: shr_location:type()
    }
 ).
 
@@ -117,8 +117,8 @@ new_character_switched_weapons (CharacterIX) ->
 -spec new_character_moved
    (
       non_neg_integer(),
-      list(btl_direction:enum()),
-      btl_location:type()
+      list(shr_direction:enum()),
+      shr_location:type()
    )
    -> type().
 new_character_moved (CharacterIX, Path, NewLocation) ->
@@ -170,8 +170,8 @@ encode (TurnResult) when is_record(TurnResult, moved) ->
    Path = TurnResult#moved.path,
    NewLocation = TurnResult#moved.new_location,
 
-   EncodedPath = lists:map(fun btl_direction:encode/1, Path),
-   EncodedNewLocation = btl_location:encode(NewLocation),
+   EncodedPath = lists:map(fun shr_direction:encode/1, Path),
+   EncodedNewLocation = shr_location:encode(NewLocation),
 
    {
       [

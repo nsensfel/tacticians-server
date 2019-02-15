@@ -187,7 +187,7 @@ set_weapon_ids (WeaponIDs, Char) ->
       shr_portrait:id(),
       {shr_weapon:id(), shr_weapon:id()},
       shr_armor:id(),
-      btl_location:type(),
+      shr_location:type(),
       shr_omnimods:type()
    )
    -> type().

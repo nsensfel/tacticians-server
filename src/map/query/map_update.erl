@@ -20,7 +20,7 @@
 (
    query_state,
    {
-      map :: map_map:type()
+      map :: shr_map:type()
    }
 ).
 
@@ -104,7 +104,7 @@ update_data (QueryState, Input) ->
    QueryState#query_state
    {
       map =
-         map_map:update_from_list
+         shr_map:update_from_list
          (
             QueryState#query_state.map,
             Input#input.w,
@@ -131,18 +131,18 @@ commit_update (QueryState, Input) ->
                [
                   ataxic:update_field
                   (
-                     map_map:get_height_field(),
+                     shr_map:get_height_field(),
                      ataxic:constant(Input#input.h)
                   ),
                   ataxic:update_field
                   (
-                     map_map:get_width_field(),
+                     shr_map:get_width_field(),
                      ataxic:constant(Input#input.w)
                   ),
                   ataxic:update_field
                   (
-                     map_map:get_tile_instances_field(),
-                     ataxic:constant(map_map:get_tile_instances(Map))
+                     shr_map:get_tile_instances_field(),
+                     ataxic:constant(shr_map:get_tile_instances(Map))
                   )
                ]
             )

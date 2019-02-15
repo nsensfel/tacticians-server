@@ -123,7 +123,7 @@ handle_attack_sequence
    -> list(btl_attack:step()).
 get_attack_sequence (Character, TargetCharacter) ->
    Range =
-      btl_location:dist
+      shr_location:dist
       (
          btl_character:get_location(Character),
          btl_character:get_location(TargetCharacter)

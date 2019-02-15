@@ -7,7 +7,7 @@
 (
    move,
    {
-      path :: list(btl_direction:enum())
+      path :: list(shr_direction:enum())
    }
 ).
 
@@ -60,10 +60,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec maybe_decode_move (list(btl_direction:type())) -> list(type()).
+-spec maybe_decode_move (list(shr_direction:type())) -> list(type()).
 maybe_decode_move ([]) -> [];
 maybe_decode_move (PathInBinary) ->
-   Path = lists:map(fun btl_direction:decode/1, PathInBinary),
+   Path = lists:map(fun shr_direction:decode/1, PathInBinary),
 
    [#move { path = Path }].
 
@@ -83,7 +83,7 @@ can_follow (move, switch_weapon) -> true;
 can_follow (move, attack) -> true;
 can_follow (_, _) -> false.
 
--spec get_path (type()) -> list(btl_direction:type()).
+-spec get_path (type()) -> list(shr_direction:type()).
 get_path (Action) when is_record(Action, move) ->
    Action#move.path;
 get_path (_) ->

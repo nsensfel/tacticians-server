@@ -16,9 +16,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec attempt (shr_player:id()) -> map_map:type().
+-spec attempt (shr_player:id()) -> shr_map:type().
 attempt (OwnerID) ->
-   Map = map_map:default(OwnerID),
+   Map = shr_map:default(OwnerID),
 
    {ok, MapID} =
       ataxia_client:add

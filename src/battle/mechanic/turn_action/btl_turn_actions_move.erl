@@ -18,18 +18,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec cross
    (
-      btl_map:type(),
-      list(btl_location:type()),
-      list(btl_direction:enum()),
+      shr_map:type(),
+      list(shr_location:type()),
+      list(shr_direction:enum()),
       non_neg_integer(),
-      btl_location:type()
+      shr_location:type()
    )
-   -> {btl_location:type(), non_neg_integer()}.
+   -> {shr_location:type(), non_neg_integer()}.
 cross (_Map, _ForbiddenLocations, [], Cost, Location) ->
    {Location, Cost};
 cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
-   NextLocation = btl_location:apply_direction(Step, Location),
-   NextTileInstance = btl_map:get_tile_instance(NextLocation, Map),
+   NextLocation = shr_location:apply_direction(Step, Location),
+   NextTileInstance = shr_map:get_tile_instance(NextLocation, Map),
    NextTileClassID = shr_tile:extract_main_class_id(NextTileInstance),
    NextTile = shr_tile:from_class_id(NextTileClassID),
    NextCost = (Cost + shr_tile:get_cost(NextTile)),
@@ -49,21 +49,21 @@ cross (Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
 
 -spec cross
    (
-      btl_map:type(),
-      list(btl_location:type()),
-      list(btl_direction:enum()),
-      btl_location:type()
+      shr_map:type(),
+      list(shr_location:type()),
+      list(shr_direction:enum()),
+      shr_location:type()
    )
-   -> {btl_location:type(), non_neg_integer()}.
+   -> {shr_location:type(), non_neg_integer()}.
 cross (Map, ForbiddenLocations, Path, Location) ->
    cross(Map, ForbiddenLocations, Path, 0, Location).
 
 -spec get_path_cost_and_destination
    (
       btl_character_turn_data:type(),
-      list(btl_direction:type())
+      list(shr_direction:type())
    )
-   -> {non_neg_integer(), btl_location:type()}.
+   -> {non_neg_integer(), shr_location:type()}.
 get_path_cost_and_destination (Data, Path) ->
    Character = btl_character_turn_data:get_character(Data),
    CharacterIX = btl_character_turn_data:get_character_ix(Data),
@@ -116,8 +116,8 @@ assert_character_can_move (Data, Cost) ->
    (
       btl_character_current_data:type(),
       btl_character_turn_update:type(),
-      list(btl_direction:type()),
-      btl_location:type()
+      list(shr_direction:type()),
+      shr_location:type()
    )
    -> btl_character_turn_update:type().
 commit_move (PreviousCurrentData, Update, Path, NewLocation) ->

@@ -1,4 +1,4 @@
--module(btl_location).
+-module(shr_location).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -44,7 +44,7 @@ validate ({X, Y}) ->
 -spec get_nowhere () -> type().
 get_nowhere () -> nowhere.
 
--spec apply_direction (btl_direction:enum(), type()) -> type().
+-spec apply_direction (shr_direction:enum(), type()) -> type().
 apply_direction (left, {X, Y}) ->
    validate({(X - 1), Y});
 apply_direction (right, {X, Y}) ->

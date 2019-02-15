@@ -1,4 +1,4 @@
--module(btl_set_map).
+-module(shr_set_map).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,19 +16,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate (btl_map:type()) -> {list(any())}.
+-spec generate (shr_map:type()) -> {list(any())}.
 generate (Map) ->
    {
       [
          {<<"msg">>, <<"set_map">>},
-         {<<"w">>, btl_map:get_width(Map)},
-         {<<"h">>, btl_map:get_height(Map)},
+         {<<"w">>, shr_map:get_width(Map)},
+         {<<"h">>, shr_map:get_height(Map)},
          {
             <<"t">>,
             lists:map
             (
                fun shr_tile:instance_to_binary_list/1,
-               tuple_to_list(btl_map:get_tile_instances(Map))
+               tuple_to_list(shr_map:get_tile_instances(Map))
             )
          }
       ]

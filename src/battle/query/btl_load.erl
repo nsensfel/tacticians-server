@@ -100,7 +100,7 @@ generate_reply (QueryState, Input) ->
          btl_battle:get_encoded_last_turns_effects(Battle)
       ),
 
-   SetMap = btl_set_map:generate(btl_battle:get_map(Battle)),
+   SetMap = shr_set_map:generate(btl_battle:get_map(Battle)),
 
    AddCharList =
       lists:map

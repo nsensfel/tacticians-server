@@ -7,7 +7,7 @@
 (
    map_summary,
    {
-      id :: binary(),
+      id :: shr_map:id(),
       name :: binary()
    }
 ).
@@ -65,7 +65,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec new (binary(), binary()) -> type().
+-spec new (shr_map:id(), binary()) -> type().
 new (ID, Name) ->
    #map_summary
    {
@@ -74,13 +74,13 @@ new (ID, Name) ->
    }.
 
 %%%% Accessors
--spec get_id (type()) -> binary().
+-spec get_id (type()) -> shr_map:id().
 get_id (MapSummary) -> MapSummary#map_summary.id.
 
 -spec get_name (type()) -> binary().
 get_name (MapSummary) -> MapSummary#map_summary.name.
 
--spec set_id (binary(), type()) -> type().
+-spec set_id (shr_map:id(), type()) -> type().
 set_id (Val, MapSummary) -> MapSummary#map_summary{ id = Val }.
 
 -spec set_name (binary(), type()) -> type().

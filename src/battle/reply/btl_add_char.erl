@@ -46,7 +46,7 @@ generate (IX, Character, PlayerIX) ->
             <<"hea">>,
             btl_character:get_current_health(Character)
          },
-         {<<"lc">>, btl_location:encode(Location)},
+         {<<"lc">>, shr_location:encode(Location)},
          {<<"pla">>, CharacterPlayerIX},
          {
             <<"ena">>,

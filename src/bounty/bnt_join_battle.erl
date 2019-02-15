@@ -82,7 +82,7 @@ get_equipment_ids (Characters) ->
    (
       btl_battle:type()
    )
-   -> ordsets:ordset(btl_location:type()).
+   -> ordsets:ordset(shr_location:type()).
 get_forbidden_locations (Battle) ->
    orddict:fold
    (
@@ -95,13 +95,13 @@ get_forbidden_locations (Battle) ->
 
 -spec find_random_location
    (
-      btl_map:type(),
-      ordsets:ordset(btl_location:type())
+      shr_map:type(),
+      ordsets:ordset(shr_location:type())
    )
-   -> {btl_location:type(), shr_tile:type()}.
+   -> {shr_location:type(), shr_tile:type()}.
 find_random_location (Map, ForbiddenLocations) ->
-   MapWidth = btl_map:get_width(Map),
-   MapHeight = btl_map:get_height(Map),
+   MapWidth = shr_map:get_width(Map),
+   MapHeight = shr_map:get_height(Map),
 
    Candidate =
       {
@@ -120,7 +120,7 @@ find_random_location (Map, ForbiddenLocations) ->
             (
                shr_tile:extract_main_class_id
                (
-                  btl_map:get_tile_instance(Candidate, Map)
+                  shr_map:get_tile_instance(Candidate, Map)
                )
             ),
 
@@ -146,8 +146,8 @@ get_glyphs_omnimods (RosterChar) ->
    (
       non_neg_integer(),
       rst_character:type(),
-      btl_map:type(),
-      ordsets:ordset(btl_location:type())
+      shr_map:type(),
+      ordsets:ordset(shr_location:type())
    )
    -> btl_character:type().
 create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
@@ -175,8 +175,8 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
    (
       list(rst_character:type()),
       non_neg_integer(),
-      btl_map:type(),
-      ordsets:ordset(btl_location:type()),
+      shr_map:type(),
+      ordsets:ordset(shr_location:type()),
       non_neg_integer(),
       orddict:orddict(non_neg_integer(), btl_character:type()),
       list(ataxic:basic())
@@ -482,7 +482,7 @@ add_to_pending_battle
       shr_player:id(),
       non_neg_integer(),
       shr_battle_summary:category(),
-      map_map:id(),
+      shr_map:id(),
       list(non_neg_integer())
    )
    -> btl_pending_battle:type().
@@ -501,16 +501,8 @@ generate_pending_battle
          ataxia_security:user_from_id(PlayerID),
          MapID
       ),
-   TileInstances = map_map:get_tile_instances(Map),
-   BattleMap =
-      btl_map:from_instances_tuple
-      (
-         map_map:get_width(Map),
-         map_map:get_height(Map),
-         TileInstances
-      ),
 
-   Battle = btl_battle:new(BattleMap),
+   Battle = btl_battle:new(Map),
 
    PendingBattle =
       btl_pending_battle:new
@@ -581,7 +573,7 @@ repair_join_battle
       shr_battle_summary:category(),
       list(non_neg_integer()),
       btl_pending_battle:id(),
-      map_map:id()
+      shr_map:id()
    )
    -> {ok, btl_pending_battle:type()}.
 repair_create_battle
@@ -854,7 +846,7 @@ repair_battle_final_links (PendingBattleID, BattleID, Battle) ->
       shr_battle_summary:mode(),
       shr_battle_summary:category(),
       non_neg_integer(),
-      map_map:id(),
+      shr_map:id(),
       list(non_neg_integer())
    )
    -> 'ok'.

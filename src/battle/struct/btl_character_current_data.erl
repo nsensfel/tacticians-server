@@ -43,11 +43,11 @@
 -spec location_to_omnimods
    (
       {non_neg_integer(), non_neg_integer()},
-      btl_map:type()
+      shr_map:type()
    )
    -> shr_omnimods:type().
 location_to_omnimods (Location, Map) ->
-   TileInstance = btl_map:get_tile_instance(Location, Map),
+   TileInstance = shr_map:get_tile_instance(Location, Map),
    TileClassID = shr_tile:extract_main_class_id(TileInstance),
    Tile = shr_tile:from_class_id(TileClassID),
 
@@ -73,7 +73,7 @@ get_attributes (Char) -> Char#character_current_data.attributes.
 get_statistics (Char) -> Char#character_current_data.statistics.
 
 %%%% Utils
--spec new (btl_character:type(), btl_map:type()) -> type().
+-spec new (btl_character:type(), shr_map:type()) -> type().
 new (Character, Map) ->
    PermanentOmnimods = btl_character:get_permanent_omnimods(Character),
 
