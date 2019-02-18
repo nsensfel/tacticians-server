@@ -13,7 +13,7 @@
       width :: non_neg_integer(),
       height :: non_neg_integer(),
       tile_instances :: shr_array_tuple:array_tuple(shr_tile_instance:type()),
-      markers :: shr_map_marker:collection()
+      markers :: orddict:orddict(shr_map_marker:name(), shr_map_marker:type())
    }
 ).
 
@@ -107,7 +107,10 @@ get_tile_instance (Location, Map) ->
    TileIX = location_to_index(Map#map.width, Location),
    element((TileIX + 1), Map#map.tile_instances).
 
--spec get_markers (type()) -> shr_map_marker:collection().
+-spec get_markers
+   (
+      type()
+   ) -> orddict:orddict(shr_map_marker:name(), shr_map_marker:type()).
 get_markers (Map) -> Map#map.markers.
 
 -spec get_marker
@@ -115,9 +118,9 @@ get_markers (Map) -> Map#map.markers.
       shr_map_marker:name(),
       type()
    )
-   -> ('not_found' | {'ok', shr_map_marker:type()}).
+   -> ('error' | {'ok', shr_map_marker:type()}).
 get_marker (Name, Map) ->
-   shr_map_marker:get(Name, Map#map.markers).
+   orddict:find(Name, Map#map.markers).
 
 %%%% Fields
 -spec get_width_field () -> non_neg_integer().
@@ -156,7 +159,7 @@ get_used_tile_ids (Map) ->
       type(),
       non_neg_integer(),
       non_neg_integer(),
-      shr_map_marker:collection(),
+      orddict:orddict(shr_map_marker:name(), shr_map_marker:type()),
       list(map())
    )
    -> type().
@@ -180,6 +183,6 @@ default (Owner) ->
       owner = Owner,
       width = 32,
       height = 32,
-      markers = shr_map_marker:empty_collection(),
+      markers = orddict:new(),
       tile_instances = list_to_tuple(lists:duplicate(1024, DefaultTileInstance))
    }.

@@ -100,7 +100,7 @@ update_data (QueryState, Input) ->
             QueryState#query_state.map,
             Input#input.w,
             Input#input.h,
-            shr_map_marker:empty_collection(),
+            orddict:new(),
             Input#input.t
          )
    }.
