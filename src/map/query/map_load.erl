@@ -76,11 +76,12 @@ fetch_data (Input) ->
       map = Map
    }.
 
--spec generate_reply(query_state()) -> binary().
-generate_reply (QueryState) ->
+-spec generate_reply (input(), query_state()) -> binary().
+generate_reply (Input, QueryState) ->
+   PUser = ataxia_security:user_from_id(Input#input.player_id),
    Map = QueryState#query_state.map,
 
-   SetMap = shr_set_map:generate(fun (_TriggerName) -> true end, Map),
+   SetMap = shr_set_map:generate(PUser, fun (_TriggerName) -> true end, Map),
    Output = jiffy:encode([SetMap]),
 
    Output.
@@ -93,7 +94,7 @@ handle (Query) ->
          shr_security:lock_queries(Input#input.player_id),
          QueryState = fetch_data(Input),
          shr_security:unlock_queries(Input#input.player_id),
-         generate_reply(QueryState);
+         generate_reply(Input, QueryState);
 
       error -> jiffy:encode([shr_disconnected:generate()])
    end.

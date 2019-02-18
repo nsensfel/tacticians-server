@@ -7,7 +7,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export([generate/2]).
+-export([generate/3]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -18,11 +18,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate
    (
+      ataxia_security:user(),
       fun ((shr_tile_instance:trigger_name()) -> boolean()),
       shr_map:type()
    )
    -> {list(any())}.
-generate (TriggerVisibilityFun, Map) ->
+generate (User, TriggerVisibilityFun, Map) ->
    {
       [
          {<<"msg">>, <<"set_map">>},
@@ -32,10 +33,30 @@ generate (TriggerVisibilityFun, Map) ->
             <<"t">>,
             lists:map
             (
-               fun (E) ->
-                  shr_tile_instance:encode(TriggerVisibilityFun, E)
-               end,
+               fun (E) -> shr_tile_instance:encode(TriggerVisibilityFun, E) end,
                tuple_to_list(shr_map:get_tile_instances(Map))
+            )
+         },
+         {
+            <<"m">>,
+            lists:filtermap
+            (
+               fun ({Key, Value}) ->
+                  case shr_map_marker:can_access(User, Value) of
+                     true ->
+                        {
+                           true,
+                           {
+                              [
+                                 { Key, shr_map_marker:encode(Value) }
+                              ]
+                           }
+                        };
+
+                     false -> false
+                  end
+               end,
+               shr_map:get_markers(Map)
             )
          }
       ]
