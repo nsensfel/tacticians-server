@@ -39,25 +39,19 @@ generate (User, TriggerVisibilityFun, Map) ->
          },
          {
             <<"m">>,
-            lists:filtermap
-            (
-               fun ({Key, Value}) ->
-                  case shr_map_marker:can_access(User, Value) of
-                     true ->
-                        {
-                           true,
-                           {
-                              [
-                                 { Key, shr_map_marker:encode(Value) }
-                              ]
-                           }
-                        };
-
-                     false -> false
-                  end
-               end,
-               shr_map:get_markers(Map)
-            )
+            {
+               lists:foldl
+               (
+                  fun ({Key, Value}, Acc) ->
+                     case shr_map_marker:can_access(User, Value) of
+                        true -> [{ Key, shr_map_marker:encode(Value) }|Acc];
+                        false -> Acc
+                     end
+                  end,
+                  [],
+                  shr_map:get_markers(Map)
+               )
+            }
          }
       ]
    }.
