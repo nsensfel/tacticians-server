@@ -160,12 +160,10 @@ get_used_tile_ids (Map) ->
       non_neg_integer(),
       non_neg_integer(),
       orddict:orddict(shr_map_marker:name(), shr_map_marker:type()),
-      list(map())
+      list(shr_tile_instance:type())
    )
    -> type().
-update_from_list (Map, Width, Height, Markers, List) ->
-   TileInstances = lists:map(fun shr_tile_instance:decode/1, List),
-
+update_from_list (Map, Width, Height, Markers, TileInstances) ->
    Map#map
    {
       width = Width,

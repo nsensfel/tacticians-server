@@ -12,7 +12,7 @@
       map_id :: binary(),
       w :: non_neg_integer(),
       h :: non_neg_integer(),
-      t :: list(map())
+      t :: list(shr_tile_instance:type())
    }
 ).
 
@@ -43,12 +43,14 @@ parse_input (Query) ->
    MapID = maps:get(<<"mid">>, JSONReqMap),
    MapWidth = maps:get(<<"w">>, JSONReqMap),
    MapHeight = maps:get(<<"h">>, JSONReqMap),
-   MapContent = maps:get(<<"t">>, JSONReqMap),
+   EncodedMapContent = maps:get(<<"t">>, JSONReqMap),
 
    %% TODO [LOW]: those checks should be done while queries are locked.
    true = (MapWidth > 0),
    true = (MapHeight > 0),
-   true = (length(MapContent) == (MapWidth * MapHeight)),
+   true = (length(EncodedMapContent) == (MapWidth * MapHeight)),
+
+   MapContent = lists:map(fun shr_tile_instance:decode/1, EncodedMapContent),
 
    #input
    {

@@ -132,7 +132,7 @@ debug_rebuild:
 	$(MAKE) ERLC_OPTS="$(ERLC_OPTS) +debug_info"
 
 $(DIALYZER_BASE_PLT_FILE):
-	$(DIALYZER_EXEC) --build_plt --apps erts kernel stdlib crypto jiffy mnesia \
+	$(DIALYZER_EXEC) --build_plt --apps erts kernel stdlib crypto mnesia \
 		--output_plt $@
 
 debug_run: $(DIALYZER_BASE_PLT_FILE)
