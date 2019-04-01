@@ -35,7 +35,15 @@
    [
       get_id/1,
       get_name/1,
-      get_omnimods/1
+      get_omnimods/1,
+   ]
+).
+
+-export
+(
+   [
+      default/0,
+      default_id/0
    ]
 ).
 
@@ -60,3 +68,9 @@ m4_include(__MAKEFILE_DATA_DIR/glyph/global.m4.conf)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/glyph/basic.m4d)m4_dnl
 from_id(_) ->
    from_id(<<"0">>).
+
+-spec default () -> type().
+default () -> from_id(<<"0">>).
+
+-spec default_id () -> id().
+default_id () -> <<"0">>.

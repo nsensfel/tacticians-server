@@ -38,7 +38,8 @@
 (
    [
       from_id/1,
-      default/0
+      default/0,
+      default_id/0
    ]
 ).
 
@@ -71,3 +72,6 @@ from_id(_) ->
 
 -spec default () -> type().
 default () -> from_id(<<"cat">>).
+
+-spec default_id () -> id().
+default_id () -> <<"cat">>.

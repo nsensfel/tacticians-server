@@ -35,7 +35,8 @@
 -export
 (
    [
-      none/0,
+      default/0,
+      default_id/0,
       from_id/1
    ]
 ).
@@ -62,7 +63,10 @@ get_omnimods (Ar) -> Ar#armor.omnimods.
 m4_include(__MAKEFILE_DATA_DIR/armor/global.m4.conf)m4_dnl
 m4_include(__MAKEFILE_DATA_DIR/armor/basic.m4d)m4_dnl
 from_id(_) ->
-   none().
+   default().
 
--spec none () -> type().
-none () -> from_id(<<"0">>).
+-spec default () -> type().
+default () -> from_id(<<"0">>).
+
+-spec default_id () -> id().
+default_id () -> <<"0">>.
