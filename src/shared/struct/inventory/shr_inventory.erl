@@ -99,7 +99,12 @@ default () ->
       glyphs = EmptySet
    }.
 
--spec allows_equipment (shr_equipment:type(), type()) -> boolean().
+-spec allows_equipment
+   (
+      (shr_equipment:type()|shr_equipment:unresolved()),
+      type()
+   )
+   -> boolean().
 allows_equipment (Eq, Inv) ->
    Weapons = Inv#inventory.weapons,
    Glyphs = Inv#inventory.glyphs,
@@ -133,7 +138,12 @@ allows_equipment (Eq, Inv) ->
       )
    ).
 
--spec add_equipment (shr_equipment:type(), type()) -> type().
+-spec add_equipment
+   (
+      (shr_equipment:type()|shr_equipment:unresolved()),
+      type()
+   )
+   -> type().
 add_equipment (Eq, Inv) ->
    Inv#inventory
    {
