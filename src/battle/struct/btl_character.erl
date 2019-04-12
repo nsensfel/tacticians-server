@@ -7,25 +7,37 @@
 
 -record
 (
-   btl_char,
+   btl_char_ref,
    {
       player_ix :: non_neg_integer(),
-      name :: binary(),
       rank :: rank(),
-      portrait_id :: shr_portrait:id(),
-      weapon_ids :: {shr_weapon:id(), shr_weapon:id()},
-      armor_id :: shr_armor:id(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
       is_active :: boolean(),
       is_defeated :: boolean(),
-      permanent_omnimods :: shr_omnimods:type()
+      base :: shr_character:unresolved()
+   }
+).
+
+-record
+(
+   btl_char,
+   {
+      player_ix :: non_neg_integer(),
+      rank :: rank(),
+      location :: {non_neg_integer(), non_neg_integer()},
+      current_health :: integer(), %% Negative integers let us reverse attacks.
+      is_active :: boolean(),
+      is_defeated :: boolean(),
+      base :: shr_character:type()
    }
 ).
 
 -opaque type() :: #btl_char{}.
+-opaque unresolved() :: #btl_char_ref{}.
+-type either() :: (type() | unresolved()).
+-export_type([type/0, unresolved/0, either/0, rank/0]).
 
--export_type([type/0, rank/0]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,39 +46,36 @@
 (
    [
       get_player_index/1,
-      get_name/1,
       get_rank/1,
-      get_portrait_id/1,
-      get_weapon_ids/1,
-      get_armor_id/1,
       get_location/1,
       get_current_health/1,
       get_is_alive/1,
       get_is_active/1,
       get_is_defeated/1,
-      get_permanent_omnimods/1,
+      get_base_character/1,
 
       set_rank/2,
-      set_weapon_ids/2,
-      set_armor_id/2,
       set_location/2,
       set_current_health/2,
       set_is_active/2,
       set_is_defeated/2,
+      set_base_character/2,
 
       get_rank_field/0,
-      get_weapons_field/0,
-      get_location_field/0,
       get_current_health_field/0,
       get_is_active_field/0,
-      get_is_defeated_field/0
+      get_is_defeated_field/0,
+      get_location_field/0,
+      get_base_character_field/0
    ]
 ).
 
 -export
 (
    [
-      new/9
+      new/4,
+      resolve/2,
+      to_unresolved/1
    ]
 ).
 
@@ -78,188 +87,163 @@
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_player_index (type()) -> non_neg_integer().
-get_player_index (Char) -> Char#btl_char.player_ix.
+-spec get_player_index (either()) -> non_neg_integer().
+get_player_index (#btl_char{ player_ix = R}) -> R;
+get_player_index (#btl_char_ref{ player_ix = R}) -> R.
 
--spec get_name (type()) -> binary().
-get_name (Char) -> Char#btl_char.name.
+-spec get_rank (either()) -> rank().
+get_rank (#btl_char{ rank = R }) -> R;
+get_rank (#btl_char_ref{ rank = R }) -> R.
 
--spec get_rank (type()) -> rank().
-get_rank (Char) -> Char#btl_char.rank.
+-spec get_location (either()) -> {non_neg_integer(), non_neg_integer()}.
+get_location (#btl_char{ location = R }) -> R;
+get_location (#btl_char_ref{ location = R }) -> R.
 
--spec get_portrait_id (type()) -> shr_portrait:id().
-get_portrait_id (Char) -> Char#btl_char.portrait_id.
-
--spec get_armor_id (type()) -> shr_armor:id().
-get_armor_id (Char) -> Char#btl_char.armor_id.
-
--spec get_weapon_ids (type()) -> {shr_weapon:id(), shr_weapon:id()}.
-get_weapon_ids (Char) -> Char#btl_char.weapon_ids.
-
--spec get_location (type()) -> {non_neg_integer(), non_neg_integer()}.
-get_location (Char) -> Char#btl_char.location.
-
--spec get_current_health (type()) -> integer().
-get_current_health (Char) -> Char#btl_char.current_health.
-
--spec get_permanent_omnimods (type()) -> shr_omnimods:type().
-get_permanent_omnimods (Char) -> Char#btl_char.permanent_omnimods.
+-spec get_current_health (either()) -> integer().
+get_current_health (#btl_char{ current_health = R }) -> R;
+get_current_health (#btl_char_ref{ current_health = R }) -> R.
 
 -spec get_is_alive (type()) -> boolean().
-get_is_alive (Char) ->
-   (
-      (not Char#btl_char.is_defeated)
-      and (Char#btl_char.current_health > 0)
-   ).
+get_is_alive (#btl_char{ current_health = H, is_defeated = D }) ->
+   ((not D) and (H > 0));
+get_is_alive (#btl_char_ref{ current_health = H, is_defeated = D }) ->
+   ((not D) and (H > 0)).
 
--spec get_is_active (type()) -> boolean().
-get_is_active (Char) ->
-   (
-      (not Char#btl_char.is_defeated)
-      and Char#btl_char.is_active
-      and get_is_alive(Char)
-   ).
 
--spec get_is_defeated (type()) -> boolean().
-get_is_defeated (Char) -> Char#btl_char.is_defeated.
+-spec get_is_active (either()) -> boolean().
+get_is_active
+(
+   #btl_char{ current_health = H, is_defeated = D, is_active = A }
+) ->
+   ((not D) and (H > 0) and A);
+get_is_active
+(
+   #btl_char_ref{ current_health = H, is_defeated = D, is_active = A }
+) ->
+   ((not D) and (H > 0) and A).
 
--spec set_rank (rank(), type()) -> type().
-set_rank (Rank, Char) ->
-   Char#btl_char
-   {
-      rank = Rank
-   }.
+-spec get_is_defeated (either()) -> boolean().
+get_is_defeated (#btl_char{ is_defeated = R }) -> R;
+get_is_defeated (#btl_char_ref{ is_defeated = R }) -> R.
+
+-spec get_base_character
+   (type()) -> shr_character:type();
+   (unresolved()) -> shr_character:unresolved().
+get_base_character (#btl_char{ base = R }) -> R;
+get_base_character (#btl_char_ref{ base = R }) -> R.
+
+-spec set_rank
+   (rank(), type()) -> type();
+   (rank(), unresolved()) -> unresolved().
+set_rank (Rank, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ rank = Rank };
+set_rank (Rank, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ rank = Rank }.
 
 -spec set_location
-   (
-      {non_neg_integer(), non_neg_integer()},
-      type()
-   )
-   -> type().
-set_location (Location, Char) ->
-   Char#btl_char
-   {
-      location = Location
-   }.
+   ({non_neg_integer(), non_neg_integer()}, type()) -> type();
+   ({non_neg_integer(), non_neg_integer()}, unresolved()) -> unresolved().
+set_location (Location, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ location = Location };
+set_location (Location, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ location = Location }.
 
--spec set_current_health (integer(), type()) -> type().
-set_current_health (Health, Char) ->
-   Char#btl_char
-   {
-      current_health = Health
-   }.
+-spec set_current_health
+   (integer(), type()) -> type();
+   (integer(), unresolved()) -> unresolved().
+set_current_health (Health, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ current_health = Health };
+set_current_health (Health, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ current_health = Health }.
 
--spec set_is_active (boolean(), type()) -> type().
-set_is_active (Active, Char) ->
-   Char#btl_char
-   {
-      is_active = Active
-   }.
+-spec set_is_active
+   (boolean(), type()) -> type();
+   (boolean(), unresolved()) -> unresolved().
+set_is_active (Active, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ is_active = Active };
+set_is_active (Active, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ is_active = Active }.
 
--spec set_is_defeated (boolean(), type()) -> type().
-set_is_defeated (Defeated, Char) ->
-   Char#btl_char
-   {
-      is_defeated = Defeated
-   }.
+-spec set_is_defeated
+   (boolean(), type()) -> type();
+   (boolean(), unresolved()) -> unresolved().
+set_is_defeated (Defeated, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ is_defeated = Defeated };
+set_is_defeated (Defeated, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ is_defeated = Defeated }.
 
--spec set_armor_id (shr_armor:id(), type()) -> type().
-set_armor_id (ArmorID, Char) ->
-   Char#btl_char
-   {
-      armor_id = ArmorID
-   }.
-
--spec set_weapon_ids ({shr_weapon:id(), shr_weapon:id()}, type()) -> type().
-set_weapon_ids (WeaponIDs, Char) ->
-   Char#btl_char
-   {
-      weapon_ids = WeaponIDs
-   }.
+-spec set_base_character
+   (shr_character:type(), type()) -> type();
+   (shr_character:unresolved(), unresolved()) -> unresolved().
+set_base_character (Base, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ base = Base};
+set_base_character (Base, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ base = Base}.
 
 %%%% Utils
 -spec new
    (
       non_neg_integer(),
-      binary(),
       rank(),
-      shr_omnimods:type(),
-      shr_portrait:id(),
-      {shr_weapon:id(), shr_weapon:id()},
-      shr_armor:id(),
       shr_location:type(),
-      shr_omnimods:type()
+      shr_character:type()
    )
    -> type().
 new
 (
    PlayerIX,
-   Name,
    Rank,
-   GlyphsOmnimods,
-   PortraitID,
-   WeaponIDs,
-   ArmorID,
    Location,
-   LocationOmnimods
+   Base
 ) ->
-   {MainWeaponID, _} = WeaponIDs,
-
-   Armor = shr_armor:from_id(ArmorID),
-   MainWeapon = shr_weapon:from_id(MainWeaponID),
-
-   PermanentOmnimods =
-      shr_omnimods:merge(shr_armor:get_omnimods(Armor), GlyphsOmnimods),
-
-   CurrentOmnimods =
-      shr_omnimods:merge
-      (
-         shr_omnimods:merge
-         (
-            shr_weapon:get_omnimods(MainWeapon),
-            LocationOmnimods
-         ),
-         PermanentOmnimods
-      ),
-
-   CurrentAttributes =
-      shr_omnimods:apply_to_attributes
-      (
-         CurrentOmnimods,
-         shr_attributes:default()
-      ),
-
-   CurrentStatistics =
-      shr_omnimods:apply_to_statistics
-      (
-         CurrentOmnimods,
-         shr_statistics:new_raw(CurrentAttributes)
-      ),
+   Statistics = shr_character:get_statistics(Base),
 
    #btl_char
    {
       player_ix = PlayerIX,
-      name = Name,
       rank = Rank,
-      portrait_id = PortraitID,
-      weapon_ids = WeaponIDs,
-      armor_id = ArmorID,
       location = Location,
-      current_health = shr_statistics:get_health(CurrentStatistics),
+      current_health = shr_statistics:get_health(Statistics),
       is_active = (PlayerIX == 0),
       is_defeated = false,
-      permanent_omnimods = PermanentOmnimods
+      base = Base
+   }.
+
+-spec resolve (shr_omnimods:type(), unresolved()) -> type().
+resolve (LocalOmnimods, CharRef) ->
+   #btl_char
+   {
+      player_ix = CharRef#btl_char_ref.player_ix,
+      rank = CharRef#btl_char_ref.rank,
+      location = CharRef#btl_char_ref.location,
+      current_health = CharRef#btl_char_ref.current_health,
+      is_active = CharRef#btl_char_ref.is_active,
+      is_defeated = CharRef#btl_char_ref.is_defeated,
+      base = shr_character:resolve(LocalOmnimods, CharRef#btl_char_ref.base)
+   }.
+
+-spec to_unresolved (type()) -> unresolved().
+to_unresolved (Char) ->
+   #btl_char_ref
+   {
+      player_ix = Char#btl_char.player_ix,
+      rank = Char#btl_char.rank,
+      location = Char#btl_char.location,
+      current_health = Char#btl_char.current_health,
+      is_active = Char#btl_char.is_active,
+      is_defeated = Char#btl_char.is_defeated,
+      base = shr_character:to_unresolved(Char#btl_char.base)
    }.
 
 -spec get_rank_field() -> non_neg_integer().
-get_rank_field () -> #btl_char.rank.
--spec get_weapons_field() -> non_neg_integer().
-get_weapons_field () -> #btl_char.weapon_ids.
+get_rank_field () -> #btl_char_ref.rank.
 -spec get_location_field() -> non_neg_integer().
-get_location_field () -> #btl_char.location.
+get_location_field () -> #btl_char_ref.location.
 -spec get_current_health_field() -> non_neg_integer().
-get_current_health_field () -> #btl_char.current_health.
+get_current_health_field () -> #btl_char_ref.current_health.
 -spec get_is_active_field() -> non_neg_integer().
-get_is_active_field () -> #btl_char.is_active.
+get_is_active_field () -> #btl_char_ref.is_active.
 -spec get_is_defeated_field() -> non_neg_integer().
-get_is_defeated_field () -> #btl_char.is_defeated.
+get_is_defeated_field () -> #btl_char_ref.is_defeated.
+-spec get_base_character_field() -> non_neg_integer().
+get_base_character_field () -> #btl_char_ref.base.

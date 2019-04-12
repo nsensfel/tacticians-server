@@ -22,8 +22,8 @@
       is_using_secondary :: boolean(),
       statistics :: shr_statistics:type(),
       attributes :: shr_attributes:type(),
-      omnimods :: shr_omnimods:type(),
-      extra_omnimods :: shr_omnimods:type()
+      unchanging_omnimods :: shr_omnimods:type(),
+      omnimods :: shr_omnimods:type()
    }
 ).
 
@@ -63,7 +63,7 @@
 -export
 (
    [
-      resolve/1,
+      resolve/2,
       to_unresolved/1
    ]
 ).
@@ -71,7 +71,9 @@
 -export
 (
    [
-      validate/2
+      get_name_field/0,
+      get_equipment_field/0,
+      get_is_using_secondary_field/0
    ]
 ).
 
@@ -173,3 +175,63 @@ set_extra_omnimods (O, Char) ->
 
 -spec dirty_set_extra_omnimods (shr_omnimods:type(), type()) -> type().
 dirty_set_extra_omnimods (O, Char) -> Char#shr_char{ extra_omnimods = O }.
+
+-spec resolve (shr_omnimods:type(), unresolved()) -> type().
+resolve (LocalOmnimods, CharRef) ->
+   ResolvedEquipment = shr_equipment:resolve(CharRef#shr_char_ref.equipment),
+   UsingSecondary = CharRef#shr_char_ref.is_using_secondary,
+
+   UnchangingOmnimods =
+      shr_omnimods:merge
+      (
+         shr_glyph_board:get_omnimods_with_glyphs
+         (
+            shr_equipment:get_glyphs(ResolvedEquipment),
+            shr_equipment:get_glyph_board(ResolvedEquipment)
+         ),
+         get_armor(CharRef)
+      ),
+
+   Omnimods =
+      shr_omnimods:merge
+      (
+         UnchangingOmnimods,
+         shr_omnimods:merge
+         (
+            get_active_weapon(CharRef),
+            LocalOmnimods
+         )
+      ),
+
+   Attributes =
+      shr_omnimods:apply_to_attributes
+      (
+         shr_attributes:default(),
+         Omnimods
+      ),
+
+   Statistics =
+      shr_omnimods:apply_to_statistics
+      (
+         shr_statistics:new_raw(Attributes),
+         Omnimods
+      ),
+
+   #shr_char
+   {
+      name = CharRef#shr_char_ref.name,
+      equipment = ResolvedEquipment,
+      is_using_secondary = UsingSecondary,
+      statistics = Statistics,
+      attributes = Attributes,
+      unchanging_omnimods = UnchangingOmnimods,
+      omnimods = Omnimods
+   }.
+
+
+-spec get_name_field() -> non_neg_integer().
+get_name_field () -> #shr_char_ref.name.
+-spec get_equipment_field() -> non_neg_integer().
+get_equipment_field () -> #shr_char_ref.equipment.
+-spec get_is_using_secondary_field() -> non_neg_integer().
+get_is_using_secondary_field () -> #shr_char_ref.is_using_secondary.
