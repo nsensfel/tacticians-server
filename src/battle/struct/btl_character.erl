@@ -271,7 +271,7 @@ decode (Map) ->
       base = shr_character:decode(maps:get(?BASE_CHAR_FIELD, Map))
    }.
 
--spec encode (unresolved()) -> unresolved().
+-spec encode (unresolved()) -> {list({binary(), any()})}.
 encode (CharRef) ->
    {
       [

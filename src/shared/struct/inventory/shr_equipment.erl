@@ -91,8 +91,23 @@
 (
    [
       default/0,
-      default_unresolved/0,
+      default_unresolved/0
+   ]
+).
 
+-export
+(
+   [
+      resolve/1,
+      to_unresolved/1,
+      encode/1,
+      decode/1
+   ]
+).
+
+-export
+(
+   [
       get_primary_weapon_field/0,
       get_secondary_weapon_field/0,
       get_armor_field/0,

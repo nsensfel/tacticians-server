@@ -1,5 +1,11 @@
 -module(shr_inventory).
 
+-define(WEAPONS_FIELD, <<"wp">>).
+-define(ARMORS_FIELD, <<"ar">>).
+-define(PORTRAITS_FIELD, <<"pt">>).
+-define(GLYPH_BOARDS_FIELD, <<"gb">>).
+-define(GLYPHS_FIELD, <<"gl">>).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,6 +53,14 @@
 ).
 
 %%%% Accessors
+-export
+(
+   [
+      encode/1,
+      decode/1
+   ]
+).
+
 -export
 (
    [
@@ -373,6 +387,28 @@ ataxia_add_equipment (Eq, Inv) ->
       )
    }.
 
+-spec decode (map()) -> type().
+decode (Map) ->
+   #inventory
+   {
+      weapons = ordsets:from_list(maps:get(?WEAPONS_FIELD, Map)),
+      armors = ordsets:from_list(maps:get(?ARMORS_FIELD, Map)),
+      portraits = ordsets:from_list(maps:get(?PORTRAITS_FIELD, Map)),
+      glyph_boards = ordsets:from_list(maps:get(?GLYPH_BOARDS_FIELD, Map)),
+      glyphs = ordsets:from_list(maps:get(?GLYPHS_FIELD, Map))
+   }.
+
+-spec encode (type()) -> {list({binary(), any()})}.
+encode (Inv) ->
+   {
+      [
+         {?WEAPONS_FIELD, ordsets:to_list(Inv#inventory.weapons)},
+         {?ARMORS_FIELD, ordsets:to_list(Inv#inventory.armors)},
+         {?PORTRAITS_FIELD, ordsets:to_list(Inv#inventory.portraits)},
+         {?GLYPH_BOARDS_FIELD, ordsets:to_list(Inv#inventory.glyph_boards)},
+         {?GLYPHS_FIELD, ordsets:to_list(Inv#inventory.glyphs)}
+      ]
+   }.
 
 -spec get_weapons_field () -> non_neg_integer().
 get_weapons_field () -> #inventory.weapons.
