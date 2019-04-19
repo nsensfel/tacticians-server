@@ -35,6 +35,7 @@
 -spec parse_input (shr_query:type()) -> input().
 parse_input (Query) ->
    JSONReqMap = shr_query:get_params(Query),
+
    PlayerID = maps:get(<<"pid">>, JSONReqMap),
    SessionToken =  maps:get(<<"stk">>, JSONReqMap),
    BattleID = maps:get(<<"bid">>, JSONReqMap),
@@ -154,6 +155,24 @@ generate_reply (QueryState, Input) ->
          ordsets:to_list(btl_battle:get_used_armor_ids(Battle))
       ),
 
+   AddGlyphList =
+      lists:map
+      (
+         fun (GlyphID) ->
+            btl_add_glyph:generate(shr_glyph:from_id(GlyphID))
+         end,
+         ordsets:to_list(btl_battle:get_used_glyph_ids(Battle))
+      ),
+
+   AddGlyphBoardList =
+      lists:map
+      (
+         fun (GlyphBoardID) ->
+            btl_add_glyph_board:generate(shr_glyph_board:from_id(GlyphBoardID))
+         end,
+         ordsets:to_list(btl_battle:get_used_glyph_board_ids(Battle))
+      ),
+
    AddTileList =
       lists:map
       (
@@ -168,6 +187,8 @@ generate_reply (QueryState, Input) ->
          AddTileList
          ++ [SetTimeline, SetMap | AddWeaponList]
          ++ AddPortraitList
+         ++ AddGlyphList
+         ++ AddGlyphBoardList
          ++ AddArmorList
          ++ AddPlayerList
          ++ AddCharList

@@ -32,11 +32,17 @@
       get_glyph_boards/1,
       get_glyphs/1,
 
-      set_weapons/2,
-      set_armors/2,
-      set_portraits/2,
-      set_glyph_boards/2,
-      set_glyphs/2
+      add_weapon/2,
+      add_armor/2,
+      add_portrait/2,
+      add_glyph_board/2,
+      add_glyph/2,
+
+      ataxia_add_armor/2,
+      ataxia_add_weapon/2,
+      ataxia_add_portrait/2,
+      ataxia_add_glyph_board/2,
+      ataxia_add_glyph/2
    ]
 ).
 
@@ -46,7 +52,8 @@
    [
       default/0,
       allows_equipment/2,
-      add_equipment/2
+      add_equipment/2,
+      ataxia_add_equipment/2
    ]
 ).
 
@@ -72,20 +79,164 @@ get_glyph_boards (Inv) -> Inv#inventory.glyph_boards.
 -spec get_glyphs (type()) -> ordsets:ordset(shr_glyph:id()).
 get_glyphs (Inv) -> Inv#inventory.glyphs.
 
--spec set_weapons (ordsets:ordset(shr_weapon:id()), type()) -> type().
-set_weapons (V, Inv) -> Inv#inventory{ weapons = V }.
 
--spec set_armors (ordsets:ordset(shr_armor:id()), type()) -> type().
-set_armors (V, Inv) -> Inv#inventory{ armors = V }.
+-spec add_weapon (shr_weapon:id(), type()) -> type().
+add_weapon (V, Inv) -> Inv#inventory{ weapons = V }.
 
--spec set_portraits (ordsets:ordset(shr_portrait:id()), type()) -> type().
-set_portraits (V, Inv) -> Inv#inventory{ portraits = V }.
+-spec add_armor (shr_armor:id(), type()) -> type().
+add_armor (V, Inv) -> Inv#inventory{ armors = V }.
 
--spec set_glyph_boards (ordsets:ordset(shr_glyph_board:id()), type()) -> type().
-set_glyph_boards (V, Inv) -> Inv#inventory{ glyph_boards = V }.
+-spec add_portrait (shr_portrait:id(), type()) -> type().
+add_portrait (V, Inv) -> Inv#inventory{ portraits = V }.
 
--spec set_glyphs (ordsets:ordset(shr_glyph:id()), type()) -> type().
-set_glyphs (V, Inv) -> Inv#inventory{ glyphs = V }.
+-spec add_glyph_board (shr_glyph_board:id(), type()) -> type().
+add_glyph_board (V, Inv) -> Inv#inventory{ glyph_boards = V }.
+
+-spec add_glyph (shr_glyph:id(), type()) -> type().
+add_glyph (V, Inv) -> Inv#inventory{ glyphs = V }.
+
+
+-spec ataxia_add_weapon
+   (
+      shr_weapon:id(),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_weapon (V, Inv) ->
+   CurrentWeapons = Inv#inventory.weapons,
+
+   case ordsets:is_element(V, CurrentWeapons) of
+      true -> Inv;
+      false ->
+         {
+            Inv#inventory{ weapons = ordsets:add_element(V, CurrentWeapons) },
+            ataxic:update_field
+            (
+               get_weapons_field(),
+               ataxic:apply_function
+               (
+                  ordsets,
+                  add_element,
+                  [ ataxic:constant(V), ataxic:current_value() ]
+               )
+            )
+         }
+   end.
+
+-spec ataxia_add_armor
+   (
+      shr_armor:id(),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_armor (V, Inv) ->
+   CurrentArmors = Inv#inventory.armors,
+
+   case ordsets:is_element(V, CurrentArmors) of
+      true -> Inv;
+      false ->
+         {
+            Inv#inventory{ armors = ordsets:add_element(V, CurrentArmors) },
+            ataxic:update_field
+            (
+               get_armors_field(),
+               ataxic:apply_function
+               (
+                  ordsets,
+                  add_element,
+                  [ ataxic:constant(V), ataxic:current_value() ]
+               )
+            )
+         }
+   end.
+
+-spec ataxia_add_portrait
+   (
+      shr_portrait:id(),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_portrait (V, Inv) ->
+   CurrentPortraits = Inv#inventory.portraits,
+
+   case ordsets:is_element(V, CurrentPortraits) of
+      true -> Inv;
+      false ->
+         {
+            Inv#inventory
+            {
+               portraits = ordsets:add_element(V, CurrentPortraits)
+            },
+            ataxic:update_field
+            (
+               get_portraits_field(),
+               ataxic:apply_function
+               (
+                  ordsets,
+                  add_element,
+                  [ ataxic:constant(V), ataxic:current_value() ]
+               )
+            )
+         }
+   end.
+
+-spec ataxia_add_glyph_board
+   (
+      shr_glyph_board:id(),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_glyph_board (V, Inv) ->
+   CurrentGlyphBoards = Inv#inventory.glyph_boards,
+
+   case ordsets:is_element(V, CurrentGlyphBoards) of
+      true -> Inv;
+      false ->
+         {
+            Inv#inventory
+            {
+               glyph_boards = ordsets:add_element(V, CurrentGlyphBoards)
+            },
+            ataxic:update_field
+            (
+               get_glyph_boards_field(),
+               ataxic:apply_function
+               (
+                  ordsets,
+                  add_element,
+                  [ ataxic:constant(V), ataxic:current_value() ]
+               )
+            )
+         }
+   end.
+
+-spec ataxia_add_glyph
+   (
+      shr_glyph:id(),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_glyph (V, Inv) ->
+   CurrentGlyphs = Inv#inventory.glyphs,
+
+   case ordsets:is_element(V, CurrentGlyphs) of
+      true -> Inv;
+      false ->
+         {
+            Inv#inventory{ glyphs = ordsets:add_element(V, CurrentGlyphs) },
+            ataxic:update_field
+            (
+               get_glyphs_field(),
+               ataxic:apply_function
+               (
+                  ordsets,
+                  add_element,
+                  [ ataxic:constant(V), ataxic:current_value() ]
+               )
+            )
+         }
+   end.
+
 
 -spec default () -> type().
 default () ->
@@ -183,3 +334,57 @@ add_equipment (Eq, Inv) ->
             shr_equipment:get_glyph_ids(Eq)
          )
    }.
+
+-spec ataxia_add_equipment
+   (
+      (shr_equipment:type()|shr_equipment:unresolved()),
+      type()
+   )
+   -> {type(), list(ataxic:basic())}.
+ataxia_add_equipment (Eq, Inv) ->
+   {S0Inv, Ataxic0} =
+      ataxia_add_weapon(shr_equipment:get_primary_weapon_id(Eq), Inv),
+
+   {S1Inv, Ataxic1} =
+      ataxia_add_weapon(shr_equipment:get_secondary_weapon_id(Eq), S0Inv),
+
+   {S2Inv, Ataxic2} = ataxia_add_armor(shr_equipment:get_armor_id(Eq), S1Inv),
+
+   {S3Inv, Ataxic3} =
+      ataxia_add_glyph_board(shr_equipment:get_glyph_board_id(Eq), S2Inv),
+
+   {S4Inv, Ataxic4s} =
+      lists:foldl
+      (
+         fun (GlyphID, {PrevInv, PrevAtaxic}) ->
+            {NewInv, NewAtaxic} = ataxia_add_glyph(GlyphID, PrevInv),
+            {NewInv, [NewAtaxic|PrevAtaxic]}
+         end,
+         {S3Inv, []},
+         shr_equipment:get_glyph_ids(Eq)
+      ),
+
+   {
+      S4Inv,
+      lists:flatten
+      (
+         [Ataxic0, Ataxic1, Ataxic2, Ataxic3],
+         lists:flatten(Ataxic4s)
+      )
+   }.
+
+
+-spec get_weapons_field () -> non_neg_integer().
+get_weapons_field () -> #inventory.weapons.
+
+-spec get_armors_field () -> non_neg_integer().
+get_armors_field () -> #inventory.armors.
+
+-spec get_portraits_field () -> non_neg_integer().
+get_portraits_field () -> #inventory.portraits.
+
+-spec get_glyph_boards_field () -> non_neg_integer().
+get_glyph_boards_field () -> #inventory.glyph_boards.
+
+-spec get_glyphs_field () -> non_neg_integer().
+get_glyphs_field () -> #inventory.glyphs.

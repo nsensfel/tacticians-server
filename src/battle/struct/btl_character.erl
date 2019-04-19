@@ -1,5 +1,13 @@
 -module(btl_character).
 
+-define(PLAYER_IX_FIELD, <<"pla">>).
+-define(RANK_FIELD, <<"rnk">>).
+-define(LOCATION_FIELD, <<"lc">>).
+-define(CURRENT_HEALTH_FIELD, <<"he">>).
+-define(IS_ACTIVE_FIELD, <<"ena">>).
+-define(IS_DEFEATED_FIELD, <<"dea">>).
+-define(BASE_CHAR_FIELD, <<"bas">>).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +83,9 @@
    [
       new/4,
       resolve/2,
-      to_unresolved/1
+      to_unresolved/1,
+      decode/1,
+      encode/1
    ]
 ).
 
@@ -247,3 +257,30 @@ get_is_active_field () -> #btl_char_ref.is_active.
 get_is_defeated_field () -> #btl_char_ref.is_defeated.
 -spec get_base_character_field() -> non_neg_integer().
 get_base_character_field () -> #btl_char_ref.base.
+
+-spec decode (map()) -> unresolved().
+decode (Map) ->
+   #btl_char_ref
+   {
+      player_ix =  maps:get(?PLAYER_IX_FIELD, Map),
+      rank = maps:get(?RANK_FIELD, Map),
+      location = shr_location:decode(maps:get(?LOCATION_FIELD, Map)),
+      current_health = maps:get(?CURRENT_HEALTH_FIELD, Map),
+      is_active = maps:get(?IS_ACTIVE_FIELD, Map),
+      is_defeated = maps:get(?IS_DEFEATED_FIELD, Map),
+      base = shr_character:decode(maps:get(?BASE_CHAR_FIELD, Map))
+   }.
+
+-spec encode (unresolved()) -> unresolved().
+encode (CharRef) ->
+   {
+      [
+         {?PLAYER_IX_FIELD, CharRef#btl_char_ref.player_ix},
+         {?RANK_FIELD, CharRef#btl_char_ref.rank},
+         {?LOCATION_FIELD, shr_location:encode(CharRef#btl_char_ref.location)},
+         {?CURRENT_HEALTH_FIELD, CharRef#btl_char_ref.current_health},
+         {?IS_ACTIVE_FIELD, CharRef#btl_char_ref.is_active},
+         {?IS_DEFEATED_FIELD, CharRef#btl_char_ref.is_defeated},
+         {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)}
+      ]
+   }.

@@ -9,10 +9,8 @@
 (
    battle,
    {
-      used_armor_ids :: ordsets:ordset(shr_armor:id()),
-      used_weapon_ids :: ordsets:ordset(shr_weapon:id()),
-      used_portrait_ids :: ordsets:ordset(shr_portrait:id()),
-      used_tile_ids :: ordsets:ordset(shr_tile:id()),
+      related_inventory :: shr_inventory:type(),
+      related_tile_ids :: ordsets:ordset(shr_tile:id()),
       map :: shr_map:type(),
       characters :: orddict:orddict(non_neg_integer(), btl_character:type()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
@@ -31,10 +29,8 @@
 -export
 (
    [
-      get_used_portrait_ids/1,
-      get_used_weapon_ids/1,
-      get_used_armor_ids/1,
-      get_used_tile_ids/1,
+      get_related_inventory/1,
+      get_related_tile_ids/1,
       get_map/1,
       get_characters/1,
       get_character/2,
@@ -44,20 +40,17 @@
       get_encoded_last_turns_effects/1,
 
       set_map/2,
-      set_used_portrait_ids/2,
-      set_used_weapon_ids/2,
-      set_used_armor_ids/2,
+      set_related_inventory/2,
       set_characters/2,
       set_character/3,
       set_players/2,
       set_player/3,
       set_current_player_turn/2,
 
-      get_used_armor_ids_field/0,
-      get_used_weapon_ids_field/0,
-      get_used_portrait_ids_field/0,
       get_characters_field/0,
       get_players_field/0,
+      get_related_inventory_field/0,
+      get_related_tile_ids_field/0,
       get_current_player_turn_field/0
    ]
 ).
@@ -90,17 +83,11 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
--spec get_used_portrait_ids (type()) -> ordsets:ordset(shr_portrait:id()).
-get_used_portrait_ids (Battle) -> Battle#battle.used_portrait_ids.
+-spec get_related_inventory (type()) -> shr_inventory:type().
+get_related_inventory (Battle) -> Battle#battle.related_inventory.
 
--spec get_used_weapon_ids (type()) -> ordsets:ordset(shr_weapon:id()).
-get_used_weapon_ids (Battle) -> Battle#battle.used_weapon_ids.
-
--spec get_used_armor_ids (type()) -> ordsets:ordset(shr_armor:id()).
-get_used_armor_ids (Battle) -> Battle#battle.used_armor_ids.
-
--spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
-get_used_tile_ids (Battle) -> Battle#battle.used_tile_ids.
+-spec get_related_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
+get_related_tile_ids (Battle) -> Battle#battle.related_tile_ids.
 
 -spec get_map (type()) -> shr_map:type().
 get_map (Battle) -> Battle#battle.map.
@@ -146,7 +133,8 @@ get_encoded_last_turns_effects (Battle) ->
 set_map (Map, Battle) ->
    Battle#battle
    {
-      map = Map
+      map = Map,
+      related_tile_ids = shr_map:get_related_tile_ids(Map)
    }.
 
 -spec set_characters
@@ -180,40 +168,11 @@ set_players (Players, Battle) ->
       players = Players
    }.
 
--spec set_used_portrait_ids
-   (
-      ordsets:ordset(shr_portrait:id()),
-      type()
-   )
-   -> type().
-set_used_portrait_ids (UPIDs, Battle) ->
+-spec set_related_inventory ( shr_inventory:type(), type()) -> type().
+set_related_inventory (Inv, Battle) ->
    Battle#battle
    {
-      used_portrait_ids = UPIDs
-   }.
-
--spec set_used_weapon_ids
-   (
-      ordsets:ordset(shr_weapon:id()),
-      type()
-   )
-   -> type().
-set_used_weapon_ids (UPIDs, Battle) ->
-   Battle#battle
-   {
-      used_weapon_ids = UPIDs
-   }.
-
--spec set_used_armor_ids
-   (
-      ordsets:ordset(shr_armor:id()),
-      type()
-   )
-   -> type().
-set_used_armor_ids (UPIDs, Battle) ->
-   Battle#battle
-   {
-      used_armor_ids = UPIDs
+      related_inventory = Inv
    }.
 
 -spec set_player (non_neg_integer(), btl_player:type(), type()) -> type().
@@ -232,15 +191,12 @@ set_current_player_turn (PlayerTurn, Battle) ->
 
 -spec new (shr_map:type()) -> type().
 new (Map) ->
-   EmptySet = ordsets:new(),
    EmptyDict = orddict:new(),
 
    #battle
    {
-      used_portrait_ids = EmptySet,
-      used_weapon_ids = EmptySet,
-      used_armor_ids = EmptySet,
-      used_tile_ids = shr_map:get_used_tile_ids(Map),
+      related_inventory = shr_inventory:default(),
+      related_tile_ids = shr_map:get_related_tile_ids(Map),
       map = Map,
       characters = EmptyDict,
       players = EmptyDict,
@@ -250,14 +206,11 @@ new (Map) ->
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.
 
--spec get_used_portrait_ids_field () -> non_neg_integer().
-get_used_portrait_ids_field () -> #battle.used_portrait_ids.
+-spec get_related_inventory_field () -> non_neg_integer().
+get_related_inventory_field () -> #battle.related_inventory.
 
--spec get_used_weapon_ids_field () -> non_neg_integer().
-get_used_weapon_ids_field () -> #battle.used_weapon_ids.
-
--spec get_used_armor_ids_field () -> non_neg_integer().
-get_used_armor_ids_field () -> #battle.used_armor_ids.
+-spec get_related_tile_ids_field () -> non_neg_integer().
+get_related_tile_ids_field () -> #battle.related_tile_ids.
 
 -spec get_players_field () -> non_neg_integer().
 get_players_field () -> #battle.players.

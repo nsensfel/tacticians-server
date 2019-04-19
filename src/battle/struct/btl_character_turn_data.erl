@@ -10,7 +10,6 @@
       dirty :: boolean(),
       battle :: btl_battle:type(),
       character :: btl_character:type(),
-      character_current_data :: btl_character_current_data:type(),
       character_ix :: non_neg_integer()
    }
 ).
@@ -30,12 +29,10 @@
       get_battle_is_dirty/1,
       get_battle/1,
       get_character/1,
-      get_character_current_data/1,
       get_character_ix/1,
 
       set_battle/2,
-      set_character/2,
-      refresh_character_current_data/1
+      set_character/2
    ]
 ).
 
@@ -43,29 +40,43 @@
 (
    [
       clean_battle/1,
-      refreshr_character/1
+      refresh_character/1
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec resolve_character_at
+   (
+      btl_battle:type(),
+      non_neg_integer()
+   ) -> btl_charater:type().
+resolve_character_at (Battle, CharacterIX) ->
+   CharacterRef = btl_battle:get_character(CharacterIX, Battle),
+   Location = btl_character:get_location(CharacterRef),
+   Map = btl_battle:get_map(Battle),
+
+   TileInstance = shr_map:get_tile_instance(Location, Map),
+   TileClassID = shr_tile_instance:get_tile_id(TileInstance),
+   Tile = shr_tile:from_id(TileClassID),
+   TileOmnimods = shr_tile:get_omnimods(Tile),
+
+   Character = btl_character:resolve(TileOmnimods, CharacterRef),
+
+   Character.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (btl_battle:type(), non_neg_integer()) -> type().
 new (Battle, CharacterIX) ->
-   Character = btl_battle:get_character(CharacterIX, Battle),
-   Map = btl_battle:get_map(Battle),
-   CharacterCurrentData = btl_character_current_data:new(Character, Map),
 
    #type
    {
       dirty = false,
       battle = Battle,
-      character = Character,
-      character_current_data = CharacterCurrentData,
+      character = resolve_character_at(Battle, CharacterIX),
       character_ix = CharacterIX
    }.
 
@@ -77,9 +88,6 @@ get_battle (Data) -> Data#type.battle.
 
 -spec get_character (type()) -> btl_character:type().
 get_character (Data) -> Data#type.character.
-
--spec get_character_current_data (type()) -> btl_character_current_data:type().
-get_character_current_data (Data) -> Data#type.character_current_data.
 
 -spec get_character_ix (type()) -> non_neg_integer().
 get_character_ix (Data) -> Data#type.character_ix.
@@ -96,19 +104,6 @@ set_character (Character, Data) ->
       character = Character
    }.
 
--spec refresh_character_current_data (type()) -> type().
-refresh_character_current_data (Data) ->
-   Battle = Data#type.battle,
-   Character = Data#type.character,
-   Map = btl_battle:get_map(Battle),
-   CharacterCurrentData = btl_character_current_data:new(Character, Map),
-
-   Data#type
-   {
-      character_current_data = CharacterCurrentData
-   }.
-
-
 -spec clean_battle (type()) -> type().
 clean_battle (Data) ->
    Data#type
@@ -123,15 +118,10 @@ clean_battle (Data) ->
          )
    }.
 
--spec refreshr_character (type()) -> type().
-refreshr_character (Data) ->
+-spec refresh_character (type()) -> type().
+refresh_character (Data) ->
    Data#type
    {
       dirty = false,
-      character =
-         btl_battle:get_character
-         (
-            Data#type.character_ix,
-            Data#type.battle
-         )
+      character = resolve_character_at(Data#type.battle, Data#type.character_ix)
    }.
