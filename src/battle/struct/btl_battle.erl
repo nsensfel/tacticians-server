@@ -41,12 +41,32 @@
       get_encoded_last_turns_effects/1,
 
       set_map/2,
+      ataxia_set_map/2,
+      ataxia_set_map/3,
+
       set_related_inventory/2,
+      ataxia_set_related_inventory/2,
+      ataxia_set_related_inventory/3,
+
       set_characters/2,
+      ataxia_set_characters/2,
+      ataxia_set_characters/3,
+
       set_character/3,
+      ataxia_set_character/3,
+      ataxia_set_character/4,
+
       set_players/2,
+      ataxia_set_players/2,
+      ataxia_set_players/3,
+
       set_player/3,
+      ataxia_set_player/3,
+      ataxia_set_player/4,
+
       set_current_player_turn/2,
+      ataxia_set_current_player_turn/2,
+      ataxia_set_current_player_turn/3,
 
       get_characters_field/0,
       get_players_field/0,
@@ -138,6 +158,59 @@ set_map (Map, Battle) ->
       related_tile_ids = shr_map:get_related_tile_ids(Map)
    }.
 
+-spec ataxia_set_map (shr_map:type(), type()) -> {type(), ataxic:basic()}.
+ataxia_set_map (Map, Battle) ->
+   OldRelatedTileIds = Battle#battle.related_tile_ids,
+   NewRelatedTileIds = shr_map:get_related_tile_ids(Map),
+
+   OrdsetUpdate =
+      ataxic_sugar:update_ordset(OldRelatedTileIds, NewRelatedTileIds),
+
+   {
+      Battle#battle
+      {
+         map = Map,
+         related_tile_ids = NewRelatedTileIds
+      },
+      ataxic:sequence
+      (
+         [
+            ataxic:update_field(get_map_field(), ataxic:constant(Map)),
+            ataxic:update_field(get_related_tile_ids_field(), OrdsetUpdate)
+         ]
+      )
+   }.
+
+-spec ataxia_set_map
+   (
+      shr_map:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_map (Map, MapUpdate, Battle) ->
+   OldRelatedTileIds = Battle#battle.related_tile_ids,
+   NewRelatedTileIds = shr_map:get_related_tile_ids(Map),
+
+   OrdsetUpdate =
+      ataxic_sugar:update_ordset(OldRelatedTileIds, NewRelatedTileIds),
+
+   {
+      Battle#battle
+      {
+         map = Map,
+         related_tile_ids = NewRelatedTileIds
+      },
+      ataxic:sequence
+      (
+         [
+            ataxic:update_field(get_map_field(), MapUpdate),
+            ataxic:update_field(get_related_tile_ids_field(), OrdsetUpdate)
+         ]
+      )
+   }.
+
+
 -spec set_characters
    (
       orddict:orddict(non_neg_integer(), btl_character:unresolved()),
@@ -148,6 +221,39 @@ set_characters (Characters, Battle) ->
    Battle#battle
    {
       characters = Characters
+   }.
+
+-spec ataxia_set_characters
+   (
+      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_characters (Characters, Battle) ->
+   {
+      Battle#battle { characters = Characters },
+      ataxic:update_field
+      (
+         get_characters_field(),
+         ataxic:constant(Characters)
+      )
+   }.
+
+-spec ataxia_set_characters
+   (
+      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_characters (Characters, CharactersUpdate, Battle) ->
+   {
+      Battle#battle { characters = Characters },
+      ataxic:update_field
+      (
+         get_characters_field(),
+         CharactersUpdate
+      )
    }.
 
 -spec set_character
@@ -163,6 +269,47 @@ set_character (IX, Character, Battle) ->
       characters = orddict:store(IX, Character, Battle#battle.characters)
    }.
 
+-spec ataxia_set_character
+   (
+      non_neg_integer(),
+      btl_character:unresolved(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_character (IX, Character, Battle) ->
+   {
+      Battle#battle
+      {
+         characters = orddict:store(IX, Character, Battle#battle.characters)
+      },
+      ataxic:update_field
+      (
+         get_characters_field(),
+         ataxic_sugar:update_orddict_element(IX, ataxic:constant(Character))
+      )
+   }.
+
+-spec ataxia_set_character
+   (
+      non_neg_integer(),
+      btl_character:unresolved(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_character (IX, Character, CharacterUpdate, Battle) ->
+   {
+      Battle#battle
+      {
+         characters = orddict:store(IX, Character, Battle#battle.characters)
+      },
+      ataxic:update_field
+      (
+         get_characters_field(),
+         ataxic_sugar:update_orddict_element(IX, CharacterUpdate)
+      )
+   }.
+
 -spec set_players
    (
       orddict:orddict(non_neg_integer(), btl_player:type()),
@@ -175,11 +322,79 @@ set_players (Players, Battle) ->
       players = Players
    }.
 
--spec set_related_inventory ( shr_inventory:type(), type()) -> type().
+-spec ataxia_set_players
+   (
+      orddict:orddict(non_neg_integer(), btl_player:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_players (Players, Battle) ->
+   {
+      Battle#battle
+      {
+         players = Players
+      },
+      ataxic:update_field
+      (
+         get_players_field(),
+         ataxic:constant(Players)
+      )
+   }.
+
+-spec ataxia_set_players
+   (
+      orddict:orddict(non_neg_integer(), btl_player:type()),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_players (Players, PlayersUpdate, Battle) ->
+   {
+      Battle#battle
+      {
+         players = Players
+      },
+      ataxic:update_field
+      (
+         get_players_field(),
+         PlayersUpdate
+      )
+   }.
+
+-spec set_related_inventory (shr_inventory:type(), type()) -> type().
 set_related_inventory (Inv, Battle) ->
    Battle#battle
    {
       related_inventory = Inv
+   }.
+
+-spec ataxia_set_related_inventory
+   (
+      shr_inventory:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_related_inventory (Inv, Battle) ->
+   {
+      Battle#battle{ related_inventory = Inv },
+      ataxic:update_field
+      (
+         get_related_inventory_field(),
+         ataxic:constant(Inv)
+      )
+   }.
+
+-spec ataxia_set_related_inventory
+   (
+      shr_inventory:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_related_inventory (Inv, InvUpdate, Battle) ->
+   {
+      Battle#battle{ related_inventory = Inv },
+      ataxic:update_field(get_related_inventory_field(), InvUpdate)
    }.
 
 -spec set_player (non_neg_integer(), btl_player:type(), type()) -> type().
@@ -189,11 +404,91 @@ set_player (IX, Player, Battle) ->
       players = orddict:store(IX, Player, Battle#battle.players)
    }.
 
+-spec ataxia_set_player
+   (
+      non_neg_integer(),
+      btl_player:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_player (IX, Player, Battle) ->
+   {
+      Battle#battle
+      {
+         players = orddict:store(IX, Player, Battle#battle.players)
+      },
+      ataxic:update_field
+      (
+         get_players_field(),
+         ataxic_sugar:update_orddict_element(IX, ataxic:constant(Player))
+      )
+   }.
+
+-spec ataxia_set_player
+   (
+      non_neg_integer(),
+      btl_player:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_player (IX, Player, PlayerUpdate, Battle) ->
+   {
+      Battle#battle
+      {
+         players = orddict:store(IX, Player, Battle#battle.players)
+      },
+      ataxic:update_field
+      (
+         get_players_field(),
+         ataxic_sugar:update_orddict_element(IX, PlayerUpdate)
+      )
+   }.
+
 -spec set_current_player_turn (btl_player_turn:type(), type()) -> type().
 set_current_player_turn (PlayerTurn, Battle) ->
    Battle#battle
    {
       current_player_turn = PlayerTurn
+   }.
+
+-spec ataxia_set_current_player_turn
+   (
+      btl_player_turn:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_current_player_turn (PlayerTurn, Battle) ->
+   {
+      Battle#battle
+      {
+         current_player_turn = PlayerTurn
+      },
+      ataxic:update_field
+      (
+         get_current_player_turn_field(),
+         ataxic:constant(PlayerTurn)
+      )
+   }.
+
+-spec ataxia_set_current_player_turn
+   (
+      btl_player_turn:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_current_player_turn (PlayerTurn, PlayerTurnUpdate, Battle) ->
+   {
+      Battle#battle
+      {
+         current_player_turn = PlayerTurn
+      },
+      ataxic:update_field
+      (
+         get_current_player_turn_field(),
+         PlayerTurnUpdate
+      )
    }.
 
 -spec new (shr_map:type()) -> type().
@@ -212,6 +507,9 @@ new (Map) ->
 
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.
+
+-spec get_map_field () -> non_neg_integer().
+get_map_field () -> #battle.map.
 
 -spec get_related_inventory_field () -> non_neg_integer().
 get_related_inventory_field () -> #battle.related_inventory.

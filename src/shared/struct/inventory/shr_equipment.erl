@@ -69,6 +69,7 @@
       ataxia_set_portrait/2,
       ataxia_set_glyph_board/2,
       ataxia_set_glyphs/2,
+      ataxia_set_glyphs/3,
 
       get_primary_weapon_id/1,
       get_secondary_weapon_id/1,
@@ -83,13 +84,15 @@
       set_portrait_id/2,
       set_glyph_board_id/2,
       set_glyph_ids/2,
+      set_glyph_ids/2,
 
       ataxia_set_primary_weapon_id/2,
       ataxia_set_secondary_weapon_id/2,
       ataxia_set_armor_id/2,
       ataxia_set_portrait_id/2,
       ataxia_set_glyph_board_id/2,
-      ataxia_set_glyph_ids/2
+      ataxia_set_glyph_ids/2,
+      ataxia_set_glyph_ids/3
    ]
 ).
 
@@ -305,6 +308,29 @@ ataxia_set_glyphs (V, Eq) ->
       )
    }.
 
+-spec ataxia_set_glyphs
+   (
+      list(shr_glyph:type()),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()};
+   (
+      list(shr_glyph:type()),
+      ataxic:basic(),
+      unresolved()
+   )
+   -> {unresolved(), ataxic:basic()}.
+ataxia_set_glyphs (V, VUpdate, Eq) ->
+   {
+      set_glyphs(V, Eq),
+      ataxic:update_field
+      (
+         get_glyphs_field(),
+         VUpdate
+      )
+   }.
+
 -spec set_primary_weapon_id
    (shr_weapon:id(), type()) -> type();
    (shr_weapon:id(), unresolved()) -> unresolved().
@@ -429,6 +455,25 @@ ataxia_set_glyph_ids (V, Eq) ->
          get_glyphs_field(),
          ataxic:constant(V)
       )
+   }.
+
+-spec ataxia_set_glyph_ids
+   (
+      list(shr_glyph:id()),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()};
+   (
+      list(shr_glyph:id()),
+      ataxic:basic(),
+      unresolved()
+   )
+   -> {unresolved(), ataxic:basic()}.
+ataxia_set_glyph_ids (V, VUpdate, Eq) ->
+   {
+      set_glyph_ids(V, Eq),
+      ataxic:update_field(get_glyphs_field(), VUpdate)
    }.
 
 -spec default () -> type().

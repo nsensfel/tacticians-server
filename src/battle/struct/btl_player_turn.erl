@@ -23,7 +23,8 @@
 (
    [
       new/2,
-      next/2
+      next/2,
+      ataxia_next/2
    ]
 ).
 
@@ -109,3 +110,17 @@ next (Players, CurrentPlayerTurn) ->
       end,
 
    new(NextTurnNumber, NextPlayerIX).
+
+-spec ataxia_next
+   (
+      orddict:orddict(non_neg_integer(), btl_player:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_next (Players, CurrentPlayerTurn) ->
+   Next = next(Players, CurrentPlayerTurn),
+
+   {
+      Next,
+      ataxic:constant(Next)
+   }.

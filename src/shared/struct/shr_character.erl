@@ -56,6 +56,7 @@
       ataxia_set_name/2,
 
       set_equipment/2,
+      ataxia_set_equipment/2,
       ataxia_set_equipment/3,
 
       set_extra_omnimods/2,
@@ -137,6 +138,19 @@ set_equipment (Eq, Char) when is_record(Char, shr_char) ->
    };
 set_equipment (EqRef, CharRef) when is_record(CharRef, shr_char_ref) ->
    CharRef#shr_char_ref{ equipment = EqRef }.
+
+-spec ataxia_set_equipment
+   (shr_equipment:type(), type()) -> {type(), ataxic:basic()};
+   (
+      shr_equipment:unresolved(),
+      unresolved()
+   )
+   -> {unresolved(), ataxic:basic()}.
+ataxia_set_equipment (Eq, Char) ->
+   {
+      set_equipment(Eq, Char),
+      ataxic:update_field(get_equipment_field(), ataxic:constant(Eq))
+   }.
 
 -spec ataxia_set_equipment
    (shr_equipment:type(), ataxic:basic(), type()) -> {type(), ataxic:basic()};

@@ -37,12 +37,18 @@
       get_timeline/1,
 
       get_is_active/1,
+
       set_is_active/2,
+      ataxia_set_is_active/2,
 
       set_luck/2,
+      ataxia_set_luck/2,
 
       add_to_timeline/2,
+      ataxia_add_to_timeline/2,
+
       reset_timeline/1,
+      ataxia_reset_timeline/1,
 
       get_timeline_field/0,
       get_luck_field/0,
@@ -88,23 +94,74 @@ get_timeline (Player) -> Player#player.timeline.
 -spec get_is_active (type()) -> boolean().
 get_is_active (Player) -> Player#player.is_active.
 
+
 -spec set_is_active (boolean(), type()) -> type().
 set_is_active (Val, Player) -> Player#player{ is_active = Val }.
+
+-spec ataxia_set_is_active (boolean(), type()) -> {type(), ataxia:basic()}.
+ataxia_set_is_active (Val, Player) ->
+   {
+      Player#player{ is_active = Val },
+      ataxic:update_field
+      (
+         get_is_active_field(),
+         ataxic:constant(Val)
+      )
+   }.
 
 -spec set_luck (integer(), type()) -> type().
 set_luck (Val, Player) -> Player#player{ luck = Val }.
 
+-spec ataxia_set_luck (integer(), type()) -> {type(), ataxic:basic()}.
+ataxia_set_luck (Val, Player) ->
+   {
+      Player#player{ luck = Val },
+      ataxic:update_field
+      (
+         get_luck_field(),
+         ataxic:constant(Val)
+      )
+   }.
+
 -spec add_to_timeline (list(any()), type()) -> type().
 add_to_timeline (NewEvents, Player) ->
-   OldTimeline = Player#player.timeline,
-
    Player#player
    {
-      timeline = (NewEvents ++ OldTimeline)
+      timeline = (NewEvents ++ Player#player.timeline)
+   }.
+
+-spec ataxia_add_to_timeline (list(any()), type()) -> {type(), ataxic:basic()}.
+ataxia_add_to_timeline (NewEvents, Player) ->
+   {
+      Player#player{ timeline = (NewEvents ++ Player#player.timeline) },
+      ataxic:update_field
+      (
+         get_timeline_field(),
+         ataxic:apply_function
+         (
+            lists,
+            append,
+            [
+               ataxic:constant(NewEvents),
+               ataxic:current_value()
+            ]
+         )
+      )
    }.
 
 -spec reset_timeline (type()) -> type().
 reset_timeline (Player) -> Player#player{ timeline = [] }.
+
+-spec ataxia_reset_timeline (type()) -> {type(), ataxic:basic()}.
+ataxia_reset_timeline (Player) ->
+   {
+      Player#player{ timeline = [] },
+      ataxic:update_field
+      (
+         get_timeline_field(),
+         ataxic:constant([])
+      )
+   }.
 
 -spec new
    (
