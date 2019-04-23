@@ -83,6 +83,7 @@ generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
    PUser = ataxia_security:user_from_id(PlayerID),
    Battle = QueryState#query_state.battle,
+   RelevantInventory = btl_battle:get_relevant_inventory(Battle),
    Players = btl_battle:get_players(Battle),
 
    {value, {PlayerIX, _Player}} =
@@ -134,7 +135,7 @@ generate_reply (QueryState, Input) ->
          fun (PortraitID) ->
             btl_add_portrait:generate(shr_portrait:from_id(PortraitID))
          end,
-         ordsets:to_list(btl_battle:get_used_portrait_ids(Battle))
+         ordsets:to_list(shr_inventory:get_portraits(RelevantInventory))
       ),
 
    AddWeaponList =
@@ -143,7 +144,7 @@ generate_reply (QueryState, Input) ->
          fun (WeaponID) ->
             btl_add_weapon:generate(shr_weapon:from_id(WeaponID))
          end,
-         ordsets:to_list(btl_battle:get_used_weapon_ids(Battle))
+         ordsets:to_list(shr_inventory:get_weapons(RelevantInventory))
       ),
 
    AddArmorList =
@@ -152,7 +153,7 @@ generate_reply (QueryState, Input) ->
          fun (ArmorID) ->
             btl_add_armor:generate(shr_armor:from_id(ArmorID))
          end,
-         ordsets:to_list(btl_battle:get_used_armor_ids(Battle))
+         ordsets:to_list(shr_inventory:get_armors(RelevantInventory))
       ),
 
    AddGlyphList =
@@ -161,7 +162,7 @@ generate_reply (QueryState, Input) ->
          fun (GlyphID) ->
             btl_add_glyph:generate(shr_glyph:from_id(GlyphID))
          end,
-         ordsets:to_list(btl_battle:get_used_glyph_ids(Battle))
+         ordsets:to_list(shr_inventory:get_glyphs(RelevantInventory))
       ),
 
    AddGlyphBoardList =
@@ -170,7 +171,7 @@ generate_reply (QueryState, Input) ->
          fun (GlyphBoardID) ->
             btl_add_glyph_board:generate(shr_glyph_board:from_id(GlyphBoardID))
          end,
-         ordsets:to_list(btl_battle:get_used_glyph_board_ids(Battle))
+         ordsets:to_list(shr_inventory:get_glyph_boards(RelevantInventory))
       ),
 
    AddTileList =
@@ -179,7 +180,7 @@ generate_reply (QueryState, Input) ->
          fun (TileClassID) ->
             btl_add_tile:generate(shr_tile:from_id(TileClassID))
          end,
-         ordsets:to_list(btl_battle:get_used_tile_ids(Battle))
+         ordsets:to_list(btl_battle:get_related_tile_ids(Battle))
       ),
 
    OutputList =

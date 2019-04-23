@@ -12,7 +12,8 @@
       related_inventory :: shr_inventory:type(),
       related_tile_ids :: ordsets:ordset(shr_tile:id()),
       map :: shr_map:type(),
-      characters :: orddict:orddict(non_neg_integer(), btl_character:type()),
+      characters ::
+         orddict:orddict(non_neg_integer(), btl_character:unresolved()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type()
    }
@@ -96,10 +97,10 @@ get_map (Battle) -> Battle#battle.map.
    (
       type()
    )
-   -> orddict:orddict(non_neg_integer(), btl_character:type()).
+   -> orddict:orddict(non_neg_integer(), btl_character:unresolved()).
 get_characters (Battle) -> Battle#battle.characters.
 
--spec get_character (non_neg_integer(), type()) -> btl_character:type().
+-spec get_character (non_neg_integer(), type()) -> btl_character:unresolved().
 get_character (IX, Battle) ->
    orddict:fetch(IX, Battle#battle.characters).
 
@@ -139,7 +140,7 @@ set_map (Map, Battle) ->
 
 -spec set_characters
    (
-      orddict:orddict(non_neg_integer(), btl_character:type()),
+      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
       type()
    )
    -> type().
@@ -149,7 +150,13 @@ set_characters (Characters, Battle) ->
       characters = Characters
    }.
 
--spec set_character (non_neg_integer(), btl_character:type(), type()) -> type().
+-spec set_character
+   (
+      non_neg_integer(),
+      btl_character:unresolved(),
+      type()
+   )
+   -> type().
 set_character (IX, Character, Battle) ->
    Battle#battle
    {
