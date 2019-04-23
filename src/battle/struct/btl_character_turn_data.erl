@@ -113,7 +113,7 @@ clean_battle (Data) ->
          btl_battle:set_character
          (
             Data#type.character_ix,
-            Data#type.character,
+            btl_character:to_unresolved(Data#type.character),
             Data#type.battle
          )
    }.

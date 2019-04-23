@@ -1,5 +1,12 @@
 -module(shr_equipment).
 
+-define(PRIMARY_WEAPON_FIELD, <<"pr">>).
+-define(SECONDARY_WEAPON_FIELD, <<"sc">>).
+-define(ARMOR_FIELD, <<"ar">>).
+-define(PORTRAIT_FIELD, <<"pt">>).
+-define(GLYPH_BOARD_FIELD, <<"gb">>).
+-define(GLYPHS_FIELD, <<"gl">>).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,8 +293,8 @@ set_glyphs (V, Eq) when is_record(Eq, shr_eq_ref) ->
    Eq#shr_eq_ref{ glyphs = lists:map(fun shr_glyph:get_id/1, V) }.
 
 -spec ataxia_set_glyphs
-   (shr_glyph:type(), type()) -> {type(), ataxic:basic()};
-   (shr_glyph:type(), unresolved()) -> {unresolved(), ataxic:basic()}.
+   (list(shr_glyph:type()), type()) -> {type(), ataxic:basic()};
+   (list(shr_glyph:type()), unresolved()) -> {unresolved(), ataxic:basic()}.
 ataxia_set_glyphs (V, Eq) ->
    {
       set_glyphs(V, Eq),
@@ -412,8 +419,8 @@ set_glyph_ids (V, Eq) when is_record(Eq, shr_eq) ->
    Eq#shr_eq{ glyphs = lists:map(fun shr_glyph:from_id/1, V) }.
 
 -spec ataxia_set_glyph_ids
-   (shr_glyph:id(), type()) -> {type(), ataxic:basic()};
-   (shr_glyph:id(), unresolved()) -> {unresolved(), ataxic:basic()}.
+   (list(shr_glyph:id()), type()) -> {type(), ataxic:basic()};
+   (list(shr_glyph:id()), unresolved()) -> {unresolved(), ataxic:basic()}.
 ataxia_set_glyph_ids (V, Eq) ->
    {
       set_glyph_ids(V, Eq),
@@ -446,6 +453,55 @@ default_unresolved () ->
       portrait = shr_portrait:default_id(),
       glyph_board = shr_glyph_board:default_id(),
       glyphs = []
+   }.
+
+-spec decode (map()) -> unresolved().
+decode (Map) ->
+   #shr_eq_ref
+   {
+      primary = maps:get(?PRIMARY_WEAPON_FIELD, Map),
+      secondary = maps:get(?SECONDARY_WEAPON_FIELD, Map),
+      armor = maps:get(?ARMOR_FIELD, Map),
+      portrait = maps:get(?PORTRAIT_FIELD, Map),
+      glyph_board = maps:get(?GLYPH_BOARD_FIELD, Map),
+      glyphs = maps:get(?GLYPHS_FIELD, Map)
+   }.
+
+-spec encode (unresolved()) -> {list({binary(), any()})}.
+encode (EqRef) ->
+   {
+      [
+         {?PRIMARY_WEAPON_FIELD, EqRef#shr_eq_ref.primary},
+         {?SECONDARY_WEAPON_FIELD, EqRef#shr_eq_ref.secondary},
+         {?ARMOR_FIELD, EqRef#shr_eq_ref.armor},
+         {?PORTRAIT_FIELD, EqRef#shr_eq_ref.portrait},
+         {?GLYPH_BOARD_FIELD, EqRef#shr_eq_ref.glyph_board},
+         {?GLYPHS_FIELD, EqRef#shr_eq_ref.glyphs}
+      ]
+   }.
+
+-spec resolve (unresolved()) -> type().
+resolve (EqRef) ->
+   #shr_eq
+   {
+      primary = shr_weapon:from_id(EqRef#shr_eq_ref.primary),
+      secondary = shr_weapon:from_id(EqRef#shr_eq_ref.secondary),
+      armor = shr_armor:from_id(EqRef#shr_eq_ref.armor),
+      portrait = shr_portrait:from_id(EqRef#shr_eq_ref.portrait),
+      glyph_board = shr_glyph_board:from_id(EqRef#shr_eq_ref.glyph_board),
+      glyphs = lists:map(fun shr_glyph:from_id/1, EqRef#shr_eq_ref.glyphs)
+   }.
+
+-spec to_unresolved (type()) -> unresolved().
+to_unresolved (Eq) ->
+   #shr_eq_ref
+   {
+      primary = shr_weapon:get_id(Eq#shr_eq.primary),
+      secondary = shr_weapon:get_id(Eq#shr_eq.secondary),
+      armor = shr_armor:get_id(Eq#shr_eq.armor),
+      portrait = shr_portrait:get_id(Eq#shr_eq.portrait),
+      glyph_board = shr_glyph_board:get_id(Eq#shr_eq.glyph_board),
+      glyphs = lists:map(fun shr_glyph:get_id/1, Eq#shr_eq.glyphs)
    }.
 
 -spec get_primary_weapon_field () -> non_neg_integer().
