@@ -42,6 +42,16 @@
       set_battle_id/2,
       set_player_ids/2,
       set_player_summary_ixs/2,
+      push_player_id/2,
+      push_player_summary_ix/2,
+
+      ataxia_set_battle/2,
+      ataxia_set_free_slots/2,
+      ataxia_set_battle_id/2,
+      ataxia_set_player_ids/2,
+      ataxia_set_player_summary_ixs/2,
+      ataxia_push_player_id/2,
+      ataxia_push_player_summary_ix/2,
 
       get_battle_field/0,
       get_free_slots_field/0,
@@ -95,19 +105,146 @@ get_player_summary_ixs (PBattle) -> PBattle#pending_battle.player_summary_ixs.
 -spec set_battle (btl_battle:type(), type()) -> type().
 set_battle (Battle, PBattle) -> PBattle#pending_battle{ battle = Battle }.
 
+-spec ataxia_set_battle (btl_battle:type(), type()) -> {type(), ataxic:basic()}.
+ataxia_set_battle (Battle, PBattle) ->
+   {
+      PBattle#pending_battle{ battle = Battle },
+      ataxic:update_field
+      (
+         get_battle_field(),
+         ataxic:constant(Battle)
+      )
+   }.
+
 -spec set_battle_id (btl_battle:id(), type()) -> type().
 set_battle_id (BattleID, PBattle) ->
    PBattle#pending_battle{ battle_id = BattleID }.
 
+-spec ataxia_set_battle_id
+   (
+      btl_battle:id(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_battle_id (BattleID, PBattle) ->
+   {
+      PBattle#pending_battle{ battle_id = BattleID },
+      ataxic:update_field
+      (
+         get_battle_id_field(),
+         ataxic:constant(BattleID)
+      )
+   }.
+
 -spec set_free_slots (non_neg_integer(), type()) -> type().
 set_free_slots (Val, PBattle) -> PBattle#pending_battle{ free_slots = Val }.
+
+-spec ataxia_set_free_slots
+   (
+      non_neg_integer(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_free_slots (Val, PBattle) ->
+   {
+      PBattle#pending_battle{ free_slots = Val },
+      ataxic:update_field
+      (
+         get_free_slots_field(),
+         ataxic:constant(Val)
+      )
+   }.
 
 -spec set_player_summary_ixs (list(non_neg_integer()), type()) -> type().
 set_player_summary_ixs (Val, PBattle) ->
    PBattle#pending_battle{ player_summary_ixs = Val }.
 
+-spec ataxia_set_player_summary_ixs
+   (
+      list(non_neg_integer()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_player_summary_ixs (Val, PBattle) ->
+   {
+      PBattle#pending_battle{ player_summary_ixs = Val },
+      ataxic:update_field
+      (
+         get_player_summary_ixs_field(),
+         ataxic:constant(Val)
+      )
+   }.
+
+-spec push_player_summary_ix (non_neg_integer(), type()) -> type().
+push_player_summary_ix (Val, PBattle) ->
+   PBattle#pending_battle
+   {
+      player_summary_ixs = [Val|PBattle#pending_battle.player_summary_ixs]
+   }.
+
+-spec ataxia_push_player_summary_ix
+   (
+      non_neg_integer(),
+      type()
+   )
+   -> {type(), ataxic:constant()}.
+ataxia_push_player_summary_ix (Val, PBattle) ->
+   {
+      PBattle#pending_battle
+      {
+         player_summary_ixs = [Val|PBattle#pending_battle.player_summary_ixs]
+      },
+      ataxic:update_field
+      (
+         get_player_summary_ixs_field(),
+         ataxic:list_cons(ataxic:constant(Val))
+      )
+   }.
+
 -spec set_player_ids (list(shr_player:id()), type()) -> type().
 set_player_ids (Val, PBattle) -> PBattle#pending_battle{ player_ids = Val }.
+
+-spec ataxia_set_player_ids
+   (
+      list(shr_player:id()),
+      type()
+   )
+   -> {type(), ataxia:basic()}.
+ataxia_set_player_ids (Val, PBattle) ->
+   {
+      PBattle#pending_battle{ player_ids = Val },
+      ataxic:update_field
+      (
+         get_player_ids_field(),
+         ataxic:constant(Val)
+      )
+   }.
+
+-spec push_player_id (shr_player:id(), type()) -> type().
+push_player_id (Val, PBattle) ->
+   PBattle#pending_battle
+   {
+      player_ids = [Val|PBattle#pending_battle.player_ids]
+   }.
+
+-spec ataxia_push_player_id
+   (
+      shr_player:id(),
+      type()
+   )
+   -> {type(), ataxia:basic()}.
+ataxia_push_player_id (Val, PBattle) ->
+   {
+      PBattle#pending_battle
+      {
+         player_ids = [Val|PBattle#pending_battle.player_ids]
+      },
+      ataxic:update_field
+      (
+         get_player_ids_field(),
+         ataxic:list_cons(ataxic:constant(Val))
+      )
+   }.
 
 -spec get_battle_id_field () -> non_neg_integer().
 get_battle_id_field () -> #pending_battle.battle_id.

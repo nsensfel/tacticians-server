@@ -429,17 +429,9 @@ add_to_pending_battle
    S1PendingBattle =
       btl_pending_battle:set_free_slots(RemainingSlots, S0PendingBattle),
    S2PendingBattle =
-      btl_pending_battle:set_player_ids
-      (
-         [PlayerID|btl_pending_battle:get_player_ids(S1PendingBattle)],
-         S1PendingBattle
-      ),
+      btl_pending_battle:push_player_id(PlayerID, S1PendingBattle),
    S3PendingBattle =
-      btl_pending_battle:set_player_summary_ixs
-      (
-         [PlayerIX|btl_pending_battle:get_player_summary_ixs(S1PendingBattle)],
-         S2PendingBattle
-      ),
+      btl_pending_battle:push_player_summary_ix(PlayerIX, S2PendingBattle),
 
    Update =
       ataxic:sequence
