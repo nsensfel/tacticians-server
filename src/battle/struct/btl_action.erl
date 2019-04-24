@@ -1,4 +1,4 @@
--module(btl_battle_action).
+-module(btl_action).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,11 +65,11 @@ maybe_decode_move ([]) -> [];
 maybe_decode_move (PathInBinary) ->
    Path = lists:map(fun shr_direction:decode/1, PathInBinary),
 
-   [#move { path = Path }].
+   [#move{ path = Path }].
 
 -spec maybe_decode_attack (integer()) -> list(type()).
 maybe_decode_attack (TargetIX) when (TargetIX < 0) -> [];
-maybe_decode_attack (TargetIX) -> [#attack { target_ix = TargetIX }].
+maybe_decode_attack (TargetIX) -> [#attack{ target_ix = TargetIX }].
 
 -spec maybe_decode_weapon_switch (boolean()) -> list(type()).
 maybe_decode_weapon_switch (false) -> [];
@@ -98,8 +98,5 @@ get_target_ix (_) ->
 -spec get_category (type()) -> category().
 get_category (Action) when is_record(Action, attack) -> attack;
 get_category (Action) when is_record(Action, move) -> move;
-get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon;
-get_category (Action) ->
-   io:format("How'd you get there?~p~n", [Action]),
-   true = Action.
+get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon.
 

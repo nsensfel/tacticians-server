@@ -1,4 +1,4 @@
--module(btl_next_turn).
+-module(btl_turn_progression).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,7 +9,7 @@
 -export
 (
    [
-      update_if_needed/1
+      handle/1
    ]
 ).
 
@@ -64,71 +64,60 @@ reset_next_player_timeline (Battle) ->
    {UpdatedBattle, UpdatedNextPlayer, DBQuery}.
 
 
--spec activate_next_players_characters (btl_battle:type(), btl_player:type())
+-spec activate_next_players_characters
+   (
+      btl_battle:type(),
+      btl_player:type()
+   )
    -> {btl_battle:type(), ataxic:basic()}.
 activate_next_players_characters (Battle, NextPlayer) ->
    NextPlayerIX = btl_player:get_index(NextPlayer),
-   Characters = btl_battle:get_characters(Battle),
+   AllCharacters = btl_battle:get_characters(Battle),
 
-   {UpdatedCharacters, AtaxicUpdates} =
+   {ResultingBattle, BattleAtaxicUpdates} =
       orddict:fold
       (
-         fun (IX, Character, {Prev, Updates}) ->
+         fun (IX, Character, {CurrentBattle, CurrentBattleUpdates}) ->
             case (btl_character:get_player_index(Character) == NextPlayerIX) of
                true ->
-                  {
-                     orddict:store
+                  {UpdatedCharacter, CharacterAtaxicUpdate} =
+                     btl_character:ataxia_set_is_active(true, Character),
+
+                  {UpdatedBattle, BattleAtaxicUpdate} =
+                     btl_battle:ataxia_set_character
                      (
                         IX,
-                        btl_character:set_is_active(true, Character),
-                        Prev
+                        UpdatedCharacter,
+                        CharacterAtaxicUpdate
                      ),
-                     [
-                        ataxic_sugar:update_orddict_element
-                        (
-                           IX,
-                           ataxic:update_field
-                           (
-                              btl_character:get_is_active_field(),
-                              ataxic:constant(true)
-                           )
-                        )|Updates
-                     ]
-                  };
 
-               false -> {Prev, Updates}
+                  {UpdatedBattle, [BattleAtaxicUpdate|CurrentBattleUpdates]};
+
+               false -> {CurrentBattle, CurrentBattleUpdates}
             end
          end,
-         {Characters, []},
-         Characters
+         {Battle, []},
+         AllCharacters
       ),
 
-   DBQuery =
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic:sequence(AtaxicUpdates)
-      ),
+   {ResultingBattle, ataxic:optimize(ataxic:sequence(BattleAtaxicUpdates))}.
 
-   UpdatedBattle = btl_battle:set_characters(UpdatedCharacters, Battle),
-
-   {UpdatedBattle, DBQuery}.
-
--spec update
+-spec activate_next_player
    (
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-update (Update) ->
+activate_next_player (Update) ->
    Data = btl_character_turn_update:get_data(Update),
    Battle = btl_character_turn_data:get_battle(Data),
 
-   {S0Battle, DBQuery0} = set_player_turn_to_next(Battle),
+   {S0Battle, DBQuery0} = prepare_player_turn_for_next_player(Battle),
    {S1Battle, NextPlayer, DBQuery1} = reset_next_player_timeline(S0Battle),
    {S2Battle, DBQuery2} =
       activate_next_players_characters(S1Battle, NextPlayer),
 
    S0Data = btl_character_turn_data:set_battle(S2Battle, Data),
+
    S0Update =
       btl_character_turn_update:add_to_timeline
       (
@@ -152,33 +141,32 @@ update (Update) ->
 
    S2Update.
 
--spec requires_update (btl_character_turn_update:type()) -> boolean().
-requires_update (Update) ->
+-spec has_active_characters_remaining
+   (
+      btl_character_turn_update:type()
+   )
+   -> boolean().
+has_active_characters_remaining (Update) ->
    Data = btl_character_turn_update:get_data(Update),
    Battle = btl_character_turn_data:get_battle(Data),
    Characters = btl_battle:get_characters(Battle),
 
-   (not
-      (lists:any
-         (
-            fun ({_IX, Char}) ->
-               btl_character:get_is_active(Char)
-            end,
-            orddict:to_list(Characters)
-         )
-      )
+   lists:any
+   (
+      fun ({_IX, Char}) -> btl_character:get_is_active(Char) end,
+      orddict:to_list(Characters)
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec update_if_needed
+-spec handle
    (
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-update_if_needed (Update) ->
-   case requires_update(Update) of
-      true -> update(Update);
+handle (Update) ->
+   case has_active_characters_remaining(Update) of
+      false -> activate_next_player(Update);
       _ -> Update
    end.

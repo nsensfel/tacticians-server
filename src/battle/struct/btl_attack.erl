@@ -1,5 +1,7 @@
 -module(btl_attack).
 
+% FIXME: this module is mostly mechanics, not structure.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,28 +114,40 @@ roll_parry (DefenderStatistics, DefenderLuck) ->
       shr_omnimods:type()
    )
    -> non_neg_integer().
-get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
-   S0DamageMultiplier =
-      case Precision of
-         misses -> 0;
-         grazes -> 0.5;
-         hits -> 1
-      end,
-
-   S1DamageMultiplier =
-      case IsCritical of
-         true -> (S0DamageMultiplier * 2);
-         _ -> S0DamageMultiplier
-      end,
-
-   S2DamageMultiplier = (S1DamageMultiplier * AtkModifier),
+get_damage
+(
+   Precision,
+   IsCritical,
+   StartingDamageMultiplier,
+   AttackerOmnimods,
+   DefenderOmnimods
+) ->
+   ActualDamageMultiplier =
+      (
+         StartingDamageMultiplier
+         *
+         (
+            case Precision of
+               misses -> 0;
+               grazes -> 0.5;
+               hits -> 1
+            end
+         )
+         *
+         (
+            case IsCritical of
+               true -> 2;
+               _ -> 1
+            end
+         )
+      ),
 
    ActualDamage =
       shr_omnimods:get_attack_damage
       (
-         S2DamageMultiplier,
-         ActualAtkOmni,
-         ActualDefOmni
+         ActualDamageMultiplier,
+         AttackerOmnimods,
+         DefenderOmnimods
       ),
 
    ActualDamage.
@@ -141,8 +155,8 @@ get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
 -spec effect_of_attack
    (
       order(),
-      btl_character_current_data:type(),
-      btl_character_current_data:type(),
+      shr_character:type(),
+      shr_character:type(),
       boolean(),
       integer(),
       integer()
@@ -151,57 +165,63 @@ get_damage (Precision, IsCritical, AtkModifier, ActualAtkOmni, ActualDefOmni) ->
 effect_of_attack
 (
    Order,
-   AtkCurrData,
-   DefCurrData,
+   Attacker,
+   Defender,
    CanParry,
    AttackerLuck,
    DefenderLuck
 ) ->
-   DefStats = btl_character_current_data:get_statistics(DefCurrData),
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   %%%% Roll parry to see if the roles have to be swapped. %%%%%%%%%%%%%%%%%%%%%
 
+   DefenderStats = shr_character:get_statistics(Defender),
    {ParryIsSuccessful, ParryPositiveLuckMod, ParryNegativeLuckMod} =
       case CanParry of
-         true -> roll_parry(DefStats, DefenderLuck);
+         true -> roll_parry(DefenderStats, DefenderLuck);
          false -> {false, 0, 0}
       end,
 
    {
-      ActualAtkData,
-      ActualDefData,
-      ActualAtkLuck,
-      ActualDefLuck
+      ActualAttacker,
+      ActualDefender,
+      ActualAttackerLuck,
+      ActualDefenderLuck
    } =
       case ParryIsSuccessful of
-         true -> {DefCurrData, AtkCurrData, DefenderLuck, AttackerLuck};
-         false -> {AtkCurrData, DefCurrData, AttackerLuck, DefenderLuck}
+         true -> {Defender, Attacker, DefenderLuck, AttackerLuck};
+         false -> {Attacker, Defender, AttackerLuck, DefenderLuck}
       end,
 
-   ActualAtkStats = btl_character_current_data:get_statistics(ActualAtkData),
-   ActualAtkOmni = btl_character_current_data:get_omnimods(ActualAtkData),
-   ActualDefStats = btl_character_current_data:get_statistics(ActualDefData),
-   ActualDefOmni = btl_character_current_data:get_omnimods(ActualDefData),
+   ActualAttackerStats = shr_character:get_statistics(ActualAttacker),
+   ActualAttackerOmnimods = shr_character:get_omnimods(ActualAttacker),
+   ActualDefenderStats = shr_character:get_statistics(ActualDefender),
+   ActualDefenderOmnimods = shr_character:get_omnimods(ActualDefender),
+
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
    {Precision, PrecisionPositiveLuckMod, PrecisionNegativeLuckMod} =
       roll_precision
       (
-         ActualAtkStats,
-         ActualDefStats,
-         ActualDefLuck
+         ActualAttackerStats,
+         ActualDefenderStats,
+         ActualDefenderLuck
       ),
 
 
    {IsCritical, CriticalPositiveLuckMod, CriticalNegativeLuckMod} =
-      roll_critical_hit(ActualAtkStats, ActualAtkLuck),
+      roll_critical_hit(ActualAttackerStats, ActualAttackerLuck),
 
-   AtkDamageModifier = shr_statistics:get_damage_modifier(ActualAtkStats),
+   ActualAttackerDamageModifier =
+      shr_statistics:get_damage_modifier(ActualAttackerStats),
+
    Damage =
       get_damage
       (
          Precision,
          IsCritical,
-         AtkDamageModifier,
-         ActualAtkOmni,
-         ActualDefOmni
+         ActualAttackerDamageModifier,
+         ActualAttackerOmnimods,
+         ActualDefenderOmnimods
       ),
 
    {FinalAttackerLuckMod, FinalDefenderLuckMod} =
@@ -311,8 +331,8 @@ encode_precision (misses) -> <<"m">>.
 -spec get_description_of
    (
       step(),
-      btl_character_current_data:type(),
-      btl_character_current_data:type(),
+      shr_character:type(),
+      shr_character:type(),
       integer(),
       integer()
    )
@@ -320,36 +340,36 @@ encode_precision (misses) -> <<"m">>.
 get_description_of
 (
    {first, CanParry},
-   AtkCurrData,
-   DefCurrData,
-   AtkLuck,
-   DefLuck
+   Attacker,
+   Defender,
+   AttackerLuck,
+   DefenderLuck
 ) ->
    effect_of_attack
    (
       first,
-      AtkCurrData,
-      DefCurrData,
+      Attacker,
+      Defender,
       CanParry,
-      AtkLuck,
-      DefLuck
+      AttackerLuck,
+      DefenderLuck
    );
 get_description_of
 (
    {second, CanParry},
-   AtkCurrData,
-   DefCurrData,
-   AtkLuck,
-   DefLuck
+   Attacker,
+   Defender,
+   AttackerLuck,
+   DefenderLuck
 ) ->
-   AtkStats = btl_character_current_data:get_statistics(AtkCurrData),
+   AttackerStats = shr_character:get_statistics(Attacker),
    AttackerDoubleAttackChance =
-      shr_statistics:get_double_hits(AtkStats),
+      shr_statistics:get_double_hits(AttackerStats),
    {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
-      shr_roll:percentage_with_luck(AttackerDoubleAttackChance, AtkLuck),
+      shr_roll:percentage_with_luck(AttackerDoubleAttackChance, AttackerLuck),
 
-   NewAtkLuck = (AtkLuck + PositiveModifier),
-   NewDefLuck = (DefLuck + NegativeModifier),
+   NewAttackerLuck = (AttackerLuck + PositiveModifier),
+   NewDefenderLuck = (DefenderLuck + NegativeModifier),
 
    case IsSuccessful of
       true ->
@@ -357,11 +377,11 @@ get_description_of
             effect_of_attack
             (
                second,
-               AtkCurrData,
-               DefCurrData,
+               Attacker,
+               Defender,
                CanParry,
-               NewAtkLuck,
-               NewDefLuck
+               NewAttackerLuck,
+               NewDefenderLuck
             ),
 
          Result#attack
@@ -377,19 +397,19 @@ get_description_of
 get_description_of
 (
    {counter, CanParry},
-   AtkCurrData,
-   DefCurrData,
-   AtkLuck,
-   DefLuck
+   Attacker,
+   Defender,
+   AttackerLuck,
+   DefenderLuck
 ) ->
    effect_of_attack
    (
       counter,
-      DefCurrData,
-      AtkCurrData,
+      Defender,
+      Attacker,
       CanParry,
-      DefLuck,
-      AtkLuck
+      DefenderLuck,
+      AttackerLuck
    ).
 
 -spec apply_to_healths_and_lucks
