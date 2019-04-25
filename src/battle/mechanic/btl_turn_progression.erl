@@ -16,52 +16,51 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec set_player_turn_to_next (btl_battle:type())
+-spec prepare_player_turn_for_next_player
+   (
+      btl_battle:type()
+   )
    -> {btl_battle:type(), ataxic:basic()}.
-set_player_turn_to_next (Battle) ->
+prepare_player_turn_for_next_player (Battle) ->
    Players = btl_battle:get_players(Battle),
    CurrentPlayerTurn = btl_battle:get_current_player_turn(Battle),
 
-   NextPlayerTurn = btl_player_turn:next(Players, CurrentPlayerTurn),
+   {UpdatedPlayerTurn, PlayerTurnAtaxiaUpdate} =
+      btl_player_turn:ataxia_next(Players, CurrentPlayerTurn),
 
-   UpdatedBattle = btl_battle:set_current_player_turn(NextPlayerTurn, Battle),
-
-   DBQuery =
-      ataxic:update_field
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_current_player_turn
       (
-         btl_battle:get_current_player_turn_field(),
-         ataxic:constant(NextPlayerTurn)
+         UpdatedPlayerTurn,
+         PlayerTurnAtaxiaUpdate,
+         Battle
       ),
 
-   {UpdatedBattle, DBQuery}.
+   {UpdatedBattle, BattleAtaxiaUpdate}.
 
--spec reset_next_player_timeline (btl_battle:type())
+-spec reset_next_player_timeline
+   (
+      btl_battle:type()
+   )
    -> {btl_battle:type(), btl_player:type(), ataxic:basic()}.
 reset_next_player_timeline (Battle) ->
    NextPlayerTurn = btl_battle:get_current_player_turn(Battle),
    NextPlayerIX = btl_player_turn:get_player_ix(NextPlayerTurn),
    NextPlayer = btl_battle:get_player(NextPlayerIX, Battle),
 
-   UpdatedNextPlayer = btl_player:reset_timeline(NextPlayer),
-   UpdatedBattle =
-      btl_battle:set_player(NextPlayerIX, UpdatedNextPlayer, Battle),
+   {UpdatedNextPlayer, PlayerAtaxiaUpdate} =
+      btl_player:ataxia_reset_timeline(NextPlayer),
 
-   DBQuery =
-      ataxic:update_field
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_player
       (
-         btl_battle:get_players_field(),
-         ataxic_sugar:update_orddict_element
-         (
-            NextPlayerIX,
-            ataxic:update_field
-            (
-               btl_player:get_timeline_field(),
-               ataxic:constant([])
-            )
-         )
+         NextPlayerIX,
+         UpdatedNextPlayer,
+         PlayerAtaxiaUpdate,
+         Battle
       ),
 
-   {UpdatedBattle, UpdatedNextPlayer, DBQuery}.
+   {UpdatedBattle, UpdatedNextPlayer, BattleAtaxiaUpdate}.
 
 
 -spec activate_next_players_characters

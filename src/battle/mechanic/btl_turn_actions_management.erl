@@ -1,4 +1,4 @@
--module(btl_turn_actions).
+-module(btl_turn_actions_management).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,20 +9,19 @@
 -export
 (
    [
-      apply_requested_actions/2
+      handle/2
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% TODO: move this elsewhere
--spec finalize_character
+-spec deactivate_character
    (
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-finalize_character (Update) ->
+deactivate_character (Update) ->
    Data = btl_character_turn_update:get_data(Update),
    Character = btl_character_turn_data:get_character(Data),
 
@@ -50,13 +49,13 @@ finalize_character (Update) ->
 
    S1Update.
 
--spec handle
+-spec handle_action
 (
    btl_battle_action:type(),
    btl_character_turn_update:type()
 )
 -> btl_character_turn_update:type().
-handle (BattleAction, Update) ->
+handle_action (BattleAction, Update) ->
    case btl_battle_action:get_category(BattleAction) of
       move -> btl_turn_actions_move:handle(BattleAction, Update);
       switch_weapon -> btl_turn_actions_switch_weapon:handle(Update);
@@ -66,16 +65,16 @@ handle (BattleAction, Update) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec apply_requested_actions
+-spec handle
    (
       btl_character_turn_data:type(),
       btl_character_turn_request:type()
    )
    -> btl_character_turn_update:type().
-apply_requested_actions (Data, Request) ->
+handle (Data, Request) ->
    Actions = btl_character_turn_request:get_actions(Request),
 
    EmptyUpdate = btl_character_turn_update:new(Data),
-   PostActionsUpdate = lists:foldl(fun handle/2, EmptyUpdate, Actions),
+   PostActionsUpdate = lists:foldl(fun handle_action/2, EmptyUpdate, Actions),
 
-   finalize_character(PostActionsUpdate).
+   deactivate_character(PostActionsUpdate).
