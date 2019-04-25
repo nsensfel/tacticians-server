@@ -63,14 +63,14 @@
       get_base_character/1,
 
       set_rank/2,
-      set_location/2,
+      set_location/3,
       set_current_health/2,
       set_is_active/2,
       set_is_defeated/2,
       set_base_character/2,
 
       ataxia_set_rank/2,
-      ataxia_set_location/2,
+      ataxia_set_location/3,
       ataxia_set_current_health/2,
       ataxia_set_is_active/2,
       ataxia_set_is_defeated/2,
@@ -101,14 +101,41 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec handle_max_health_change
+   (
+      shr_character:type(),
+      shr_character:type(),
+      integer()
+   )
+   -> {boolean(), integer()}.
+handle_max_health_change (OldBaseChar, NewBaseChar, OldHealth) ->
+   OldMaxHealth =
+      shr_statistics:get_health(shr_character:get_statistics(OldBaseChar)),
+
+   NewMaxHealth =
+      shr_statistics:get_health(shr_character:get_statistics(NewBaseChar)),
+
+   case (OldMaxHealth == NewMaxHealth) of
+      true -> {false, OldMaxHealth, OldHealth};
+      false ->
+         OldHealthRatio = (OldHealth / OldMaxHealth),
+         NewHealth =
+            min
+            (
+               NewMaxHealth,
+               shr_math_util:ceil(OldHealthRatio * NewMaxHealth)
+            ),
+
+         {true, NewHealth}
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_player_index (either()) -> non_neg_integer().
-get_player_index (#btl_char{ player_ix = R}) -> R;
-get_player_index (#btl_char_ref{ player_ix = R}) -> R.
+get_player_index (#btl_char{ player_ix = R }) -> R;
+get_player_index (#btl_char_ref{ player_ix = R }) -> R.
 
 -spec get_rank (either()) -> rank().
 get_rank (#btl_char{ rank = R }) -> R;
@@ -158,23 +185,90 @@ set_rank (Rank, Char) when is_record(Char, btl_char) ->
 set_rank (Rank, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ rank = Rank }.
 
-% TODO: This can change current_health.
-% FIXME: Can't do this without giving the new tile omnimods.
+-spec ataxia_set_rank
+   (rank(), type()) -> {type(), ataxic:basic()};
+   (rank(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_rank (Rank, Char) ->
+   {
+      set_rank(Rank, Char),
+      ataxic:update_field
+      (
+         get_rank_field(),
+         ataxic:constant(Rank)
+      )
+   }.
+
 -spec set_location
    (
       {non_neg_integer(), non_neg_integer()},
       shr_omnimods:type(),
       type()
    )
-   -> type();
+   -> type().
 set_location (Location, LocOmnimods, Char) ->
-   BaseCharacter = 
-   CurrentMaxHealth =
-      shr_statistics:get_health
+   CurrentBaseCharacter = Char#btl_char.base,
+   UpdatedBaseCharacter = shr_character:set_extra_omnimods(LocOmnimods),
+
+   case
+      handle_max_health_change
       (
-         shr_character:get_statistics
+         CurrentBaseCharacter,
+         UpdatedBaseCharacter,
+         Char#btl_char.current_health
       )
-   Char#btl_char{ location = Location }.
+   of
+      {false, _, _} ->
+         Char#btl_char
+         {
+            location = Location,
+            base = UpdatedBaseCharacter
+         };
+
+      {true, NewHealth} ->
+         Char#btl_char
+         {
+            location = Location,
+            base = UpdatedBaseCharacter,
+            current_health = NewHealth
+         }
+   end.
+
+-spec ataxia_set_location
+   (
+      {non_neg_integer(), non_neg_integer()},
+      shr_omnimods:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_location (Location, LocOmnimods, Char) ->
+   CurrentHealth = Char#btl_char.current_health,
+   UpdatedChar = set_location(Location, LocOmnimods, Char),
+   UpdatedCharHealth = UpdatedChar#btl_char.current_health,
+   LocationUpdate =
+      ataxic:update_field
+      (
+         get_location_field(),
+         ataxic:constant(Location)
+      ),
+
+   {
+      UpdatedChar,
+      case (CurrentHealth == UpdatedChar) of
+         true -> LocationUpdate;
+         false ->
+            ataxic:sequence
+            (
+               [
+                  ataxic:update_field
+                  (
+                     get_current_health_field(),
+                     ataxic:constant(UpdatedCharHealth)
+                  ),
+                  LocationUpdate
+               ]
+            )
+      end
+   }.
 
 -spec set_current_health
    (integer(), type()) -> type();
@@ -184,6 +278,19 @@ set_current_health (Health, Char) when is_record(Char, btl_char) ->
 set_current_health (Health, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ current_health = Health }.
 
+-spec ataxia_set_current_health
+   (integer(), type()) -> {type(), ataxic:basic()};
+   (integer(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_current_health (Health, Char) ->
+   {
+      set_current_health(Health, Char),
+      ataxic:update_field
+      (
+         get_current_health_field(),
+         ataxic:constant(Health)
+      )
+   }.
+
 -spec set_is_active
    (boolean(), type()) -> type();
    (boolean(), unresolved()) -> unresolved().
@@ -191,6 +298,19 @@ set_is_active (Active, Char) when is_record(Char, btl_char) ->
    Char#btl_char{ is_active = Active };
 set_is_active (Active, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ is_active = Active }.
+
+-spec ataxia_set_is_active
+   (boolean(), type()) -> {type(), ataxic:basic()};
+   (boolean(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_is_active (Active, Char) ->
+   {
+      set_is_active(Active, Char),
+      ataxic:update_field
+      (
+         get_is_active_field(),
+         ataxic:constant(Active)
+      )
+   }.
 
 -spec set_is_defeated
    (boolean(), type()) -> type();
@@ -200,14 +320,94 @@ set_is_defeated (Defeated, Char) when is_record(Char, btl_char) ->
 set_is_defeated (Defeated, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ is_defeated = Defeated }.
 
-% TODO: This can change current_health.
--spec set_base_character
-   (shr_character:type(), type()) -> type();
-   (shr_character:unresolved(), unresolved()) -> unresolved().
-set_base_character (Base, Char) when is_record(Char, btl_char) ->
-   Char#btl_char{ base = Base };
-set_base_character (Base, Char) when is_record(Char, btl_char_ref) ->
-   Char#btl_char_ref{ base = Base }.
+-spec ataxia_set_is_defeated
+   (boolean(), type()) -> {type(), ataxic:basic()};
+   (boolean(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_is_defeated (Defeated, Char) ->
+   {
+      set_is_defeated(Defeated, Char),
+      ataxic:update_field
+      (
+         get_is_defeated_field(),
+         ataxic:constant(Defeated)
+      )
+   }.
+
+-spec set_base_character (shr_character:type(), type()) -> type().
+set_base_character (NewBaseCharacter, Char) ->
+   CurrentBaseCharacter = Char#btl_char.base,
+   case
+      handle_max_health_change
+      (
+         CurrentBaseCharacter,
+         NewBaseCharacter,
+         Char#btl_char.current_health
+      )
+   of
+      {false, _, _} ->
+         Char#btl_char
+         {
+            base = NewBaseCharacter
+         };
+
+      {true, NewHealth} ->
+         Char#btl_char
+         {
+            base = NewBaseCharacter,
+            current_health = NewHealth
+         }
+   end.
+
+-spec ataxia_set_base_character
+   (
+      shr_character:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_base_character (NewBaseCharacter, BaseCharacterAtaxicUpdate, Char) ->
+   CurrentHealth = Char#btl_char.current_health,
+   UpdatedChar = set_base_character(NewBaseCharacter, Char),
+   UpdatedCharHealth = UpdatedChar#btl_char.current_health,
+   BattleCharacterAtaxicUpdate =
+      ataxic:update_field
+      (
+         get_base_character_field(),
+         BaseCharacterAtaxicUpdate
+      ),
+
+   {
+      UpdatedChar,
+      case (CurrentHealth == UpdatedChar) of
+         true -> BattleCharacterAtaxicUpdate;
+         false ->
+            ataxic:sequence
+            (
+               [
+                  ataxic:update_field
+                  (
+                     get_current_health_field(),
+                     ataxic:constant(UpdatedCharHealth)
+                  ),
+                  BattleCharacterAtaxicUpdate
+               ]
+            )
+      end
+   }.
+
+-spec ataxia_set_base_character
+   (
+      shr_character:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_base_character (NewBaseCharacter, Char) ->
+   ataxia_set_base_character
+   (
+      NewBaseCharacter,
+      ataxic:constant(NewBaseCharacter),
+      Char
+   ).
 
 %%%% Utils
 -spec new

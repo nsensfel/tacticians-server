@@ -27,7 +27,6 @@
       statistics :: shr_statistics:type(),
       attributes :: shr_attributes:type(),
       equipment_but_weapons_omnimods :: shr_omnimods:type(),
-      % TODO: move this to btl_character instead.
       extra_omnimods :: shr_omnimods:type(),
       omnimods :: shr_omnimods:type()
    }
