@@ -26,9 +26,10 @@
       is_using_secondary :: boolean(),
       statistics :: shr_statistics:type(),
       attributes :: shr_attributes:type(),
+      equipment_but_weapons_omnimods :: shr_omnimods:type(),
+      % TODO: move this to btl_character instead.
       extra_omnimods :: shr_omnimods:type(),
-      omnimods :: shr_omnimods:type(),
-      dirty :: boolean()
+      omnimods :: shr_omnimods:type()
    }
 ).
 
@@ -62,10 +63,7 @@
       set_extra_omnimods/2,
 
       switch_weapons/1,
-      ataxia_switch_weapons/1,
-
-      clean/1,
-      is_dirty/1
+      ataxia_switch_weapons/1
    ]
 ).
 
@@ -91,6 +89,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_equipment_but_weapons_omnimods
+   (
+      shr_equipment:either()
+   )
+   -> shr_omnimods:type().
+get_equipment_but_weapons_omnimods (Equipment) ->
+   shr_omnimods:merge
+   (
+      shr_glyph_board:get_omnimods_with_glyphs
+      (
+         shr_equipment:get_glyphs(Equipment),
+         shr_equipment:get_glyph_board(Equipment)
+      ),
+      shr_armor:get_omnimods(shr_equipment:get_armor(Equipment))
+   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,10 +144,45 @@ get_equipment (#shr_char_ref{ equipment = R }) -> R.
    (shr_equipment:type(), type()) -> type();
    (shr_equipment:unresolved(), unresolved()) -> unresolved().
 set_equipment (Eq, Char) when is_record(Char, shr_char) ->
+   EquipmentButWeaponsOmnimods = get_equipment_but_weapons_omnimods(Eq),
+   ActiveWeaponOmnimods =
+      case Char#shr_char.is_using_secondary of
+         false -> shr_weapon:get_omnimods(shr_equipment:get_primary_weapon(Eq));
+         _ -> shr_weapon:get_omnimods(shr_equipment:get_secondary_weapon(Eq))
+      end,
+
+   NewOmnimods =
+      shr_omnimods:merge
+      (
+         shr_omnimods:merge
+         (
+            EquipmentButWeaponsOmnimods,
+            ActiveWeaponOmnimods
+         ),
+         Char#shr_char.extra_omnimods
+      ),
+
+   NewAttributes =
+      shr_omnimods:apply_to_attributes
+      (
+         shr_attributes:default(),
+         NewOmnimods
+      ),
+
+   NewStatistics =
+      shr_omnimods:apply_to_statistics
+      (
+         shr_statistics:new_raw(NewAttributes),
+         NewOmnimods
+      ),
+
    Char#shr_char
    {
       equipment = Eq,
-      dirty = true
+      equipment_but_weapons_omnimods = EquipmentButWeaponsOmnimods,
+      omnimods = NewOmnimods,
+      attributes = NewAttributes,
+      statistics = NewStatistics
    };
 set_equipment (EqRef, CharRef) when is_record(CharRef, shr_char_ref) ->
    CharRef#shr_char_ref{ equipment = EqRef }.
@@ -170,10 +218,45 @@ ataxia_set_equipment (Eq, EqUpdate, Char) ->
    (type()) -> type();
    (unresolved()) -> unresolved().
 switch_weapons (Char) when is_record(Char, shr_char) ->
+   Eq = Char#shr_char.equipment,
+
+   ActiveWeaponOmnimods =
+      case Char#shr_char.is_using_secondary of
+         true -> shr_weapon:get_omnimods(shr_equipment:get_primary_weapon(Eq));
+         _ -> shr_weapon:get_omnimods(shr_equipment:get_secondary_weapon(Eq))
+      end,
+
+   NewOmnimods =
+      shr_omnimods:merge
+      (
+         shr_omnimods:merge
+         (
+            Char#shr_char.equipment_but_weapons_omnimods,
+            Char#shr_char.extra_omnimods
+         ),
+         ActiveWeaponOmnimods
+      ),
+
+   NewAttributes =
+      shr_omnimods:apply_to_attributes
+      (
+         shr_attributes:default(),
+         NewOmnimods
+      ),
+
+   NewStatistics =
+      shr_omnimods:apply_to_statistics
+      (
+         shr_statistics:new_raw(NewAttributes),
+         NewOmnimods
+      ),
+
    Char#shr_char
    {
       is_using_secondary = (not Char#shr_char.is_using_secondary),
-      dirty = true
+      omnimods = NewOmnimods,
+      attributes = NewAttributes,
+      statistics = NewStatistics
    };
 switch_weapons (Char) when is_record(Char, shr_char_ref) ->
    Char#shr_char_ref
@@ -229,70 +312,49 @@ get_omnimods (Char) -> Char#shr_char.omnimods.
 
 -spec set_extra_omnimods (shr_omnimods:type(), type()) -> type().
 set_extra_omnimods (O, Char) ->
-   Char#shr_char
-   {
-      extra_omnimods = O,
-      dirty = true
-   }.
-
--spec clean (type()) -> type().
-clean (Char) when Char#shr_char.dirty ->
-   Equipment = Char#shr_char.equipment,
-
-   Omnimods =
+   NewOmnimods =
       shr_omnimods:merge
       (
          shr_omnimods:merge
          (
-            shr_glyph_board:get_omnimods_with_glyphs
-            (
-               shr_equipment:get_glyphs(Equipment),
-               shr_equipment:get_glyph_board(Equipment)
-            ),
-            shr_armor:get_omnimods(shr_equipment:get_armor(Equipment))
+            Char#shr_char.equipment_but_weapons_omnimods,
+            shr_weapon:get_omnimods(get_active_weapon(Char))
          ),
-         shr_omnimods:merge
-         (
-            shr_weapon:get_omnimods(get_active_weapon(Char)),
-            Char#shr_char.extra_omnimods
-         )
+         O
       ),
 
-   Attributes =
+   NewAttributes =
       shr_omnimods:apply_to_attributes
       (
          shr_attributes:default(),
-         Omnimods
+         NewOmnimods
       ),
 
-   Statistics =
+   NewStatistics =
       shr_omnimods:apply_to_statistics
       (
-         shr_statistics:new_raw(Attributes),
-         Omnimods
+         shr_statistics:new_raw(NewAttributes),
+         NewOmnimods
       ),
 
    Char#shr_char
    {
-      dirty = false,
-      attributes = Attributes,
-      statistics = Statistics,
-      omnimods = Omnimods
-   };
-clean (Char) -> Char.
-
--spec is_dirty (type()) -> boolean().
-is_dirty (Char) -> Char#shr_char.dirty.
+      extra_omnimods = O,
+      omnimods = NewOmnimods,
+      attributes = NewAttributes,
+      statistics = NewStatistics
+   }.
 
 -spec resolve (shr_omnimods:type(), unresolved()) -> type().
 resolve (LocalOmnimods, CharRef) ->
    Attributes = shr_attributes:default(),
+   Eq = shr_equipment:resolve(CharRef#shr_char_ref.equipment),
 
    #shr_char
    {
       name = CharRef#shr_char_ref.name,
-      dirty = true,
-      equipment = shr_equipment:resolve(CharRef#shr_char_ref.equipment),
+      equipment_but_weapons_omnimods = get_equipment_but_weapons_omnimods(Eq),
+      equipment = Eq,
       is_using_secondary = CharRef#shr_char_ref.is_using_secondary,
       statistics = shr_statistics:new_raw(Attributes),
       attributes = Attributes,

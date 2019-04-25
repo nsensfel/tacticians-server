@@ -69,6 +69,15 @@
       set_is_defeated/2,
       set_base_character/2,
 
+      ataxia_set_rank/2,
+      ataxia_set_location/2,
+      ataxia_set_current_health/2,
+      ataxia_set_is_active/2,
+      ataxia_set_is_defeated/2,
+      ataxia_set_base_character/2,
+
+      ataxia_set_base_character/3,
+
       get_rank_field/0,
       get_current_health_field/0,
       get_is_active_field/0,
@@ -119,7 +128,6 @@ get_is_alive (#btl_char{ current_health = H, is_defeated = D }) ->
 get_is_alive (#btl_char_ref{ current_health = H, is_defeated = D }) ->
    ((not D) and (H > 0)).
 
-
 -spec get_is_active (either()) -> boolean().
 get_is_active
 (
@@ -150,13 +158,23 @@ set_rank (Rank, Char) when is_record(Char, btl_char) ->
 set_rank (Rank, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ rank = Rank }.
 
+% TODO: This can change current_health.
+% FIXME: Can't do this without giving the new tile omnimods.
 -spec set_location
-   ({non_neg_integer(), non_neg_integer()}, type()) -> type();
-   ({non_neg_integer(), non_neg_integer()}, unresolved()) -> unresolved().
-set_location (Location, Char) when is_record(Char, btl_char) ->
-   Char#btl_char{ location = Location };
-set_location (Location, Char) when is_record(Char, btl_char_ref) ->
-   Char#btl_char_ref{ location = Location }.
+   (
+      {non_neg_integer(), non_neg_integer()},
+      shr_omnimods:type(),
+      type()
+   )
+   -> type();
+set_location (Location, LocOmnimods, Char) ->
+   BaseCharacter = 
+   CurrentMaxHealth =
+      shr_statistics:get_health
+      (
+         shr_character:get_statistics
+      )
+   Char#btl_char{ location = Location }.
 
 -spec set_current_health
    (integer(), type()) -> type();
@@ -182,13 +200,14 @@ set_is_defeated (Defeated, Char) when is_record(Char, btl_char) ->
 set_is_defeated (Defeated, Char) when is_record(Char, btl_char_ref) ->
    Char#btl_char_ref{ is_defeated = Defeated }.
 
+% TODO: This can change current_health.
 -spec set_base_character
    (shr_character:type(), type()) -> type();
    (shr_character:unresolved(), unresolved()) -> unresolved().
 set_base_character (Base, Char) when is_record(Char, btl_char) ->
-   Char#btl_char{ base = Base};
+   Char#btl_char{ base = Base };
 set_base_character (Base, Char) when is_record(Char, btl_char_ref) ->
-   Char#btl_char_ref{ base = Base}.
+   Char#btl_char_ref{ base = Base }.
 
 %%%% Utils
 -spec new

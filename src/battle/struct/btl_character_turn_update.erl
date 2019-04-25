@@ -18,7 +18,7 @@
 
       character_ix :: non_neg_integer(),
 
-      reversed_timeline :: list(any())
+      timeline :: list(any())
    }
 ).
 
@@ -92,7 +92,7 @@ new (Battle, CharacterIX) ->
 
       character_ix = CharacterIX,
 
-      reversed_timeline = []
+      timeline = []
    }.
 
 -spec get_battle (type()) -> {type(), btl_battle:type()}.
@@ -203,12 +203,12 @@ ataxia_set_character (Character, CharacterUpdate, Data) ->
 add_to_timeline (Item, Data) ->
    Data#type
    {
-      reversed_timeline =
-         [btl_turn_result:encode(Item)|Data#type.reversed_timeline]
+      timeline =
+         [btl_turn_result:encode(Item)|Data#type.timeline]
    }.
 
 -spec get_timeline (type()) -> list(any()).
-get_timeline (Data) -> lists:reverse(Data#type.reversed_timeline).
+get_timeline (Data) -> Data#type.timeline.
 
 -spec get_battle_update (type()) -> ataxic:basic().
 get_battle_update (Data) ->

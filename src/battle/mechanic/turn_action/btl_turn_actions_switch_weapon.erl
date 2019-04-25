@@ -26,43 +26,30 @@
    )
    -> btl_character_turn_update:type().
 handle (Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Character = btl_character_turn_data:get_character(Data),
-   CharacterCurrentData =
-      btl_character_turn_data:get_character_current_data(Data),
-   CharacterIX = btl_character_turn_data:get_character_ix(Data),
+   {S0Update, Character} = btl_character_turn_update:get_character(Update),
+   CharacterIX = btl_character_turn_update:get_character_ix(S0Update),
+   BaseCharacter = btl_character:get_base_character(Character),
 
-   {PrimaryWeaponID, SecondaryWeaponID} = btl_character:get_weapon_ids(Character),
+   {UpdatedBaseCharacter, BaseCharacterAtaxiaUpdate} =
+      shr_character:ataxia_switch_weapons(BaseCharacter),
 
-   UpdatedWeaponIDs = {SecondaryWeaponID, PrimaryWeaponID},
-   UpdatedCharacter = btl_character:set_weapon_ids(UpdatedWeaponIDs, Character),
-
-   S0Data = btl_character_turn_data:set_character(UpdatedCharacter, Data),
-   S1Data = btl_character_turn_data:refresh_character_current_data(S0Data),
-
-   S0Update = btl_character_turn_update:set_data(S1Data, Update),
-   S1Update =
-      btl_turn_actions_stats_change:handle_max_health_changes
+   {UpdatedCharacter, CharacterAtaxiaUpdate} =
+      btl_character:ataxia_set_base_character
       (
-         CharacterCurrentData,
-         S0Update
+         UpdatedBaseCharacter,
+         BaseCharacterAtaxiaUpdate,
+         Character
       ),
 
    TimelineItem = btl_turn_result:new_character_switched_weapons(CharacterIX),
 
-   DBQuery =
-      ataxic:update_field
+   S1Update = btl_character_turn_update:add_to_timeline(TimelineItem, S0Update),
+   S2Update =
+      btl_character_turn_update:ataxia_set_character
       (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_orddict_element
-         (
-            CharacterIX,
-            ataxic:update_field
-            (
-               btl_character:get_weapons_field(),
-               ataxic:constant(UpdatedWeaponIDs)
-            )
-         )
+         UpdatedCharacter,
+         CharacterAtaxiaUpdate,
+         S1Update
       ),
 
-   btl_character_turn_update:add_to_timeline(TimelineItem, DBQuery, S1Update).
+   S2Update.
