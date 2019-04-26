@@ -3,7 +3,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type decoded_character() :: {non_neg_integer(), rst_character:type()}.
+-type decoded_character() :: {non_neg_integer(), shr_character:unresolved()}.
 
 -record
 (
@@ -41,7 +41,7 @@ decode_character_list (EncodedCharactersList) ->
    lists:map
    (
       fun (Map) ->
-         {maps:get(<<"ix">>, Map), rst_character:decode(Map)}
+         {maps:get(<<"ix">>, Map), shr_character:decode(Map)}
       end,
       EncodedCharactersList
    ).
@@ -102,15 +102,19 @@ update_data (QueryState, Input) ->
    Inventory = QueryState#query_state.inventory,
    Characters = Input#input.characters,
 
-   lists:map
+   %% TODO: Assert true, once inventories are put in place.
+   lists:all
    (
       fun ({_IX, Character}) ->
-         rst_character:validate(Inventory, Character)
+         shr_inventory:allows_equipment
+         (
+            shr_character:get_equipment(Character),
+            Inventory
+         )
       end,
       Characters
    ),
 
-   %% TODO [FUNCTION: chr][REQUIRED]: unimplemented.
    QueryState.
 
 -spec commit_update (query_state(), input()) -> 'ok'.
@@ -122,21 +126,14 @@ commit_update (QueryState, Input) ->
 
    RosterID = shr_player:get_roster_id(Player),
 
-   {UpdatedRoster, QueryList} =
+   {UpdatedRoster, RosterAtaxiaUpdates} =
       lists:foldl
       (
          fun ({IX, Character}, {CurrentRoster, UpdateList}) ->
-             {
-               rst_roster:set_character(IX, Character, CurrentRoster),
-               [
-                  ataxic_sugar:update_orddict_element
-                  (
-                     IX,
-                     ataxic:constant(Character)
-                  )
-                  | UpdateList
-               ]
-            }
+            {UpdatedRoster, NewUpdate} =
+               rst_roster:ataxia_set_character(IX, Character, CurrentRoster),
+
+            {UpdatedRoster, [NewUpdate|UpdateList]}
          end,
          {Roster, []},
          Characters
@@ -149,11 +146,7 @@ commit_update (QueryState, Input) ->
          ataxia_security:user_from_id(PlayerID),
          ataxic:update_value
          (
-            ataxic:update_field
-            (
-               rst_roster:get_characters_field(),
-               ataxic:sequence(QueryList)
-            )
+            ataxic:optimize(ataxic:sequence(RosterAtaxiaUpdates))
          ),
          RosterID
       ),

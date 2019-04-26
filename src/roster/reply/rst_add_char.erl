@@ -19,22 +19,14 @@
 -spec generate
    (
       non_neg_integer(),
-      rst_character:type()
+      shr_character:unresolved()
    )
    -> {list(any())}.
 generate (IX, Character) ->
-   {ActiveWeapon, SecondaryWeapon} = rst_character:get_weapon_ids(Character),
-
    {
       [
          {<<"msg">>, <<"add_char">>},
          {<<"ix">>, IX},
-         {<<"nam">>, rst_character:get_name(Character)},
-         {<<"prt">>, rst_character:get_portrait_id(Character)},
-         {<<"awp">>, ActiveWeapon},
-         {<<"swp">>, SecondaryWeapon},
-         {<<"ar">>, rst_character:get_armor_id(Character)},
-         {<<"gls">>, rst_character:get_glyph_ids(Character)},
-         {<<"gb">>, rst_character:get_glyph_board_id(Character)}
+         {<<"bas">>, shr_character:encode(Character)}
       ]
    }.

@@ -13,70 +13,6 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%% USED IDS COLLECTION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec update_ordset
-   (
-      ordsets:ordset(any()),
-      ordsets:ordset(any())
-   )
-   -> ataxic:basic().
-update_ordset (New, Old) ->
-   AddedElements = ordsets:subtract(New, Old),
-
-   ataxic:sequence
-   (
-      lists:map
-      (
-         fun (V) ->
-            ataxic:apply_function
-            (
-               ordsets,
-               add_element,
-               [
-                  ataxic:constant(V),
-                  ataxic:current_value()
-               ]
-            )
-         end,
-         ordsets:to_list(AddedElements)
-      )
-   ).
-
--spec get_equipment_ids
-   (
-      list(rst_character:type())
-   )
-   ->
-   {
-      ordsets:ordset(shr_portrait:id()),
-      ordsets:ordset(shr_weapon:id()),
-      ordsets:ordset(shr_armor:id())
-   }.
-get_equipment_ids (Characters) ->
-   {
-      UsedPortraitIDs,
-      UsedWeaponIDs,
-      UsedArmorIDs
-   } =
-      lists:foldl
-      (
-         fun (Character, {UPIDs, UWIDs, UAIDs}) ->
-            {MWpID, SWpID} = rst_character:get_weapon_ids(Character),
-            AID = rst_character:get_armor_id(Character),
-            PID = rst_character:get_portrait_id(Character),
-            {
-               ordsets:add_element(PID, UPIDs),
-               ordsets:add_element(MWpID, ordsets:add_element(SWpID, UWIDs)),
-               ordsets:add_element(AID, UAIDs)
-            }
-         end,
-         {ordsets:new(), ordsets:new(), ordsets:new()},
-         Characters
-      ),
-
-   {UsedPortraitIDs, UsedWeaponIDs, UsedArmorIDs}.
-
-
 %%%% ROSTERS HANDLING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_forbidden_locations
    (
@@ -131,21 +67,10 @@ find_random_location (Map, ForbiddenLocations) ->
          end
    end.
 
--spec get_glyphs_omnimods (rst_character:type()) -> shr_omnimods:type().
-get_glyphs_omnimods (RosterChar) ->
-   GlyphBoardID = rst_character:get_glyph_board_id(RosterChar),
-   GlyphIDs = rst_character:get_glyph_ids(RosterChar),
-   GlyphBoard = shr_glyph_board:from_id(GlyphBoardID),
-   Glyphs = lists:map(fun shr_glyph:from_id/1, GlyphIDs),
-   case shr_glyph_board:get_omnimods_with_glyphs(Glyphs, GlyphBoard) of
-      {ok, Result} -> Result;
-      error -> shr_omnimods:new([], [], [], [])
-   end.
-
 -spec create_character
    (
       non_neg_integer(),
-      rst_character:type(),
+      shr_character:unresolved(),
       shr_map:type(),
       ordsets:ordset(shr_location:type())
    )
@@ -153,27 +78,17 @@ get_glyphs_omnimods (RosterChar) ->
 create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
    {Location, Tile} = find_random_location(Map, ForbiddenLocations),
    TileOmnimods = shr_tile:get_omnimods(Tile),
-   GlyphsOmnimods = get_glyphs_omnimods(RosterChar),
 
-   Result =
-      btl_character:new
-      (
-         PlayerIX,
-         rst_character:get_name(RosterChar),
-         optional, % TODO: link this to roster.
-         GlyphsOmnimods,
-         rst_character:get_portrait_id(RosterChar),
-         rst_character:get_weapon_ids(RosterChar),
-         rst_character:get_armor_id(RosterChar),
-         Location,
-         TileOmnimods
-      ),
+   ResolvedBaseChar = shr_character:resolve(TileOmnimods, RosterChar),
+
+   % TODO: link rank to roster.
+   Result = btl_character:new(PlayerIX, optional, Location, ResolvedBaseChar),
 
    Result.
 
 -spec handle_characters
    (
-      list(rst_character:type()),
+      list(shr_character:unresolved()),
       non_neg_integer(),
       shr_map:type(),
       ordsets:ordset(shr_location:type()),
@@ -280,7 +195,7 @@ add_player (PlayerID, PlayerSummaryIX, PlayerSummaryCategory, Battle) ->
 
 -spec add_characters
    (
-      list(rst_character:type()),
+      list(shr_character:unresolved()),
       non_neg_integer(),
       btl_battle:type()
    )
@@ -369,7 +284,7 @@ add_characters (RosterCharacters, PlayerIX, Battle) ->
       shr_player:id(),
       list(non_neg_integer())
    )
-   -> list(rst_character:type()).
+   -> list(shr_character:unresolved()).
 get_roster_characters (PlayerID, SelectedRosterCharacterIXs) ->
    Player = shr_timed_cache:fetch(player_db, ataxia_security:any(), PlayerID),
    RosterID = shr_player:get_roster_id(Player),
