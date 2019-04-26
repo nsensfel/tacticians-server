@@ -22,8 +22,9 @@
 ).
 
 -opaque type() :: #inventory{}.
+-type id() :: ataxia_id:type().
 
--export_type([type/0]).
+-export_type([type/0, id/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,19 +96,27 @@ get_glyphs (Inv) -> Inv#inventory.glyphs.
 
 
 -spec add_weapon (shr_weapon:id(), type()) -> type().
-add_weapon (V, Inv) -> Inv#inventory{ weapons = V }.
+add_weapon (V, Inv) ->
+   Inv#inventory{ weapons = ordsets:add_element(V, Inv#inventory.weapons) }.
 
 -spec add_armor (shr_armor:id(), type()) -> type().
-add_armor (V, Inv) -> Inv#inventory{ armors = V }.
+add_armor (V, Inv) ->
+   Inv#inventory{ armors = ordsets:add_element(V, Inv#inventory.armors) }.
 
 -spec add_portrait (shr_portrait:id(), type()) -> type().
-add_portrait (V, Inv) -> Inv#inventory{ portraits = V }.
+add_portrait (V, Inv) ->
+   Inv#inventory{ portraits = ordsets:add_element(V, Inv#inventory.portraits) }.
 
 -spec add_glyph_board (shr_glyph_board:id(), type()) -> type().
-add_glyph_board (V, Inv) -> Inv#inventory{ glyph_boards = V }.
+add_glyph_board (V, Inv) ->
+   Inv#inventory
+   {
+      glyph_boards = ordsets:add_element(V, Inv#inventory.glyph_boards)
+   }.
 
 -spec add_glyph (shr_glyph:id(), type()) -> type().
-add_glyph (V, Inv) -> Inv#inventory{ glyphs = V }.
+add_glyph (V, Inv) ->
+   Inv#inventory{ glyphs = ordsets:add_element(V, Inv#inventory.glyphs) }.
 
 
 -spec ataxia_add_weapon
@@ -115,12 +124,12 @@ add_glyph (V, Inv) -> Inv#inventory{ glyphs = V }.
       shr_weapon:id(),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_weapon (V, Inv) ->
    CurrentWeapons = Inv#inventory.weapons,
 
    case ordsets:is_element(V, CurrentWeapons) of
-      true -> Inv;
+      true -> {Inv, ataxic:current_value()};
       false ->
          {
             Inv#inventory{ weapons = ordsets:add_element(V, CurrentWeapons) },
@@ -142,12 +151,12 @@ ataxia_add_weapon (V, Inv) ->
       shr_armor:id(),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_armor (V, Inv) ->
    CurrentArmors = Inv#inventory.armors,
 
    case ordsets:is_element(V, CurrentArmors) of
-      true -> Inv;
+      true -> {Inv, ataxic:current_value()};
       false ->
          {
             Inv#inventory{ armors = ordsets:add_element(V, CurrentArmors) },
@@ -169,12 +178,12 @@ ataxia_add_armor (V, Inv) ->
       shr_portrait:id(),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_portrait (V, Inv) ->
    CurrentPortraits = Inv#inventory.portraits,
 
    case ordsets:is_element(V, CurrentPortraits) of
-      true -> Inv;
+      true -> {Inv, ataxic:current_value()};
       false ->
          {
             Inv#inventory
@@ -199,12 +208,12 @@ ataxia_add_portrait (V, Inv) ->
       shr_glyph_board:id(),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_glyph_board (V, Inv) ->
    CurrentGlyphBoards = Inv#inventory.glyph_boards,
 
    case ordsets:is_element(V, CurrentGlyphBoards) of
-      true -> Inv;
+      true -> {Inv, ataxic:current_value()};
       false ->
          {
             Inv#inventory
@@ -229,12 +238,12 @@ ataxia_add_glyph_board (V, Inv) ->
       shr_glyph:id(),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_glyph (V, Inv) ->
    CurrentGlyphs = Inv#inventory.glyphs,
 
    case ordsets:is_element(V, CurrentGlyphs) of
-      true -> Inv;
+      true -> {Inv, ataxic:current_value()};
       false ->
          {
             Inv#inventory{ glyphs = ordsets:add_element(V, CurrentGlyphs) },
@@ -354,7 +363,7 @@ add_equipment (Eq, Inv) ->
       (shr_equipment:type()|shr_equipment:unresolved()),
       type()
    )
-   -> {type(), list(ataxic:basic())}.
+   -> {type(), ataxic:basic()}.
 ataxia_add_equipment (Eq, Inv) ->
    {S0Inv, Ataxic0} =
       ataxia_add_weapon(shr_equipment:get_primary_weapon_id(Eq), Inv),
@@ -380,10 +389,9 @@ ataxia_add_equipment (Eq, Inv) ->
 
    {
       S4Inv,
-      lists:flatten
+      ataxic:optimize
       (
-         [Ataxic0, Ataxic1, Ataxic2, Ataxic3],
-         lists:flatten(Ataxic4s)
+         ataxic:sequence([Ataxic0, Ataxic1, Ataxic2, Ataxic3|Ataxic4s])
       )
    }.
 

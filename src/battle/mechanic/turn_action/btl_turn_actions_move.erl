@@ -60,14 +60,19 @@ cross (Map, ForbiddenLocations, Path, Location) ->
 
 -spec get_path_cost_and_destination
    (
-      btl_character_turn_data:type(),
+      btl_character_turn_update:type(),
       list(shr_direction:type())
    )
-   -> {non_neg_integer(), shr_location:type()}.
-get_path_cost_and_destination (Data, Path) ->
-   Character = btl_character_turn_data:get_character(Data),
-   CharacterIX = btl_character_turn_data:get_character_ix(Data),
-   Battle = btl_character_turn_data:get_battle(Data),
+   ->
+   {
+      non_neg_integer(),
+      shr_location:type(),
+      btl_character_turn_update:type()
+   }.
+get_path_cost_and_destination (Update, Path) ->
+   {S0Update, Character} = btl_character_turn_update:get_character(Update),
+   {S1Update, Battle} = btl_character_turn_update:get_battle(S0Update),
+   CharacterIX = btl_character_turn_update:get_character_ix(S1Update),
    Map = btl_battle:get_map(Battle),
 
    ForbiddenLocations =
@@ -95,18 +100,23 @@ get_path_cost_and_destination (Data, Path) ->
          btl_character:get_location(Character)
       ),
 
-   {Cost, NewLocation}.
+   {Cost, NewLocation, S1Update}.
 
 -spec assert_character_can_move
    (
-      btl_character_turn_data:type(),
+      btl_character:type(),
       non_neg_integer()
    )
    -> 'ok'.
-assert_character_can_move (Data, Cost) ->
-   CharacterData = btl_character_turn_data:get_character_current_data(Data),
-   CharacterStats= btl_character_current_data:get_statistics(CharacterData),
-   CharacterMovementPoints = shr_statistics:get_movement_points(CharacterStats),
+assert_character_can_move (Char, Cost) ->
+   CharacterMovementPoints =
+      shr_statistics:get_movement_points
+      (
+         shr_character:get_statistics
+         (
+            btl_character:get_base_character(Char)
+         )
+      ),
 
    true = (Cost =< CharacterMovementPoints),
 
@@ -114,54 +124,47 @@ assert_character_can_move (Data, Cost) ->
 
 -spec commit_move
    (
-      btl_character_current_data:type(),
+      btl_character:type(),
       btl_character_turn_update:type(),
       list(shr_direction:type()),
       shr_location:type()
    )
    -> btl_character_turn_update:type().
-commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Character = btl_character_turn_data:get_character(Data),
-   CharacterIX = btl_character_turn_data:get_character_ix(Data),
-
-   UpdatedCharacter = btl_character:set_location(NewLocation, Character),
-   S0Data = btl_character_turn_data:set_character(UpdatedCharacter, Data),
-   S1Data = btl_character_turn_data:refresh_character_current_data(S0Data),
-
-   S0Update = btl_character_turn_update:set_data(S1Data, Update),
-   S1Update =
-      btl_turn_actions_stats_change:handle_max_health_changes
+commit_move (Character, Update, Path, NewLocation) ->
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+   Map = btl_battle:get_map(Battle),
+   TileOmnimods =
+      shr_tile:get_omnimods
       (
-         PreviousCurrentData,
-         S0Update
-      ),
-
-   TimelineItem =
-      btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
-
-   DBQuery =
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_orddict_element
+         shr_tile:from_id
          (
-            CharacterIX,
-            ataxic:update_field
+            shr_tile_instance:get_tile_id
             (
-               btl_character:get_location_field(),
-               ataxic:constant(NewLocation)
+               shr_map:get_tile_instance(NewLocation, Map)
             )
          )
       ),
 
-   S2Update =
-      btl_character_turn_update:add_to_timeline
+   {UpdatedCharacter, CharacterAtaxiaUpdate} =
+      btl_character:ataxia_set_location(NewLocation, TileOmnimods, Character),
+
+   S1Update =
+      btl_character_turn_update:ataxia_set_character
       (
-         TimelineItem,
-         DBQuery,
-         S1Update
+         UpdatedCharacter,
+         CharacterAtaxiaUpdate,
+         S0Update
       ),
+
+   TimelineItem =
+      btl_turn_result:new_character_moved
+      (
+         btl_character_turn_update:get_character_ix(S1Update),
+         Path,
+         NewLocation
+      ),
+
+   S2Update = btl_character_turn_update:add_to_timeline(TimelineItem, S1Update),
 
    S2Update.
 
@@ -170,17 +173,17 @@ commit_move (PreviousCurrentData, Update, Path, NewLocation) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle
    (
-      btl_battle_action:type(),
+      btl_action:type(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
 handle (BattleAction, Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   CharacterCurrentData =
-      btl_character_turn_data:get_character_current_data(Data),
-   Path = btl_battle_action:get_path(BattleAction),
+   {S0Update, Character} = btl_character_turn_update:get_character(Update),
+   Path = btl_action:get_path(BattleAction),
 
-   {PathCost, NewLocation} = get_path_cost_and_destination(Data, Path),
-   assert_character_can_move(Data, PathCost),
+   {PathCost, NewLocation, S1Update} =
+      get_path_cost_and_destination(S0Update, Path),
 
-   commit_move(CharacterCurrentData, Update, Path, NewLocation).
+   assert_character_can_move(Character, PathCost),
+
+   commit_move(Character, S1Update, Path, NewLocation).

@@ -40,7 +40,7 @@
 -opaque unresolved() :: #shr_eq_ref{}.
 -type either() :: (type() | unresolved()).
 
--export_type([type/0, unresolved/0]).
+-export_type([type/0, unresolved/0, either/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,7 +83,6 @@
       set_armor_id/2,
       set_portrait_id/2,
       set_glyph_board_id/2,
-      set_glyph_ids/2,
       set_glyph_ids/2,
 
       ataxia_set_primary_weapon_id/2,
@@ -299,14 +298,12 @@ set_glyphs (V, Eq) when is_record(Eq, shr_eq_ref) ->
    (list(shr_glyph:type()), type()) -> {type(), ataxic:basic()};
    (list(shr_glyph:type()), unresolved()) -> {unresolved(), ataxic:basic()}.
 ataxia_set_glyphs (V, Eq) ->
-   {
-      set_glyphs(V, Eq),
-      ataxic:update_field
-      (
-         get_glyphs_field(),
-         ataxic:constant(shr_glyph:get_id(V))
-      )
-   }.
+   ataxia_set_glyphs
+   (
+      V,
+      ataxic:constant(lists:map(fun shr_glyph:get_id/1, V)),
+      Eq
+   ).
 
 -spec ataxia_set_glyphs
    (
@@ -448,14 +445,7 @@ set_glyph_ids (V, Eq) when is_record(Eq, shr_eq) ->
    (list(shr_glyph:id()), type()) -> {type(), ataxic:basic()};
    (list(shr_glyph:id()), unresolved()) -> {unresolved(), ataxic:basic()}.
 ataxia_set_glyph_ids (V, Eq) ->
-   {
-      set_glyph_ids(V, Eq),
-      ataxic:update_field
-      (
-         get_glyphs_field(),
-         ataxic:constant(V)
-      )
-   }.
+   ataxia_set_glyph_ids(V, ataxic:constant(V), Eq).
 
 -spec ataxia_set_glyph_ids
    (

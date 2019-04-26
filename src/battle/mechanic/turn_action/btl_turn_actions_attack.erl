@@ -19,9 +19,9 @@
 
 -spec handle_attack_sequence
    (
-      btl_character_current_data:type(),
+      btl_character:type(),
       non_neg_integer(),
-      btl_character_current_data:type(),
+      btl_character:type(),
       non_neg_integer(),
       integer(),
       integer(),
@@ -38,9 +38,9 @@
    }.
 handle_attack_sequence
 (
-   _CharacterCurrentData,
+   _Character,
    CharacterCurrentHealth,
-   _TargetCurrentData,
+   _TargetCharacter,
    TargetCurrentHealth,
    AttackerLuck,
    DefenderLuck,
@@ -62,9 +62,9 @@ when
    };
 handle_attack_sequence
 (
-   CharacterCurrentData,
+   Character,
    AttackerHealth,
-   TargetCurrentData,
+   TargetCharacter,
    DefenderHealth,
    AttackerLuck,
    DefenderLuck,
@@ -75,8 +75,8 @@ handle_attack_sequence
       btl_attack:get_description_of
       (
          NextAttack,
-         CharacterCurrentData,
-         TargetCurrentData,
+         btl_character:get_base_character(Character),
+         btl_character:get_base_character(TargetCharacter),
          AttackerLuck,
          DefenderLuck
       ),
@@ -105,9 +105,9 @@ handle_attack_sequence
 
    handle_attack_sequence
    (
-      CharacterCurrentData,
+      Character,
       NewAttackerHealth,
-      TargetCurrentData,
+      TargetCharacter,
       NewDefenderHealth,
       NewAttackerLuck,
       NewDefenderLuck,
@@ -129,11 +129,17 @@ get_attack_sequence (Character, TargetCharacter) ->
          btl_character:get_location(TargetCharacter)
       ),
 
-   {AttackingWeaponID, _} = btl_character:get_weapon_ids(Character),
-   {DefendingWeaponID, _} = btl_character:get_weapon_ids(TargetCharacter),
+   AttackingWeapon =
+      shr_character:get_active_weapon
+      (
+         btl_character:get_base_character(Character)
+      ),
 
-   AttackingWeapon = shr_weapon:from_id(AttackingWeaponID),
-   DefendingWeapon = shr_weapon:from_id(DefendingWeaponID),
+   DefendingWeapon =
+      shr_character:get_active_weapon
+      (
+         btl_character:get_base_character(TargetCharacter)
+      ),
 
    btl_attack:get_sequence(Range, AttackingWeapon, DefendingWeapon).
 
@@ -142,30 +148,48 @@ get_attack_sequence (Character, TargetCharacter) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle
    (
-      btl_battle_action:type(),
+      btl_action:type(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
 handle (BattleAction, Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Battle = btl_character_turn_data:get_battle(Data),
-   Character = btl_character_turn_data:get_character(Data),
-   CharacterIX = btl_character_turn_data:get_character_ix(Data),
-   CharacterCurrentData =
-      btl_character_turn_data:get_character_current_data(Data),
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+   {S1Update, Character} = btl_character_turn_update:get_character(S0Update),
+
    AttackingPlayerIX = btl_character:get_player_index(Character),
    AttackingPlayer = btl_battle:get_player(AttackingPlayerIX, Battle),
    AttackingPlayerLuck = btl_player:get_luck(AttackingPlayer),
 
+   TargetIX = btl_action:get_target_ix(BattleAction),
    Map = btl_battle:get_map(Battle),
-   TargetIX = btl_battle_action:get_target_ix(BattleAction),
-   TargetCharacter = btl_battle:get_character(TargetIX, Battle),
-   TargetCurrentData = btl_character_current_data:new(TargetCharacter, Map),
+   TargetCharacterRef = btl_battle:get_character(TargetIX, Battle),
+   TargetCharacter =
+      btl_character:resolve
+      (
+         shr_tile:get_omnimods
+         (
+            shr_tile:from_id
+            (
+               shr_tile_instance:get_tile_id
+               (
+                  shr_map:get_tile_instance
+                  (
+                     btl_character:get_location(TargetCharacterRef),
+                     Map
+                  )
+               )
+            )
+         ),
+         TargetCharacterRef
+      ),
+
    DefendingPlayerIX = btl_character:get_player_index(TargetCharacter),
    DefendingPlayer = btl_battle:get_player(DefendingPlayerIX, Battle),
    DefendingPlayerLuck = btl_player:get_luck(DefendingPlayer),
 
+
    true = btl_character:get_is_alive(TargetCharacter),
+
 
    AttackSequence = get_attack_sequence(Character, TargetCharacter),
 
@@ -178,9 +202,9 @@ handle (BattleAction, Update) ->
    } =
       handle_attack_sequence
       (
-         CharacterCurrentData,
+         Character,
          btl_character:get_current_health(Character),
-         TargetCurrentData,
+         TargetCharacter,
          btl_character:get_current_health(TargetCharacter),
          AttackingPlayerLuck,
          DefendingPlayerLuck,
@@ -202,135 +226,114 @@ handle (BattleAction, Update) ->
          _ -> 0
       end,
 
-   NextAttackingPlayer =
-      btl_player:set_luck(S0NewAttackerLuck, AttackingPlayer),
+   {UpdatedAttackingPlayer, AttackingPlayerAtaxiaUpdate} =
+      btl_player:ataxia_set_luck(S0NewAttackerLuck, AttackingPlayer),
 
-   NextDefendingPlayer =
-      btl_player:set_luck(S0NewDefenderLuck, DefendingPlayer),
+   {UpdatedDefendingPlayer, DefendingPlayerAtaxiaUpdate} =
+      btl_player:ataxia_set_luck(S0NewDefenderLuck, DefendingPlayer),
 
-   UpdatedCharacter =
-      btl_character:set_current_health(RemainingAttackerHealth, Character),
-
-   UpdatedBattle =
-      btl_battle:set_player
+   {UpdatedCharacter, CharacterAtaxiaUpdate} =
+      btl_character:ataxia_set_current_health
       (
-         DefendingPlayerIX,
-         NextDefendingPlayer,
-         btl_battle:set_player
-         (
-            AttackingPlayerIX,
-            NextAttackingPlayer,
-            btl_battle:set_character
-            (
-               TargetIX,
-               btl_character:set_current_health
-               (
-                  RemainingDefenderHealth,
-                  TargetCharacter
-               ),
-               Battle
-            )
-         )
+         RemainingAttackerHealth,
+         Character
       ),
 
-   S0Data = btl_character_turn_data:set_battle(UpdatedBattle, Data),
-   S1Data = btl_character_turn_data:set_character(UpdatedCharacter, S0Data),
+   {UpdatedTargetCharacterRef, TargetCharacterRefAtaxiaUpdate} =
+      btl_character:ataxia_set_current_health
+      (
+         RemainingDefenderHealth,
+         TargetCharacterRef
+      ),
+
+   {S0Battle, BattleAtaxiaUpdate0} =
+      btl_battle:ataxia_set_player
+      (
+         AttackingPlayerIX,
+         UpdatedAttackingPlayer,
+         AttackingPlayerAtaxiaUpdate,
+         Battle
+      ),
+
+   {S1Battle, BattleAtaxiaUpdate1} =
+      btl_battle:ataxia_set_player
+      (
+         DefendingPlayerIX,
+         UpdatedDefendingPlayer,
+         DefendingPlayerAtaxiaUpdate,
+         S0Battle
+      ),
+
+   {S2Battle, BattleAtaxiaUpdate2} =
+      btl_battle:ataxia_set_character
+      (
+         TargetIX,
+         UpdatedTargetCharacterRef,
+         TargetCharacterRefAtaxiaUpdate,
+         S1Battle
+      ),
+
+   % Potential danger ahead: we're going to update both the 'character' and
+   % 'battle' members of a btl_character_turn_update.
+   % 'S1Update' is sure to have both up to date (as it's the result of 'get'
+   % requests for both) and there is no risk of the 'battle' update influencing
+   % 'character', making what follows safe.
+
+   S2Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S2Battle,
+         false,
+         ataxic:optimize
+         (
+            ataxic:sequence
+            (
+               [
+                  BattleAtaxiaUpdate0,
+                  BattleAtaxiaUpdate1,
+                  BattleAtaxiaUpdate2
+               ]
+            )
+         ),
+         S1Update
+      ),
+
+   S3Update =
+      btl_character_turn_update:ataxia_set_character
+      (
+         UpdatedCharacter,
+         CharacterAtaxiaUpdate,
+         S2Update
+      ),
 
    TimelineItem =
       btl_turn_result:new_character_attacked
       (
-         CharacterIX,
+         btl_character_turn_update:get_character_ix(S3Update),
          TargetIX,
          AttackEffects,
          S0NewAttackerLuck,
          S0NewDefenderLuck
       ),
 
-   DBQuery0 =
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_orddict_element
-         (
-            TargetIX,
-            ataxic:update_field
-            (
-               btl_character:get_current_health_field(),
-               ataxic:constant(RemainingDefenderHealth)
-            )
-         )
-      ),
-
-   DBQuery1 =
-      ataxic:update_field
-      (
-         btl_battle:get_characters_field(),
-         ataxic_sugar:update_orddict_element
-         (
-            CharacterIX,
-            ataxic:update_field
-            (
-               btl_character:get_current_health_field(),
-               ataxic:constant(RemainingAttackerHealth)
-            )
-         )
-      ),
-
-   DBQuery2 =
-      ataxic:update_field
-      (
-         btl_battle:get_players_field(),
-         ataxic:sequence
-         (
-            [
-               ataxic_sugar:update_orddict_element
-               (
-                  DefendingPlayerIX,
-                  ataxic:update_field
-                  (
-                     btl_player:get_luck_field(),
-                     ataxic:constant(S0NewDefenderLuck)
-                  )
-               ),
-               ataxic_sugar:update_orddict_element
-               (
-                  AttackingPlayerIX,
-                  ataxic:update_field
-                  (
-                     btl_player:get_luck_field(),
-                     ataxic:constant(S0NewAttackerLuck)
-                  )
-               )
-            ]
-         )
-      ),
-
-   S0Update =
-      btl_character_turn_update:add_to_timeline
-      (
-         TimelineItem,
-         DBQuery0,
-         Update
-      ),
-
-   S1Update = btl_character_turn_update:add_to_db(DBQuery1, S0Update),
-   S2Update = btl_character_turn_update:add_to_db(DBQuery2, S1Update),
-   S3Update = btl_character_turn_update:set_data(S1Data, S2Update),
-
-   S4Update =
-      btl_victory:handle_character_lost_health
-      (
-         CharacterIX,
-         RemainingAttackerHealth,
-         S3Update
-      ),
+   S4Update = btl_character_turn_update:add_to_timeline(TimelineItem, S3Update),
 
    S5Update =
-      btl_victory:handle_character_lost_health
-      (
-         TargetIX,
-         RemainingDefenderHealth,
-         S4Update
-      ),
+      case (RemainingAttackerHealth > 0) of
+         true -> S4Update;
+         false ->
+            btl_victory_progression:handle_character_loss(Character, S4Update)
+      end,
 
-   S5Update.
+   S6Update =
+      case (RemainingAttackerHealth > 0) of
+         true -> S5Update;
+         false ->
+            btl_victory_progression:handle_character_loss
+            (
+               TargetCharacterRef,
+               S5Update
+            )
+      end,
+
+   S6Update.

@@ -58,7 +58,7 @@
       list(shr_glyph:type()),
       list(integer())
    )
-   -> ({'ok', shr_omnimods:type()} | 'error').
+   -> ('error' | {'ok', shr_omnimods:type()}).
 get_omnimods_with_glyphs_internals (Omnimods, [], []) ->
    {ok, Omnimods};
 get_omnimods_with_glyphs_internals (_Omnimods, [], _) ->
@@ -102,12 +102,15 @@ default () -> from_id(<<"0">>).
       list(shr_glyph:type()),
       type()
    )
-   -> ({'ok', shr_omnimods:type()} | 'error').
+   -> shr_omnimods:type().
 get_omnimods_with_glyphs (Glyphs, GlyphBoard) ->
    BoardOmnimods = GlyphBoard#glyph_board.omnimods,
    BoardSlots = GlyphBoard#glyph_board.slots,
 
-   get_omnimods_with_glyphs_internals(BoardOmnimods, Glyphs, BoardSlots).
+   {ok, Omnimods} =
+      get_omnimods_with_glyphs_internals(BoardOmnimods, Glyphs, BoardSlots),
+
+   Omnimods.
 
 -spec default_id () -> id().
 default_id () -> <<"0">>.

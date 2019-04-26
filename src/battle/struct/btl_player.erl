@@ -98,7 +98,7 @@ get_is_active (Player) -> Player#player.is_active.
 -spec set_is_active (boolean(), type()) -> type().
 set_is_active (Val, Player) -> Player#player{ is_active = Val }.
 
--spec ataxia_set_is_active (boolean(), type()) -> {type(), ataxia:basic()}.
+-spec ataxia_set_is_active (boolean(), type()) -> {type(), ataxic:basic()}.
 ataxia_set_is_active (Val, Player) ->
    {
       Player#player{ is_active = Val },

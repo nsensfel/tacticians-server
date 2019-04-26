@@ -41,7 +41,7 @@
 (
    [
       default/0,
-      default/0,
+      default_id/0,
       from_id/1
    ]
 ).

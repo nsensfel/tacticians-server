@@ -39,12 +39,12 @@ deactivate_character (Update) ->
 
 -spec handle_action
 (
-   btl_battle_action:type(),
+   btl_action:type(),
    btl_character_turn_update:type()
 )
 -> btl_character_turn_update:type().
 handle_action (BattleAction, Update) ->
-   case btl_battle_action:get_category(BattleAction) of
+   case btl_action:get_category(BattleAction) of
       move -> btl_turn_actions_move:handle(BattleAction, Update);
       switch_weapon -> btl_turn_actions_switch_weapon:handle(Update);
       attack -> btl_turn_actions_attack:handle(BattleAction, Update)
@@ -78,6 +78,7 @@ update_timeline (Update) ->
       btl_character_turn_update:ataxia_set_battle
       (
          UpdatedBattle,
+         false,
          BattleAtaxiaUpdate,
          S0Update
       ),

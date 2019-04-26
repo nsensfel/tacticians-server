@@ -187,7 +187,7 @@ push_player_summary_ix (Val, PBattle) ->
       non_neg_integer(),
       type()
    )
-   -> {type(), ataxic:constant()}.
+   -> {type(), ataxic:basic()}.
 ataxia_push_player_summary_ix (Val, PBattle) ->
    {
       PBattle#pending_battle
@@ -209,7 +209,7 @@ set_player_ids (Val, PBattle) -> PBattle#pending_battle{ player_ids = Val }.
       list(shr_player:id()),
       type()
    )
-   -> {type(), ataxia:basic()}.
+   -> {type(), ataxic:basic()}.
 ataxia_set_player_ids (Val, PBattle) ->
    {
       PBattle#pending_battle{ player_ids = Val },
@@ -232,7 +232,7 @@ push_player_id (Val, PBattle) ->
       shr_player:id(),
       type()
    )
-   -> {type(), ataxia:basic()}.
+   -> {type(), ataxic:basic()}.
 ataxia_push_player_id (Val, PBattle) ->
    {
       PBattle#pending_battle

@@ -183,7 +183,7 @@ handle (Query) ->
 
          S0Update = fetch_data(Request),
          assert_user_permissions(S0Update, Request),
-         S1Update = btl_turn_actions:apply_requested_actions(S0Update, Request),
+         S1Update = btl_turn_actions_management:handle(S0Update, Request),
          commit_update(S1Update, Request),
 
          shr_security:unlock_queries(PlayerID),

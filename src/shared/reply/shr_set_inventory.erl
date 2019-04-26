@@ -23,10 +23,10 @@ generate (Inventory) ->
    {
       [
          {<<"msg">>, <<"set_inventory">>},
-         {<<"pts">>, encode_set(shr_inventory:get_portrait_ids(Inventory))},
-         {<<"gls">>, encode_set(shr_inventory:get_glyph_ids(Inventory))},
-         {<<"gbs">>, encode_set(shr_inventory:get_glyph_board_ids(Inventory))},
-         {<<"wps">>, encode_set(shr_inventory:get_weapon_ids(Inventory))},
-         {<<"ars">>, encode_set(shr_inventory:get_armor_ids(Inventory))}
+         {<<"pts">>, encode_set(shr_inventory:get_portraits(Inventory))},
+         {<<"gls">>, encode_set(shr_inventory:get_glyphs(Inventory))},
+         {<<"gbs">>, encode_set(shr_inventory:get_glyph_boards(Inventory))},
+         {<<"wps">>, encode_set(shr_inventory:get_weapons(Inventory))},
+         {<<"ars">>, encode_set(shr_inventory:get_armors(Inventory))}
       ]
    }.

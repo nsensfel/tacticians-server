@@ -35,7 +35,7 @@
    [
       get_id/1,
       get_name/1,
-      get_omnimods/1,
+      get_omnimods/1
    ]
 ).
 

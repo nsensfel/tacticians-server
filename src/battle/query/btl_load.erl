@@ -83,7 +83,7 @@ generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
    PUser = ataxia_security:user_from_id(PlayerID),
    Battle = QueryState#query_state.battle,
-   RelevantInventory = btl_battle:get_relevant_inventory(Battle),
+   RelevantInventory = btl_battle:get_related_inventory(Battle),
    Players = btl_battle:get_players(Battle),
 
    {value, {PlayerIX, _Player}} =
@@ -133,7 +133,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (PortraitID) ->
-            btl_add_portrait:generate(shr_portrait:from_id(PortraitID))
+            shr_add_portrait:generate(shr_portrait:from_id(PortraitID))
          end,
          ordsets:to_list(shr_inventory:get_portraits(RelevantInventory))
       ),
@@ -142,7 +142,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (WeaponID) ->
-            btl_add_weapon:generate(shr_weapon:from_id(WeaponID))
+            shr_add_weapon:generate(shr_weapon:from_id(WeaponID))
          end,
          ordsets:to_list(shr_inventory:get_weapons(RelevantInventory))
       ),
@@ -151,7 +151,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (ArmorID) ->
-            btl_add_armor:generate(shr_armor:from_id(ArmorID))
+            shr_add_armor:generate(shr_armor:from_id(ArmorID))
          end,
          ordsets:to_list(shr_inventory:get_armors(RelevantInventory))
       ),
@@ -160,7 +160,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (GlyphID) ->
-            btl_add_glyph:generate(shr_glyph:from_id(GlyphID))
+            shr_add_glyph:generate(shr_glyph:from_id(GlyphID))
          end,
          ordsets:to_list(shr_inventory:get_glyphs(RelevantInventory))
       ),
@@ -169,7 +169,7 @@ generate_reply (QueryState, Input) ->
       lists:map
       (
          fun (GlyphBoardID) ->
-            btl_add_glyph_board:generate(shr_glyph_board:from_id(GlyphBoardID))
+            shr_add_glyph_board:generate(shr_glyph_board:from_id(GlyphBoardID))
          end,
          ordsets:to_list(shr_inventory:get_glyph_boards(RelevantInventory))
       ),

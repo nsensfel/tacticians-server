@@ -36,7 +36,7 @@
       get_markers/1,
       get_marker/2,
 
-      get_used_tile_ids/1
+      get_related_tile_ids/1
    ]
 ).
 
@@ -136,8 +136,8 @@ get_markers_field () -> #map.markers.
 get_tile_instances_field () -> #map.tile_instances.
 
 %%%% Utility
--spec get_used_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
-get_used_tile_ids (Map) ->
+-spec get_related_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
+get_related_tile_ids (Map) ->
    UsedTileIDs =
       lists:foldl
       (

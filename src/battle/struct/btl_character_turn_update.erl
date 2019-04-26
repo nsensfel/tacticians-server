@@ -56,10 +56,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec resolve_character_at
    (
-      btl_battle:type(),
-      non_neg_integer()
-   ) -> btl_charater:type().
-resolve_character_at (Battle, CharacterIX) ->
+      non_neg_integer(),
+      btl_battle:type()
+   ) -> btl_character:type().
+resolve_character_at (CharacterIX, Battle) ->
    CharacterRef = btl_battle:get_character(CharacterIX, Battle),
    Location = btl_character:get_location(CharacterRef),
    Map = btl_battle:get_map(Battle),
@@ -78,7 +78,6 @@ resolve_character_at (Battle, CharacterIX) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (btl_battle:type(), non_neg_integer()) -> type().
 new (Battle, CharacterIX) ->
-
    #type
    {
       character_is_outdated = false,
@@ -87,7 +86,7 @@ new (Battle, CharacterIX) ->
       battle = Battle,
       reversed_battle_updates = [],
 
-      character = resolve_character_at(Battle, CharacterIX),
+      character = resolve_character_at(CharacterIX, Battle),
       reversed_character_updates = [],
 
       character_ix = CharacterIX,
@@ -104,7 +103,7 @@ get_battle (Data) ->
             btl_battle:ataxia_set_character
             (
                Data#type.character_ix,
-               Data#type.character,
+               btl_character:to_unresolved(Data#type.character),
                ataxic:sequence
                (
                   lists:reverse(Data#type.reversed_character_updates)
@@ -153,9 +152,12 @@ get_character_ix (Data) -> Data#type.character_ix.
 
 -spec set_battle (btl_battle:type(), boolean(), type()) -> type().
 set_battle (Battle, CouldAffectCharacter, Data) ->
+   false = (Data#type.battle_is_outdated and CouldAffectCharacter),
+
    Data#type
    {
-      character_is_outdated = CouldAffectCharacter,
+      character_is_outdated =
+         (Data#type.character_is_outdated or CouldAffectCharacter),
       battle = Battle
    }.
 
@@ -168,15 +170,20 @@ set_battle (Battle, CouldAffectCharacter, Data) ->
    )
    -> type().
 ataxia_set_battle (Battle, CouldAffectCharacter, BattleUpdate, Data) ->
+   false = (Data#type.battle_is_outdated and CouldAffectCharacter),
+
    Data#type
    {
-      character_is_outdated = CouldAffectCharacter,
+      character_is_outdated =
+         (Data#type.character_is_outdated or CouldAffectCharacter),
       battle = Battle,
       reversed_battle_updates = [BattleUpdate|Data#type.reversed_battle_updates]
    }.
 
 -spec set_character (btl_character:type(), type()) -> type().
 set_character (Character, Data) ->
+   false = Data#type.character_is_outdated,
+
    Data#type
    {
       battle_is_outdated = true,
@@ -186,11 +193,13 @@ set_character (Character, Data) ->
 -spec ataxia_set_character
    (
       btl_character:type(),
-      ataxia:basic(),
+      ataxic:basic(),
       type()
    )
    -> type().
 ataxia_set_character (Character, CharacterUpdate, Data) ->
+   false = Data#type.character_is_outdated,
+
    Data#type
    {
       battle_is_outdated = true,

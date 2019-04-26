@@ -20,7 +20,7 @@
       session_token :: binary(),
       battle_id :: binary(),
       character_ix :: non_neg_integer(),
-      actions :: list(btl_battle_action:type())
+      actions :: list(btl_action:type())
    }
 ).
 
@@ -52,12 +52,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode_actions (map()) -> list(btl_battle_action:type()).
+-spec decode_actions (map()) -> list(btl_action:type()).
 decode_actions (Act) ->
    S0Result = [],
    S1Result =
       case
-         btl_battle_action:maybe_decode_move(maps:get(?ACTIONS_MOVE_FIELD, Act))
+         btl_action:maybe_decode_move(maps:get(?ACTIONS_MOVE_FIELD, Act))
       of
          [] -> S0Result;
          [Move] -> [Move|S0Result]
@@ -65,7 +65,7 @@ decode_actions (Act) ->
 
    S2Result =
       case
-         btl_battle_action:maybe_decode_attack
+         btl_action:maybe_decode_attack
          (
             maps:get(?ACTIONS_ATTACK_FIELD, Act)
          )
@@ -76,7 +76,7 @@ decode_actions (Act) ->
 
    S3Result =
       case
-         btl_battle_action:maybe_decode_weapon_switch
+         btl_action:maybe_decode_weapon_switch
          (
             maps:get(?ACTIONS_WEAPON_SWITCH_FIELD, Act)
          )
@@ -117,5 +117,5 @@ get_battle_id (Request) -> Request#type.battle_id.
 -spec get_character_ix (type()) -> non_neg_integer().
 get_character_ix (Request) -> Request#type.character_ix.
 
--spec get_actions (type()) -> list(btl_battle_action:type()).
+-spec get_actions (type()) -> list(btl_action:type()).
 get_actions (Request) -> Request#type.actions.

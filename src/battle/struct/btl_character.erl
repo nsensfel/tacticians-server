@@ -116,7 +116,7 @@ handle_max_health_change (OldBaseChar, NewBaseChar, OldHealth) ->
       shr_statistics:get_health(shr_character:get_statistics(NewBaseChar)),
 
    case (OldMaxHealth == NewMaxHealth) of
-      true -> {false, OldMaxHealth, OldHealth};
+      true -> {false, OldHealth};
       false ->
          OldHealthRatio = (OldHealth / OldMaxHealth),
          NewHealth =
@@ -207,7 +207,8 @@ ataxia_set_rank (Rank, Char) ->
    -> type().
 set_location (Location, LocOmnimods, Char) ->
    CurrentBaseCharacter = Char#btl_char.base,
-   UpdatedBaseCharacter = shr_character:set_extra_omnimods(LocOmnimods),
+   UpdatedBaseCharacter =
+      shr_character:set_extra_omnimods(LocOmnimods, CurrentBaseCharacter),
 
    case
       handle_max_health_change
@@ -217,7 +218,7 @@ set_location (Location, LocOmnimods, Char) ->
          Char#btl_char.current_health
       )
    of
-      {false, _, _} ->
+      {false, _} ->
          Char#btl_char
          {
             location = Location,
@@ -253,7 +254,7 @@ ataxia_set_location (Location, LocOmnimods, Char) ->
 
    {
       UpdatedChar,
-      case (CurrentHealth == UpdatedChar) of
+      case (CurrentHealth == UpdatedCharHealth) of
          true -> LocationUpdate;
          false ->
             ataxic:sequence
@@ -344,7 +345,7 @@ set_base_character (NewBaseCharacter, Char) ->
          Char#btl_char.current_health
       )
    of
-      {false, _, _} ->
+      {false, _} ->
          Char#btl_char
          {
             base = NewBaseCharacter
@@ -378,7 +379,7 @@ ataxia_set_base_character (NewBaseCharacter, BaseCharacterAtaxicUpdate, Char) ->
 
    {
       UpdatedChar,
-      case (CurrentHealth == UpdatedChar) of
+      case (CurrentHealth == UpdatedCharHealth) of
          true -> BattleCharacterAtaxicUpdate;
          false ->
             ataxic:sequence

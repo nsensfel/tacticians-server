@@ -164,15 +164,15 @@ set_equipment (Eq, Char) when is_record(Char, shr_char) ->
    NewAttributes =
       shr_omnimods:apply_to_attributes
       (
-         shr_attributes:default(),
-         NewOmnimods
+         NewOmnimods,
+         shr_attributes:default()
       ),
 
    NewStatistics =
       shr_omnimods:apply_to_statistics
       (
-         shr_statistics:new_raw(NewAttributes),
-         NewOmnimods
+         NewOmnimods,
+         shr_statistics:new_raw(NewAttributes)
       ),
 
    Char#shr_char
@@ -239,15 +239,15 @@ switch_weapons (Char) when is_record(Char, shr_char) ->
    NewAttributes =
       shr_omnimods:apply_to_attributes
       (
-         shr_attributes:default(),
-         NewOmnimods
+         NewOmnimods,
+         shr_attributes:default()
       ),
 
    NewStatistics =
       shr_omnimods:apply_to_statistics
       (
-         shr_statistics:new_raw(NewAttributes),
-         NewOmnimods
+         NewOmnimods,
+         shr_statistics:new_raw(NewAttributes)
       ),
 
    Char#shr_char
@@ -325,15 +325,15 @@ set_extra_omnimods (O, Char) ->
    NewAttributes =
       shr_omnimods:apply_to_attributes
       (
-         shr_attributes:default(),
-         NewOmnimods
+         NewOmnimods,
+         shr_attributes:default()
       ),
 
    NewStatistics =
       shr_omnimods:apply_to_statistics
       (
-         shr_statistics:new_raw(NewAttributes),
-         NewOmnimods
+         NewOmnimods,
+         shr_statistics:new_raw(NewAttributes)
       ),
 
    Char#shr_char

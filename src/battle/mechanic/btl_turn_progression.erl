@@ -87,7 +87,8 @@ activate_next_players_characters (Battle, NextPlayer) ->
                      (
                         IX,
                         UpdatedCharacter,
-                        CharacterAtaxicUpdate
+                        CharacterAtaxicUpdate,
+                        CurrentBattle
                      ),
 
                   {UpdatedBattle, [BattleAtaxicUpdate|CurrentBattleUpdates]};
@@ -107,35 +108,41 @@ activate_next_players_characters (Battle, NextPlayer) ->
    )
    -> btl_character_turn_update:type().
 activate_next_player (Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Battle = btl_character_turn_data:get_battle(Data),
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
 
-   {S0Battle, DBQuery0} = prepare_player_turn_for_next_player(Battle),
-   {S1Battle, NextPlayer, DBQuery1} = reset_next_player_timeline(S0Battle),
-   {S2Battle, DBQuery2} =
+   {S0Battle, BattleAtaxiaUpdate0} =
+      prepare_player_turn_for_next_player(Battle),
+
+   {S1Battle, NextPlayer, BattleAtaxiaUpdate1} =
+      reset_next_player_timeline(S0Battle),
+
+   {S2Battle, BattleAtaxiaUpdate2} =
       activate_next_players_characters(S1Battle, NextPlayer),
 
-   S0Data = btl_character_turn_data:set_battle(S2Battle, Data),
+   S1Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S2Battle,
+         true,
+         ataxic:sequence
+         (
+            [
+               BattleAtaxiaUpdate0,
+               BattleAtaxiaUpdate1,
+               BattleAtaxiaUpdate2
+            ]
+         ),
+         S0Update
+      ),
 
-   S0Update =
+   S2Update =
       btl_character_turn_update:add_to_timeline
       (
          btl_turn_result:new_player_turn_started
          (
             btl_player:get_index(NextPlayer)
          ),
-         DBQuery0,
-         Update
-      ),
-
-   S1Update = btl_character_turn_update:set_data(S0Data, S0Update),
-
-   S2Update =
-      lists:foldl
-      (
-         fun btl_character_turn_update:add_to_db/2,
-         S1Update,
-         [DBQuery1,DBQuery2]
+         S1Update
       ),
 
    S2Update.
@@ -144,17 +151,19 @@ activate_next_player (Update) ->
    (
       btl_character_turn_update:type()
    )
-   -> boolean().
+   -> {boolean(), btl_character_turn_update:type()}.
 has_active_characters_remaining (Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Battle = btl_character_turn_data:get_battle(Data),
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
    Characters = btl_battle:get_characters(Battle),
 
-   lists:any
-   (
-      fun ({_IX, Char}) -> btl_character:get_is_active(Char) end,
-      orddict:to_list(Characters)
-   ).
+   {
+      lists:any
+      (
+         fun ({_IX, Char}) -> btl_character:get_is_active(Char) end,
+         orddict:to_list(Characters)
+      ),
+      S0Update
+   }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,6 +175,6 @@ has_active_characters_remaining (Update) ->
    -> btl_character_turn_update:type().
 handle (Update) ->
    case has_active_characters_remaining(Update) of
-      false -> activate_next_player(Update);
-      _ -> Update
+      {false, S0Update} -> activate_next_player(S0Update);
+      {true, S0Update} -> S0Update
    end.

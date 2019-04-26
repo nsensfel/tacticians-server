@@ -28,6 +28,7 @@
 -export
 (
    [
+      default/0,
       new/4,
       new_dirty/4
    ]
@@ -114,6 +115,9 @@ new (AttributeMods, StatisticMods, AttackMods, DefenseMods) ->
       atkmods = dict:from_list(AttackMods),
       defmods = dict:from_list(DefenseMods)
    }.
+
+-spec default () -> type().
+default () -> new([], [], [], []).
 
 -spec new_dirty
 (

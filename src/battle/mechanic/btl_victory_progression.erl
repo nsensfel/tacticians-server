@@ -9,7 +9,7 @@
 -export
 (
    [
-      handle_character_lost_health/3
+      handle_character_loss/2
    ]
 ).
 
@@ -90,37 +90,43 @@ mark_player_as_inactive (PlayerIX, Battle) ->
    )
    -> btl_character_turn_update:type().
 handle_player_defeat (PlayerIX, Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Battle = btl_character_turn_data:get_battle(Data),
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
 
    {S0Battle, BattleAtaxicUpdate0} =
       mark_characters_of_player_as_defeated(PlayerIX, Battle),
    {S1Battle, BattleAtaxicUpdate1} =
       mark_player_as_inactive(PlayerIX, S0Battle),
 
-   UpdatedData = btl_character_turn_data:set_battle(S1Battle, Data),
-   S0Update = btl_character_turn_update:set_data(UpdatedData, Update),
-
    S1Update =
-      btl_character_turn_update:add_to_timeline
+      btl_character_turn_update:ataxia_set_battle
       (
-         btl_turn_result:new_player_lost(PlayerIX),
-         ataxia:sequence([BattleAtaxicUpdate0, BattleAtaxicUpdate1]),
+         S1Battle,
+         true,
+         ataxic:sequence([BattleAtaxicUpdate0, BattleAtaxicUpdate1]),
          S0Update
       ),
 
-   S1Update.
+   S2Update =
+      btl_character_turn_update:add_to_timeline
+      (
+         btl_turn_result:new_player_lost(PlayerIX),
+         S1Update
+      ),
 
--spec actually_handle_character_lost_health
+   S2Update.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec handle_character_loss
    (
-      non_neg_integer(),
+      btl_character:either(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-actually_handle_character_lost_health (CharIX, Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   Battle = btl_character_turn_data:get_battle(Data),
-   Character = btl_battle:get_character(CharIX, Battle),
+handle_character_loss (Character, Update) ->
+   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
    Characters = btl_battle:get_characters(Battle),
    CharacterPlayerIX = btl_character:get_player_index(Character),
 
@@ -133,10 +139,9 @@ actually_handle_character_lost_health (CharIX, Update) ->
          StillHasAliveChar =
             lists:any
             (
-               fun ({IX, Char}) ->
+               fun ({_IX, Char}) ->
                   (
                      (CharacterPlayerIX == btl_character:get_player_index(Char))
-                     and (IX /= CharIX)
                      and btl_character:get_is_alive(Char)
                   )
                end,
@@ -144,53 +149,28 @@ actually_handle_character_lost_health (CharIX, Update) ->
             ),
 
          case StillHasAliveChar of
-            true -> Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, Update)
+            true -> S0Update;
+            _ -> handle_player_defeat(CharacterPlayerIX, S0Update)
          end;
 
-      commander -> handle_player_defeat(CharacterPlayerIX, Update);
+      commander -> handle_player_defeat(CharacterPlayerIX, S0Update);
 
       target ->
          StillHasAliveTargetChar =
             lists:any
             (
-               fun ({IX, Char}) ->
+               fun ({_IX, Char}) ->
                   (
                      (CharacterPlayerIX == btl_character:get_player_index(Char))
-                     and (IX /= CharIX)
                      and btl_character:get_is_alive(Char)
-                     and (blt_character:get_rank(Char) == target)
+                     and (btl_character:get_rank(Char) == target)
                   )
                end,
                orddict:to_list(Characters)
             ),
 
          case StillHasAliveTargetChar of
-            true -> Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, Update)
+            true -> S0Update;
+            _ -> handle_player_defeat(CharacterPlayerIX, S0Update)
          end
    end.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec handle_character_lost_health
-   (
-      non_neg_integer(),
-      integer(),
-      btl_character_turn_update:type()
-   )
-   -> btl_character_turn_update:type().
-handle_character_lost_health (_, Health, Update) when (Health > 0) -> Update;
-handle_character_lost_health (CharIX, _Health, Update) ->
-   Data = btl_character_turn_update:get_data(Update),
-   S1Data = btl_character_turn_data:clean_battle(Data),
-   S1Update = btl_character_turn_update:set_data(S1Data, Update),
-
-   S2Update = actually_handle_character_lost_health(CharIX, S1Update),
-
-   S2Data = btl_character_turn_update:get_data(S2Update),
-   S3Data = btl_character_turn_data:refresh_character(S2Data),
-   S3Update = btl_character_turn_update:set_data(S3Data, S2Update),
-
-   S3Update.
