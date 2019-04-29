@@ -177,7 +177,7 @@ get_portrait_id (#shr_eq{ portrait = R }) -> shr_portrait:get_id(R).
 get_glyph_board_id (#shr_eq_ref{ glyph_board = R }) -> R;
 get_glyph_board_id (#shr_eq{ glyph_board = R }) -> shr_glyph_board:get_id(R).
 
--spec get_glyph_ids (type()) -> list(shr_glyph:id()).
+-spec get_glyph_ids (either()) -> list(shr_glyph:id()).
 get_glyph_ids (#shr_eq_ref{ glyphs = R }) -> R;
 get_glyph_ids (#shr_eq{ glyphs = R }) -> lists:map(fun shr_glyph:get_id/1, R).
 
