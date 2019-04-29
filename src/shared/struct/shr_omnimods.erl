@@ -29,8 +29,7 @@
 (
    [
       default/0,
-      new/4,
-      new_dirty/4
+      new/4
    ]
 ).
 
@@ -64,14 +63,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec cleanup_entry_list (list(entry())) -> list(entry()).
-cleanup_entry_list (ModList) ->
-   [First|Rem] = ModList,
-   case First of
-      {none, _} -> Rem;
-      _ -> ModList
-   end.
-
 -spec apply_coefficient_to_mods (float(), mods()) -> mods().
 apply_coefficient_to_mods (Coef, Mods) ->
    dict:map(fun (_Name, Val) -> shr_math_util:ceil(Coef * Val) end, Mods).
@@ -118,23 +109,6 @@ new (AttributeMods, StatisticMods, AttackMods, DefenseMods) ->
 
 -spec default () -> type().
 default () -> new([], [], [], []).
-
--spec new_dirty
-(
-      list(entry()),
-      list(entry()),
-      list(entry()),
-      list(entry())
-   )
-   -> type().
-new_dirty(AttributeMods, StatisticMods, AttackMods, DefenseMods) ->
-   new
-   (
-      cleanup_entry_list(AttributeMods),
-      cleanup_entry_list(StatisticMods),
-      cleanup_entry_list(AttackMods),
-      cleanup_entry_list(DefenseMods)
-   ).
 
 %%% Modification
 -spec merge (type(), type()) -> type().

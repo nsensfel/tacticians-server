@@ -86,16 +86,17 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
 
    btl_character:to_unresolved(Result).
 
--spec handle_characters
+-spec add_characters
    (
       non_neg_integer(),
-      shr_map:type(),
-      ordsets:ordset(shr_location:type()),
       list(shr_character:unresolved()),
       btl_battle:type()
    )
    -> { btl_battle:type(), ataxic:basic() }.
-handle_characters (PlayerIX, Map, UsedLocations, RosterCharacters, Battle) ->
+add_characters (PlayerIX, RosterCharacters, Battle) ->
+   Map = btl_battle:get_map(Battle),
+   ForbiddenLocations = get_forbidden_locations(Battle),
+
    {_FinalUsedLocations, FinalBattle, FinalBattleAtaxicUpdates} =
       lists:foldl
       (
@@ -114,121 +115,42 @@ handle_characters (PlayerIX, Map, UsedLocations, RosterCharacters, Battle) ->
                   CurrentUsedLocations
                ),
 
-            {_NewCharacterIX, NewBattle, NewBattleAtaxiaUpdate} =
+            {_NewCharacterIX, S0Battle, BattleAtaxiaUpdate0} =
                btl_battle:ataxia_add_character(NewCharacterRef, CurrentBattle),
+
+            {UpdatedInventory, InventoryAtaxiaUpdate} =
+               shr_inventory:ataxia_add_equipment
+               (
+                  shr_character:get_equipment(RosterCharacter),
+                  btl_battle:get_related_inventory(S0Battle)
+               ),
+
+            {S1Battle, BattleAtaxiaUpdate1} =
+               btl_battle:ataxia_set_related_inventory
+               (
+                  UpdatedInventory,
+                  InventoryAtaxiaUpdate,
+                  S0Battle
+               ),
 
             {
                [
                   btl_character:get_location(NewCharacterRef)
                   |CurrentUsedLocations
                ],
-               NewBattle,
-               [NewBattleAtaxiaUpdate|CurrentBattleAtaxicUpdates]
+               S1Battle,
+               [
+                  BattleAtaxiaUpdate0,
+                  BattleAtaxiaUpdate1
+                  |CurrentBattleAtaxicUpdates
+               ]
             }
          end,
-         {UsedLocations, Battle, []},
+         {ForbiddenLocations, Battle, []},
          RosterCharacters
       ),
 
    {FinalBattle, ataxic:optimize(ataxic:sequence(FinalBattleAtaxicUpdates))}.
-
--spec add_player
-   (
-      shr_player:id(),
-      non_neg_integer(),
-      shr_battle_summary:category(),
-      btl_battle:type()
-   )
-   -> {btl_battle:type(), non_neg_integer(), ataxic:basic()}.
-add_player (PlayerID, PlayerSummaryIX, PlayerSummaryCategory, Battle) ->
-
-   {PlayerIX, Update}.
-
--spec add_characters
-   (
-      list(shr_character:unresolved()),
-      non_neg_integer(),
-      btl_battle:type()
-   )
-   -> {btl_battle:type(), ataxic:basic()}.
-add_characters (RosterCharacters, PlayerIX, Battle) ->
-   CurrentCharacters = btl_battle:get_characters(Battle),
-   NextCharacterIX = orddict:size(CurrentCharacters),
-   Map = btl_battle:get_map(Battle),
-
-   ForbiddenLocations = get_forbidden_locations(Battle),
-
-   {NewCharacters, CharactersUpdates} =
-      handle_characters
-      (
-         RosterCharacters,
-         PlayerIX,
-         Map,
-         ForbiddenLocations,
-         NextCharacterIX,
-         CurrentCharacters,
-         []
-      ),
-
-   {UsedPortraitIDs, UsedWeaponIDs, UsedArmorIDs} =
-      get_equipment_ids(RosterCharacters),
-
-   OldPortraitIDs = btl_battle:get_used_portrait_ids(Battle),
-   PortraitIDsUpdate =
-      ataxic:update_field
-      (
-         btl_battle:get_used_portrait_ids_field(),
-         update_ordset(UsedPortraitIDs, OldPortraitIDs)
-      ),
-
-   OldWeaponIDs = btl_battle:get_used_weapon_ids(Battle),
-   WeaponIDsUpdate =
-      ataxic:update_field
-      (
-         btl_battle:get_used_weapon_ids_field(),
-         update_ordset(UsedWeaponIDs, OldWeaponIDs)
-      ),
-
-   OldArmorIDs = btl_battle:get_used_armor_ids(Battle),
-   ArmorIDsUpdate =
-      ataxic:update_field
-      (
-         btl_battle:get_used_armor_ids_field(),
-         update_ordset(UsedArmorIDs, OldArmorIDs)
-      ),
-
-   S0Battle = btl_battle:set_characters(NewCharacters, Battle),
-   S1Battle =
-      btl_battle:set_used_armor_ids
-      (
-         ordsets:union(UsedArmorIDs, OldArmorIDs),
-         btl_battle:set_used_weapon_ids
-         (
-            ordsets:union(UsedWeaponIDs, OldWeaponIDs),
-            btl_battle:set_used_portrait_ids
-            (
-               ordsets:union(UsedPortraitIDs, OldPortraitIDs),
-               S0Battle
-            )
-         )
-      ),
-
-   Update =
-      ataxic:sequence
-      (
-         [
-            ataxic:update_field
-            (
-               btl_battle:get_characters_field(),
-               ataxic:sequence(CharactersUpdates)
-            ),
-            PortraitIDsUpdate,
-            WeaponIDsUpdate,
-            ArmorIDsUpdate
-         ]
-      ),
-
-   {S1Battle, Update}.
 
 -spec get_roster_characters
    (
@@ -285,63 +207,47 @@ add_to_pending_battle
 
    NewCharacters = get_roster_characters(PlayerID, SelectedRosterCharacterIXs),
 
-   NewPlayer =
-      btl_player:new
+   NewPlayer = btl_player:new(0, PlayerID, PlayerSumIX, PlayerSumCategory),
+
+   {PlayerIX, S0Battle, BattleAtaxiaUpdate0} =
+      btl_battle:ataxia_add_player(NewPlayer, Battle),
+
+   {S1Battle, BattleAtaxiaUpdate1} =
+      add_characters(PlayerIX, NewCharacters, S0Battle),
+
+   {S0PendingBattle, PendingBattleUpdate0} =
+      btl_pending_battle:ataxia_set_battle
       (
-         0,
-         PlayerID,
-         PlayerSumIX,
-         PlayerSumCategory
+         S1Battle,
+         ataxic:sequence([BattleAtaxiaUpdate0, BattleAtaxiaUpdate1]),
+         PendingBattle
       ),
 
-   {PlayerIX, S0Battle, BattleAtaxiaUpdate} =
-      btl_battle:add_player(NewPlayer, Battle),
+   {S1PendingBattle, PendingBattleUpdate1} =
+      btl_pending_battle:ataxia_set_free_slots(RemainingSlots, S0PendingBattle),
 
-   {S1Battle, BattleUpdate1} =
-      add_characters(NewCharacters, PlayerIX, S0Battle),
+   {S2PendingBattle, PendingBattleUpdate2} =
+      btl_pending_battle:ataxia_push_player_id(PlayerID, S1PendingBattle),
 
-   S0PendingBattle = btl_pending_battle:set_battle(S1Battle, PendingBattle),
-   S1PendingBattle =
-      btl_pending_battle:set_free_slots(RemainingSlots, S0PendingBattle),
-   S2PendingBattle =
-      btl_pending_battle:push_player_id(PlayerID, S1PendingBattle),
-   S3PendingBattle =
-      btl_pending_battle:push_player_summary_ix(PlayerIX, S2PendingBattle),
+   {S3PendingBattle, PendingBattleUpdate3} =
+      btl_pending_battle:ataxia_push_player_summary_ix
+      (
+         PlayerIX,
+         S2PendingBattle
+      ),
 
-   Update =
+   {
+      S3PendingBattle,
       ataxic:sequence
       (
          [
-            ataxic:update_field
-            (
-               btl_pending_battle:get_battle_field(),
-               ataxic:sequence
-               (
-                  [
-                     BattleUpdate0,
-                     BattleUpdate1
-                  ]
-               )
-            ),
-            ataxic:update_field
-            (
-               btl_pending_battle:get_free_slots_field(),
-               ataxic:constant(RemainingSlots)
-            ),
-            ataxic:update_field
-            (
-               btl_pending_battle:get_player_ids_field(),
-               ataxic:list_cons(ataxic:constant(PlayerID))
-            ),
-            ataxic:update_field
-            (
-               btl_pending_battle:get_player_summary_ixs_field(),
-               ataxic:list_cons(ataxic:constant(PlayerSumIX))
-            )
+            PendingBattleUpdate0,
+            PendingBattleUpdate1,
+            PendingBattleUpdate2,
+            PendingBattleUpdate3
          ]
-      ),
-
-   {S3PendingBattle, Update}.
+      )
+   }.
 
 %%%% STAGE -1: CREATING THE PENDING BATTLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate_pending_battle
@@ -652,7 +558,7 @@ repair_battle_final_link_of_player (BattleID, Player) ->
                         ataxic:update_field
                         (
                            shr_battle_summary:get_is_players_turn_field(),
-                           ataxic:constant(btl_player:get_index(Player) == 0)
+                           ataxic:constant(false)
                         )
                      ]
                   ),
@@ -672,7 +578,6 @@ repair_battle_final_link_of_player (BattleID, Player) ->
       ),
 
    ok.
-
 
 -spec repair_battle_final_links
    (

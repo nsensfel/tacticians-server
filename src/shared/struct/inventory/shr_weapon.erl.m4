@@ -30,6 +30,7 @@
 (
    [
       get_id/1,
+      get_is_primary/1,
       get_name/1,
       get_minimum_range/1,
       get_maximum_range/1,
@@ -59,6 +60,9 @@ get_id (Wp) -> Wp#weapon.id.
 
 -spec get_name (type()) -> binary().
 get_name (Wp) -> Wp#weapon.name.
+
+-spec get_is_primary (type()) -> boolean().
+get_is_primary (Wp) -> Wp#weapon.is_primary.
 
 -spec get_minimum_range (type()) -> non_neg_integer().
 get_minimum_range (Wp) -> Wp#weapon.range_min.

@@ -75,7 +75,7 @@ fetch_data (Player, Input) ->
 
    io:format("[W] Using shim inventory.~n"),
 
-   Inventory = shr_inventory:new(PlayerID),
+   Inventory = shr_inventory:default(),
 
    #query_state
    {

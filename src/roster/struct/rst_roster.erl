@@ -143,7 +143,7 @@ ataxia_set_character (IX, Character, Roster) ->
    -> {type(), ataxic:basic()}.
 ataxia_set_character (IX, Character, CharacterAtaxiaUpdate, Roster) ->
    {
-      ataxia_set_character(IX, Character, Roster),
+      set_character(IX, Character, Roster),
       ataxic:update_field
       (
          get_characters_field(),

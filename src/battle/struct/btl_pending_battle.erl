@@ -46,6 +46,8 @@
       push_player_summary_ix/2,
 
       ataxia_set_battle/2,
+      ataxia_set_battle/3,
+
       ataxia_set_free_slots/2,
       ataxia_set_battle_id/2,
       ataxia_set_player_ids/2,
@@ -107,12 +109,22 @@ set_battle (Battle, PBattle) -> PBattle#pending_battle{ battle = Battle }.
 
 -spec ataxia_set_battle (btl_battle:type(), type()) -> {type(), ataxic:basic()}.
 ataxia_set_battle (Battle, PBattle) ->
+   ataxia_set_battle(Battle, ataxic:constant(Battle), PBattle).
+
+-spec ataxia_set_battle
+   (
+      btl_battle:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_battle (Battle, BattleAtaxiaUpdate, PBattle) ->
    {
-      PBattle#pending_battle{ battle = Battle },
+      set_battle(Battle, PBattle),
       ataxic:update_field
       (
          get_battle_field(),
-         ataxic:constant(Battle)
+         BattleAtaxiaUpdate
       )
    }.
 

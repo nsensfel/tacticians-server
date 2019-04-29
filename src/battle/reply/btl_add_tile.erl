@@ -24,6 +24,8 @@ generate (Tile) ->
          {<<"id">>, shr_tile:get_id(Tile)},
          {<<"nam">>, shr_tile:get_name(Tile)},
          {<<"ct">>, shr_tile:get_cost(Tile)},
+         {<<"de">>, 1}, % TODO: provide actual depth.
+         {<<"fa">>, <<"">>}, % TODO: provide actual family.
          {<<"omni">>, shr_omnimods:encode(shr_tile:get_omnimods(Tile))}
       ]
    }.

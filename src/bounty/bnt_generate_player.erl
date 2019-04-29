@@ -81,7 +81,7 @@ finalize_login (UsernameLC, EmailLC, PlayerID) ->
 
 -spec generate_inventory (shr_player:id()) -> shr_inventory:id().
 generate_inventory (PlayerID) ->
-   Inventory = shr_inventory:new(PlayerID),
+   Inventory = shr_inventory:default(),
 
    {ok, InventoryID} =
       ataxia_client:add

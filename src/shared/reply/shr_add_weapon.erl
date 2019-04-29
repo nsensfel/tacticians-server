@@ -25,6 +25,7 @@ generate (Weapon) ->
          {<<"nam">>, shr_weapon:get_name(Weapon)},
          {<<"rmi">>, shr_weapon:get_minimum_range(Weapon)},
          {<<"rma">>, shr_weapon:get_maximum_range(Weapon)},
+         {<<"pri">>, shr_weapon:get_is_primary(Weapon)},
          {<<"omni">>, shr_omnimods:encode(shr_weapon:get_omnimods(Weapon))}
       ]
    }.

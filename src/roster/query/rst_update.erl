@@ -88,7 +88,7 @@ fetch_data (Player, Input) ->
       ),
 
 %   Inventory = shr_timed_cache:fetch(inventory_db, PlayerID, InventoryID),
-   Inventory = shr_inventory:new(PlayerID),
+   Inventory = shr_inventory:default(),
 
    #query_state
    {

@@ -107,7 +107,7 @@ get_path_cost_and_destination (Update, Path) ->
       btl_character:type(),
       non_neg_integer()
    )
-   -> 'ok'.
+   -> ('ok' | 'error').
 assert_character_can_move (Char, Cost) ->
    CharacterMovementPoints =
       shr_statistics:get_movement_points
@@ -118,9 +118,16 @@ assert_character_can_move (Char, Cost) ->
          )
       ),
 
-   true = (Cost =< CharacterMovementPoints),
-
-   ok.
+   case (Cost =< CharacterMovementPoints) of
+      true -> ok;
+      false ->
+         io:format
+         (
+            "~n[E] Character trying to move ~p dist with ~p points.~n",
+            [Cost, CharacterMovementPoints]
+         ),
+         error
+   end.
 
 -spec commit_move
    (
@@ -184,6 +191,6 @@ handle (BattleAction, Update) ->
    {PathCost, NewLocation, S1Update} =
       get_path_cost_and_destination(S0Update, Path),
 
-   assert_character_can_move(Character, PathCost),
+   ok = assert_character_can_move(Character, PathCost),
 
    commit_move(Character, S1Update, Path, NewLocation).

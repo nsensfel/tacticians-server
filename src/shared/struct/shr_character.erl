@@ -69,6 +69,7 @@
 -export
 (
    [
+      new/0,
       resolve/2,
       to_unresolved/1,
       encode/1,
@@ -107,6 +108,15 @@ get_equipment_but_weapons_omnimods (Equipment) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec new () -> unresolved().
+new () ->
+   #shr_char_ref
+   {
+      name = <<"Unnamed Character">>,
+      equipment = shr_equipment:default_unresolved(),
+      is_using_secondary = false
+   }.
+
 %%%% Accessors
 -spec get_name (either()) -> binary().
 get_name (#shr_char{ name = R }) -> R;
@@ -346,18 +356,44 @@ set_extra_omnimods (O, Char) ->
 
 -spec resolve (shr_omnimods:type(), unresolved()) -> type().
 resolve (LocalOmnimods, CharRef) ->
-   Attributes = shr_attributes:default(),
    Eq = shr_equipment:resolve(CharRef#shr_char_ref.equipment),
+
+   EquipmentButWeaponsOmnimods = get_equipment_but_weapons_omnimods(Eq),
+
+   NewOmnimods =
+      shr_omnimods:merge
+      (
+         shr_omnimods:merge
+         (
+            EquipmentButWeaponsOmnimods,
+            shr_weapon:get_omnimods(get_active_weapon(CharRef))
+         ),
+         LocalOmnimods
+      ),
+
+   NewAttributes =
+      shr_omnimods:apply_to_attributes
+      (
+         NewOmnimods,
+         shr_attributes:default()
+      ),
+
+   NewStatistics =
+      shr_omnimods:apply_to_statistics
+      (
+         NewOmnimods,
+         shr_statistics:new_raw(NewAttributes)
+      ),
 
    #shr_char
    {
       name = CharRef#shr_char_ref.name,
-      equipment_but_weapons_omnimods = get_equipment_but_weapons_omnimods(Eq),
+      equipment_but_weapons_omnimods = EquipmentButWeaponsOmnimods,
       equipment = Eq,
       is_using_secondary = CharRef#shr_char_ref.is_using_secondary,
-      statistics = shr_statistics:new_raw(Attributes),
-      attributes = Attributes,
-      omnimods = shr_omnimods:default(),
+      statistics = NewStatistics,
+      attributes = NewAttributes,
+      omnimods = NewOmnimods,
       extra_omnimods = LocalOmnimods
    }.
 
