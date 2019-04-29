@@ -12,7 +12,6 @@
       handle/1
    ]
 ).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,7 +19,7 @@
    (
       btl_battle:type()
    )
-   -> {btl_battle:type(), ataxic:basic()}.
+   -> {non_neg_integer(), btl_battle:type(), ataxic:basic()}.
 prepare_player_turn_for_next_player (Battle) ->
    Players = btl_battle:get_players(Battle),
    CurrentPlayerTurn = btl_battle:get_current_player_turn(Battle),
@@ -36,16 +35,19 @@ prepare_player_turn_for_next_player (Battle) ->
          Battle
       ),
 
-   {UpdatedBattle, BattleAtaxiaUpdate}.
+   {
+      btl_player_turn:get_player_ix(UpdatedPlayerTurn),
+      UpdatedBattle,
+      BattleAtaxiaUpdate
+   }.
 
 -spec reset_next_player_timeline
    (
+      non_neg_integer(),
       btl_battle:type()
    )
-   -> {btl_battle:type(), btl_player:type(), ataxic:basic()}.
-reset_next_player_timeline (Battle) ->
-   NextPlayerTurn = btl_battle:get_current_player_turn(Battle),
-   NextPlayerIX = btl_player_turn:get_player_ix(NextPlayerTurn),
+   -> {btl_battle:type(), ataxic:basic()}.
+reset_next_player_timeline (NextPlayerIX, Battle) ->
    NextPlayer = btl_battle:get_player(NextPlayerIX, Battle),
 
    {UpdatedNextPlayer, PlayerAtaxiaUpdate} =
@@ -60,17 +62,16 @@ reset_next_player_timeline (Battle) ->
          Battle
       ),
 
-   {UpdatedBattle, UpdatedNextPlayer, BattleAtaxiaUpdate}.
+   {UpdatedBattle, BattleAtaxiaUpdate}.
 
 
 -spec activate_next_players_characters
    (
-      btl_battle:type(),
-      btl_player:type()
+      non_neg_integer(),
+      btl_battle:type()
    )
    -> {btl_battle:type(), ataxic:basic()}.
-activate_next_players_characters (Battle, NextPlayer) ->
-   NextPlayerIX = btl_player:get_index(NextPlayer),
+activate_next_players_characters (NextPlayerIX, Battle) ->
    AllCharacters = btl_battle:get_characters(Battle),
 
    {ResultingBattle, BattleAtaxicUpdates} =
@@ -110,14 +111,14 @@ activate_next_players_characters (Battle, NextPlayer) ->
 activate_next_player (Update) ->
    {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
 
-   {S0Battle, BattleAtaxiaUpdate0} =
+   {NextPlayerIX, S0Battle, BattleAtaxiaUpdate0} =
       prepare_player_turn_for_next_player(Battle),
 
-   {S1Battle, NextPlayer, BattleAtaxiaUpdate1} =
-      reset_next_player_timeline(S0Battle),
+   {S1Battle, BattleAtaxiaUpdate1} =
+      reset_next_player_timeline(NextPlayerIX, S0Battle),
 
    {S2Battle, BattleAtaxiaUpdate2} =
-      activate_next_players_characters(S1Battle, NextPlayer),
+      activate_next_players_characters(NextPlayerIX, S1Battle),
 
    S1Update =
       btl_character_turn_update:ataxia_set_battle
@@ -138,10 +139,7 @@ activate_next_player (Update) ->
    S2Update =
       btl_character_turn_update:add_to_timeline
       (
-         btl_turn_result:new_player_turn_started
-         (
-            btl_player:get_index(NextPlayer)
-         ),
+         btl_turn_result:new_player_turn_started(NextPlayerIX),
          S1Update
       ),
 

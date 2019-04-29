@@ -74,7 +74,7 @@ find_random_location (Map, ForbiddenLocations) ->
       shr_map:type(),
       ordsets:ordset(shr_location:type())
    )
-   -> btl_character:type().
+   -> btl_character:unresolved().
 create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
    {Location, Tile} = find_random_location(Map, ForbiddenLocations),
    TileOmnimods = shr_tile:get_omnimods(Tile),
@@ -84,71 +84,53 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
    % TODO: link rank to roster.
    Result = btl_character:new(PlayerIX, optional, Location, ResolvedBaseChar),
 
-   Result.
+   btl_character:to_unresolved(Result).
 
 -spec handle_characters
    (
-      list(shr_character:unresolved()),
       non_neg_integer(),
       shr_map:type(),
       ordsets:ordset(shr_location:type()),
-      non_neg_integer(),
-      orddict:orddict(non_neg_integer(), btl_character:type()),
-      list(ataxic:basic())
+      list(shr_character:unresolved()),
+      btl_battle:type()
    )
-   ->
-   {
-      orddict:orddict(non_neg_integer(), btl_character:type()),
-      list(ataxic:basic())
-   }.
-handle_characters
-(
-   [],
-   _PlayerIX,
-   _Map,
-   _UsedLocations,
-   _NextCharIX,
-   Characters,
-   AtaxicUpdates
-) ->
-   {Characters, AtaxicUpdates};
-handle_characters
-(
-   [RosterCharacter|NextRosterCharacters],
-   PlayerIX,
-   Map,
-   UsedLocations,
-   NextCharIX,
-   Characters,
-   AtaxicUpdates
-) ->
-   NewCharacter =
-      create_character(PlayerIX, RosterCharacter, Map, UsedLocations),
-
-   NewCharacters = orddict:store(NextCharIX, NewCharacter, Characters),
-
-   NewUpdate =
-      ataxic:apply_function
+   -> { btl_battle:type(), ataxic:basic() }.
+handle_characters (PlayerIX, Map, UsedLocations, RosterCharacters, Battle) ->
+   {_FinalUsedLocations, FinalBattle, FinalBattleAtaxicUpdates} =
+      lists:foldl
       (
-         orddict,
-         store,
-         [
-            ataxic:constant(NextCharIX),
-            ataxic:constant(NewCharacter),
-            ataxic:current_value()
-         ]
+         fun
+         (
+            RosterCharacter,
+            {CurrentUsedLocations, CurrentBattle, CurrentBattleAtaxicUpdates}
+         )
+         ->
+            NewCharacterRef =
+               create_character
+               (
+                  PlayerIX,
+                  RosterCharacter,
+                  Map,
+                  CurrentUsedLocations
+               ),
+
+            {_NewCharacterIX, NewBattle, NewBattleAtaxiaUpdate} =
+               btl_battle:ataxia_add_character(NewCharacterRef, CurrentBattle),
+
+            {
+               [
+                  btl_character:get_location(NewCharacterRef)
+                  |CurrentUsedLocations
+               ],
+               NewBattle,
+               [NewBattleAtaxiaUpdate|CurrentBattleAtaxicUpdates]
+            }
+         end,
+         {UsedLocations, Battle, []},
+         RosterCharacters
       ),
 
-   handle_characters
-   (
-      NextRosterCharacters,
-      PlayerIX,
-      Map,
-      [btl_character:get_location(NewCharacter)|UsedLocations],
-      (NextCharIX + 1),
-      NewCharacters,
-      [NewUpdate|AtaxicUpdates]
-   ).
+   {FinalBattle, ataxic:optimize(ataxic:sequence(FinalBattleAtaxicUpdates))}.
 
 -spec add_player
    (
@@ -159,39 +141,8 @@ handle_characters
    )
    -> {btl_battle:type(), non_neg_integer(), ataxic:basic()}.
 add_player (PlayerID, PlayerSummaryIX, PlayerSummaryCategory, Battle) ->
-   Players = btl_battle:get_players(Battle),
 
-   PlayerIX = orddict:size(Players),
-   NewPlayer =
-      btl_player:new
-      (
-         PlayerIX,
-         0,
-         PlayerID,
-         PlayerSummaryIX,
-         PlayerSummaryCategory
-      ),
-
-   NewPlayers = orddict:store(PlayerIX, NewPlayer, Players),
-   S0Battle = btl_battle:set_players(NewPlayers, Battle),
-
-   Update =
-      ataxic:update_field
-      (
-         btl_battle:get_players_field(),
-         ataxic:apply_function
-         (
-            orddict,
-            store,
-            [
-               ataxic:constant(PlayerIX),
-               ataxic:constant(NewPlayer),
-               ataxic:current_value()
-            ]
-         )
-      ),
-
-   {S0Battle, PlayerIX, Update}.
+   {PlayerIX, Update}.
 
 -spec add_characters
    (
@@ -334,8 +285,17 @@ add_to_pending_battle
 
    NewCharacters = get_roster_characters(PlayerID, SelectedRosterCharacterIXs),
 
-   {S0Battle, PlayerIX, BattleUpdate0} =
-      add_player(PlayerID, PlayerSumIX, PlayerSumCategory, Battle),
+   NewPlayer =
+      btl_player:new
+      (
+         0,
+         PlayerID,
+         PlayerSumIX,
+         PlayerSumCategory
+      ),
+
+   {PlayerIX, S0Battle, BattleAtaxiaUpdate} =
+      btl_battle:add_player(NewPlayer, Battle),
 
    {S1Battle, BattleUpdate1} =
       add_characters(NewCharacters, PlayerIX, S0Battle),

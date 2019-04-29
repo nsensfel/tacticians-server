@@ -56,6 +56,9 @@
       ataxia_set_character/3,
       ataxia_set_character/4,
 
+      add_character/2,
+      ataxia_add_character/2,
+
       set_players/2,
       ataxia_set_players/2,
       ataxia_set_players/3,
@@ -63,6 +66,9 @@
       set_player/3,
       ataxia_set_player/3,
       ataxia_set_player/4,
+
+      add_player/2,
+      ataxia_add_player/2,
 
       set_current_player_turn/2,
       ataxia_set_current_player_turn/2,
@@ -243,6 +249,27 @@ set_character (IX, Character, Battle) ->
       characters = orddict:store(IX, Character, Battle#battle.characters)
    }.
 
+-spec add_character
+   (
+      btl_character:unresolved(),
+      type()
+   )
+   -> {non_neg_integer(), type()}.
+add_character (Character, Battle) ->
+   IX = orddict:size(Battle#battle.characters),
+   {IX, set_character(IX, Character, Battle)}.
+
+-spec ataxia_add_character
+   (
+      btl_character:unresolved(),
+      type()
+   )
+   -> {non_neg_integer(), type(), ataxic:basic()}.
+ataxia_add_character (Character, Battle) ->
+   IX = orddict:size(Battle#battle.characters),
+   {S0Battle, AtaxicUpdate} = ataxia_set_character(IX, Character, Battle),
+   {IX, S0Battle, AtaxicUpdate}.
+
 -spec ataxia_set_character
    (
       non_neg_integer(),
@@ -372,6 +399,22 @@ ataxia_set_player (IX, Player, PlayerUpdate, Battle) ->
          ataxic_sugar:update_orddict_element(IX, PlayerUpdate)
       )
    }.
+
+-spec add_player (btl_player:type(), type()) -> {non_neg_integer(), type()}.
+add_player (Player, Battle) ->
+   IX = orddict:size(Battle#battle.players),
+   {IX, set_player(IX, Player, Battle)}.
+
+-spec ataxia_add_player
+   (
+      btl_player:type(),
+      type()
+   )
+   -> {non_neg_integer(), type(), ataxic:basic()}.
+ataxia_add_player (Player, Battle) ->
+   IX = orddict:size(Battle#battle.players),
+   {S0Battle, AtaxicUpdate} = ataxia_set_player(IX, Player, Battle),
+   {IX, S0Battle, AtaxicUpdate}.
 
 -spec set_current_player_turn (btl_player_turn:type(), type()) -> type().
 set_current_player_turn (PlayerTurn, Battle) ->

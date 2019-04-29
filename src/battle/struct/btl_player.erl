@@ -8,7 +8,6 @@
 (
    player,
    {
-      ix :: non_neg_integer(),
       id :: shr_player:id(),
       character_ix :: non_neg_integer(),
       timeline :: list(any()),
@@ -29,7 +28,6 @@
 (
    [
       get_id/1,
-      get_index/1,
       get_luck/1,
       get_summary_index/1,
       get_summary_category/1,
@@ -59,7 +57,7 @@
 -export
 (
    [
-      new/5
+      new/4
    ]
 ).
 
@@ -72,9 +70,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_id (type()) -> shr_player:id().
 get_id (Player) -> Player#player.id.
-
--spec get_index (type()) -> non_neg_integer().
-get_index (Player) -> Player#player.ix.
 
 -spec get_luck (type()) -> integer().
 get_luck (Player) -> Player#player.luck.
@@ -166,15 +161,13 @@ ataxia_reset_timeline (Player) ->
 -spec new
    (
       non_neg_integer(),
-      non_neg_integer(),
       shr_player:id(),
       non_neg_integer(),
       shr_battle_summary:category()
    ) -> type().
-new (IX, CharacterIX, ID, SummaryIX, SummaryCategory) ->
+new (CharacterIX, ID, SummaryIX, SummaryCategory) ->
    #player
    {
-      ix = IX,
       character_ix = CharacterIX,
       id = ID,
       is_active = true,
