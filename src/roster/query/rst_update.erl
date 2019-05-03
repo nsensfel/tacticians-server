@@ -41,7 +41,10 @@ decode_character_list (EncodedCharactersList) ->
    lists:map
    (
       fun (Map) ->
-         {maps:get(<<"ix">>, Map), shr_character:decode(Map)}
+         {
+            maps:get(<<"ix">>, Map),
+            shr_character:decode(maps:get(<<"bas">>, Map))
+         }
       end,
       EncodedCharactersList
    ).
