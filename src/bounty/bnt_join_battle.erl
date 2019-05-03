@@ -134,10 +134,11 @@ add_characters (PlayerIX, RosterCharacters, Battle) ->
                ),
 
             {
-               [
-                  btl_character:get_location(NewCharacterRef)
-                  |CurrentUsedLocations
-               ],
+               ordsets:add_element
+               (
+                  btl_character:get_location(NewCharacterRef),
+                  CurrentUsedLocations
+               ),
                S1Battle,
                [
                   BattleAtaxiaUpdate0,
