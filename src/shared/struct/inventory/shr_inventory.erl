@@ -366,22 +366,28 @@ ataxia_add_equipment (Eq, Inv) ->
    {S3Inv, Ataxic3} =
       ataxia_add_glyph_board(shr_equipment:get_glyph_board_id(Eq), S2Inv),
 
-   {S4Inv, Ataxic4s} =
+   {S4Inv, Ataxic4} =
+      ataxia_add_portrait(shr_equipment:get_portrait_id(Eq), S3Inv),
+
+   {S5Inv, Ataxic5s} =
       lists:foldl
       (
          fun (GlyphID, {PrevInv, PrevAtaxic}) ->
             {NewInv, NewAtaxic} = ataxia_add_glyph(GlyphID, PrevInv),
             {NewInv, [NewAtaxic|PrevAtaxic]}
          end,
-         {S3Inv, []},
+         {S4Inv, []},
          shr_equipment:get_glyph_ids(Eq)
       ),
 
    {
-      S4Inv,
+      S5Inv,
       ataxic:optimize
       (
-         ataxic:sequence([Ataxic0, Ataxic1, Ataxic2, Ataxic3|Ataxic4s])
+         ataxic:sequence
+         (
+            [Ataxic0, Ataxic1, Ataxic2, Ataxic3, Ataxic4 |Ataxic5s]
+         )
       )
    }.
 
