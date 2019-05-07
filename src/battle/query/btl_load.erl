@@ -81,7 +81,6 @@ fetch_data (Input) ->
 -spec generate_reply(query_state(), input()) -> binary().
 generate_reply (QueryState, Input) ->
    PlayerID = Input#input.player_id,
-   PUser = ataxia_security:user_from_id(PlayerID),
    Battle = QueryState#query_state.battle,
    RelevantInventory = btl_battle:get_related_inventory(Battle),
    Players = btl_battle:get_players(Battle),
@@ -106,7 +105,7 @@ generate_reply (QueryState, Input) ->
    SetMap =
       shr_set_map:generate
       (
-         PUser,
+         PlayerIX,
          fun (_TriggerName) -> false end,
          btl_battle:get_map(Battle)
       ),

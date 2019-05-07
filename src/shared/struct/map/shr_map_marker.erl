@@ -3,10 +3,29 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type name() :: binary().
--type type() :: {ataxia_security:permission(), list(shr_location:type())}.
+-record
+(
+   matk_mrk,
+   {
+      character_ix :: non_neg_integer()
+   }
+).
 
--export_type([name/0, type/0]).
+-record
+(
+   spawn_mrk,
+   {
+      player_ix :: non_neg_integer()
+   }
+).
+
+-type name() :: binary().
+-opaque melee_attack_zone() :: #matk_mrk{}.
+-opaque spawn_zone() :: #spawn_mrk{}.
+-opaque type() ::
+   {list(shr_location:type()), (melee_attack_zone() | spawn_zone())}.
+
+-export_type([name/0, type/0, melee_attack_zone/0, spawn_zone/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -14,7 +33,7 @@
 -export
 (
    [
-      can_access/2,
+      player_can_see/2,
       get_locations/1
    ]
 ).
@@ -34,36 +53,39 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec can_access (ataxia_security:user(), type()) -> boolean().
-can_access (User, {Permission, _Locations}) ->
-   ataxia_security:can_access(User, Permission).
-
--spec get_locations (type()) -> boolean().
-get_locations ({_Permission, Locations}) ->
-   Locations.
+-spec get_locations (type()) -> list(shr_location:type()).
+get_locations ({L, _}) -> L.
 
 -spec encode (type()) -> {list(any())}.
-encode ({Permission, Locations}) ->
+encode ({L, MarkerData}) when is_record(MarkerData, matk_mrk) ->
    {
       [
-         {
-            <<"p">>,
-            ataxia_security:permission_to_json(fun (E) -> E end, Permission)
-         },
-         { <<"l">>, lists:map(fun shr_location:encode/1, Locations) }
+         { <<"t">>, <<"matk">> },
+         { <<"cix">>, MarkerData#matk_mrk.character_ix },
+         { <<"l">>, lists:map(fun shr_location:encode/1, L) }
+      ]
+   };
+encode ({L, MarkerData}) when is_record(MarkerData, spawn_mrk) ->
+   {
+      [
+         { <<"t">>, <<"spawn">> },
+         { <<"pix">>, MarkerData#spawn_mrk.player_ix },
+         { <<"l">>, lists:map(fun shr_location:encode/1, L) }
       ]
    }.
 
 -spec decode (map()) -> type().
 decode (Map) ->
-   EncodedPermission = maps:get("p", Map),
-   EncodedLocations = maps:get("l", Map),
-
-   Permission =
-      ataxia_security:permission_from_json(fun (E) -> E end, EncodedPermission),
-   Locations = lists:map(fun shr_location:decode/1, EncodedLocations),
-
+   Data = maps:get(<<"d">>, Map),
    {
-      Permission,
-      Locations
+      lists:map(fun shr_location:decode/1, maps:get(<<"l">>, Map)),
+      (
+         case maps:get(<<"t">>, Data) of
+            <<"mtak">> -> #matk_mrk{ character_ix = maps:get(<<"cix">>, Data) };
+            <<"spawn">> -> #spawn_mrk{ player_ix = maps:get(<<"pix">>, Data) }
+         end
+      )
    }.
+
+-spec player_can_see (integer(), type()) -> boolean().
+player_can_see (IX, _Marker) -> (IX >= 0).

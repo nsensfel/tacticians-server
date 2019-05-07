@@ -77,11 +77,10 @@ fetch_data (Input) ->
    }.
 
 -spec generate_reply (input(), query_state()) -> binary().
-generate_reply (Input, QueryState) ->
-   PUser = ataxia_security:user_from_id(Input#input.player_id),
+generate_reply (_Input, QueryState) ->
    Map = QueryState#query_state.map,
 
-   SetMap = shr_set_map:generate(PUser, fun (_TriggerName) -> true end, Map),
+   SetMap = shr_set_map:generate(0, fun (_TriggerName) -> true end, Map),
    Output = jiffy:encode([SetMap]),
 
    Output.

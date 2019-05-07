@@ -18,12 +18,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec generate
    (
-      ataxia_security:user(),
+      non_neg_integer(),
       fun ((shr_tile_instance:trigger_name()) -> boolean()),
       shr_map:type()
    )
    -> {list(any())}.
-generate (User, TriggerVisibilityFun, Map) ->
+generate (PlayerIX, TriggerVisibilityFun, Map) ->
    {
       [
          {<<"msg">>, <<"set_map">>},
@@ -43,7 +43,7 @@ generate (User, TriggerVisibilityFun, Map) ->
                lists:foldl
                (
                   fun ({Key, Value}, Acc) ->
-                     case shr_map_marker:can_access(User, Value) of
+                     case shr_map_marker:player_can_see(PlayerIX, Value) of
                         true -> [{ Key, shr_map_marker:encode(Value) }|Acc];
                         false -> Acc
                      end
