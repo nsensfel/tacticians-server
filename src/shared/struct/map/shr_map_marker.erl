@@ -34,7 +34,8 @@
 (
    [
       player_can_see/2,
-      get_locations/1
+      get_locations/1,
+      get_name/1
    ]
 ).
 
@@ -88,4 +89,14 @@ decode (Map) ->
    }.
 
 -spec player_can_see (integer(), type()) -> boolean().
-player_can_see (IX, _Marker) -> (IX >= 0).
+player_can_see (PlayerIX, _Marker) -> (PlayerIX >= 0).
+
+-spec get_name (type()) -> binary().
+get_name ({_Location, MarkerData}) when is_record(MarkerData, matk_mrk) ->
+   Prefix = <<"matk_c">>,
+   CharacterIXString = integer_to_binary(MarkerData#matk_mrk.character_ix),
+   <<Prefix/binary, CharacterIXString/binary>>;
+get_name ({_Location, MarkerData}) when is_record(MarkerData, spawn_mrk) ->
+   Prefix = <<"spawn_p">>,
+   PlayerIXString = integer_to_binary(MarkerData#spawn_mrk.player_ix),
+   <<Prefix/binary, PlayerIXString/binary>>.
