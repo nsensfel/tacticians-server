@@ -22,6 +22,7 @@
 -export
 (
    [
+      generate_neighborhood/4,
       apply_direction/2,
       dist/2
    ]
@@ -88,3 +89,44 @@ decode (Map) ->
    true = (is_integer(X) and is_integer(Y)),
 
    validate({X, Y}).
+
+-spec generate_neighborhood
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      non_neg_integer(),
+      type()
+   )
+   -> ordsets:ordset(type()).
+generate_neighborhood(_, _, _, nowhere) -> ordsets:new();
+generate_neighborhood(MapWidth, MapHeight, Dist, {StartingX, StartingY}) ->
+   lists:foldl
+   (
+      fun (CurrentYMod, CurrentYResult) ->
+         CurrentY = (StartingY + CurrentYMod),
+         case ((CurrentY < 0) or (CurrentY >= MapHeight)) of
+            true -> CurrentYResult;
+            false ->
+               XDistRange = Dist - abs(CurrentYMod),
+               lists:foldl
+               (
+                  fun (CurrentXMod, CurrentResult) ->
+                     CurrentX = (StartingX + CurrentXMod),
+                     case ((CurrentX < 0) or (CurrentX >= MapWidth)) of
+                        true -> CurrentResult;
+                        false ->
+                           ordsets:add_element
+                           (
+                              {CurrentX, CurrentY},
+                              CurrentResult
+                           )
+                     end
+                  end,
+                  CurrentYResult,
+                  lists:seq(-XDistRange, XDistRange)
+               )
+         end
+      end,
+      ordsets:new(),
+      lists:seq(-Dist, Dist)
+   ).
