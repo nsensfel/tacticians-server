@@ -10,15 +10,20 @@ attack (which should make being able to do two attacks per turn worthwhile),
 
 Each character has exactly one skill, which is chosen like any other part of
 their equipment. Skills have infinite range, and are casted on a single target
-(faction is not taken into account). The use of a skill counts as an action
-(i.e. it replaces either switching weapons or attacking).
+(faction is not taken into account), which is either a character or a tile
+(that may actually place the skill on a pattern around itself).
+The use of a skill counts as an action (i.e. it replaces either switching
+weapons or attacking).
 
 Multiple variants of the same skill allow players to select a more costly skill
 for an increase in either power (Alpha variant), duration (Beta variant), or
 both (Gamma variant). The increase should not be linear (e.g. 2 times the power
 costs 175% of the default version). The X Gamma variant combines the advantages
 of the Beta and the Alpha versions. It obviously costs way more than either of
-them.
+them. Another variation could be to have the skill triggered later, by
+targeting a tile. Depending on the variant, a character (ally, enemy, or
+either) would trigger the effect upon walking on the tile. This could for
+example be used for a self-resurrection skill.
 
 Ideas for some skills:
 * Attack Anywhere:
