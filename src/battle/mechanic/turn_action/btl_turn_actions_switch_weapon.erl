@@ -24,7 +24,7 @@
    (
       btl_character_turn_update:type()
    )
-   -> btl_character_turn_update:type().
+   -> {'ok', btl_character_turn_update:type()}.
 handle (Update) ->
    {S0Update, Character} = btl_character_turn_update:get_character(Update),
    CharacterIX = btl_character_turn_update:get_character_ix(S0Update),
@@ -52,4 +52,4 @@ handle (Update) ->
          S1Update
       ),
 
-   S2Update.
+   {ok, S2Update}.

@@ -151,7 +151,7 @@ get_attack_sequence (Character, TargetCharacter) ->
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   -> btl_character_turn_update:type().
+   -> {ok, btl_character_turn_update:type()}.
 handle (BattleAction, Update) ->
    {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
    {S1Update, Character} = btl_character_turn_update:get_character(S0Update),
@@ -336,4 +336,4 @@ handle (BattleAction, Update) ->
             )
       end,
 
-   S6Update.
+   {ok, S6Update}.

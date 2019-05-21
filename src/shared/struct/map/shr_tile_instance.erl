@@ -32,7 +32,8 @@
 (
    [
       get_tile_id/1,
-      get_variant_id/1
+      get_variant_id/1,
+      get_triggers/1
    ]
 ).
 
@@ -48,6 +49,9 @@ get_tile_id ({TileID, _, _, _}) -> TileID.
 
 -spec get_variant_id (type()) -> shr_tile:variant_id().
 get_variant_id ({_, VariantID, _, _}) -> VariantID.
+
+-spec get_triggers (type()) -> list(trigger_name()).
+get_triggers ({_, _, _, Triggers}) -> Triggers.
 
 -spec decode (map()) -> type().
 decode (Map) ->

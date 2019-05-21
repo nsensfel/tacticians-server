@@ -1,5 +1,15 @@
 -module(shr_map_marker).
 
+-define(OWNER_IX_FIELD, <<"oix">>).
+-define(LOCATIONS_FIELD, <<"l">>).
+-define(DATA_FIELD, <<"d">>).
+
+-define(DATA_TYPE_FIELD, <<"t">>).
+-define(MATK_TYPE_VALUE, <<"matk">>).
+-define(SPAWN_TYPE_VALUE, <<"spawn">>).
+
+-define(MATK_CHARACTER_IX_FIELD, <<"cix">>).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,17 +25,37 @@
 (
    spawn_mrk,
    {
-      player_ix :: non_neg_integer()
+   }
+).
+
+-record
+(
+   marker,
+   {
+      owner_ix :: (non_neg_integer() | -1),
+      data :: (data()),
+      locations :: list(shr_location:type())
    }
 ).
 
 -type name() :: binary().
+-type category() :: (matk | spawn).
 -opaque melee_attack_zone() :: #matk_mrk{}.
 -opaque spawn_zone() :: #spawn_mrk{}.
--opaque type() ::
-   {list(shr_location:type()), (melee_attack_zone() | spawn_zone())}.
+-opaque data() :: (#matk_mrk{} | #spawn_mrk{}).
+-opaque type() :: #marker{}.
 
--export_type([name/0, type/0, melee_attack_zone/0, spawn_zone/0]).
+-export_type
+(
+   [
+      name/0,
+      type/0,
+      category/0,
+      data/0,
+      melee_attack_zone/0,
+      spawn_zone/0
+   ]
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,7 +65,17 @@
    [
       player_can_see/2,
       get_locations/1,
-      get_name/1
+      get_name/1,
+      get_owner_index/1,
+      get_category/1,
+      interrupts_movement/2
+   ]
+).
+
+-export
+(
+   [
+      get_character_index/1
    ]
 ).
 
@@ -50,53 +90,103 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec encode_data (data()) -> {list({binary(), any()})}.
+encode_data (MarkerData) when is_record(MarkerData, matk_mrk) ->
+   {
+      [
+         { ?DATA_TYPE_FIELD, ?MATK_TYPE_VALUE },
+         { ?MATK_CHARACTER_IX_FIELD, MarkerData#matk_mrk.character_ix }
+      ]
+   };
+encode_data (MarkerData) when is_record(MarkerData, spawn_mrk) ->
+   {
+      [
+         { ?DATA_TYPE_FIELD, ?SPAWN_TYPE_VALUE }
+      ]
+   }.
+
+-spec decode_data (map()) -> data().
+decode_data (Map) ->
+   case maps:get(?DATA_TYPE_FIELD, Map) of
+      ?MATK_TYPE_VALUE ->
+         #matk_mrk
+         {
+            character_ix = maps:get(?MATK_CHARACTER_IX_FIELD, Map)
+         };
+
+      ?SPAWN_TYPE_VALUE -> #spawn_mrk{};
+
+      _Other ->
+         % TODO: error.
+         #spawn_mrk{}
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_locations (type()) -> list(shr_location:type()).
-get_locations ({L, _}) -> L.
+-spec interrupts_movement (non_neg_integer(), type()) -> boolean().
+interrupts_movement (PlayerIX, Marker) ->
+   (
+      (PlayerIX /= Marker#marker.owner_ix)
+      and is_record(Marker#marker.data, matk_mrk)
+   ).
 
--spec encode (type()) -> {list(any())}.
-encode ({L, MarkerData}) when is_record(MarkerData, matk_mrk) ->
+-spec get_locations (type()) -> list(shr_location:type()).
+get_locations (Marker) -> Marker#marker.locations.
+
+-spec get_owner_index (type()) -> (non_neg_integer() | -1).
+get_owner_index (Marker) -> Marker#marker.owner_ix.
+
+-spec get_category (type()) -> category().
+get_category (Marker) ->
+   case Marker#marker.data of
+      #matk_mrk{} -> matk;
+      #spawn_mrk{} -> spawn
+   end.
+
+-spec encode (type()) -> {list({binary(), any()})}.
+encode (Marker) ->
    {
       [
-         { <<"t">>, <<"matk">> },
-         { <<"cix">>, MarkerData#matk_mrk.character_ix },
-         { <<"l">>, lists:map(fun shr_location:encode/1, L) }
-      ]
-   };
-encode ({L, MarkerData}) when is_record(MarkerData, spawn_mrk) ->
-   {
-      [
-         { <<"t">>, <<"spawn">> },
-         { <<"pix">>, MarkerData#spawn_mrk.player_ix },
-         { <<"l">>, lists:map(fun shr_location:encode/1, L) }
+         {
+            ?LOCATIONS_FIELD,
+            lists:map(fun shr_location:encode/1, Marker#marker.locations)
+         },
+         { ?OWNER_IX_FIELD, Marker#marker.owner_ix },
+         { ?DATA_FIELD, encode_data(Marker#marker.data) }
       ]
    }.
+
 
 -spec decode (map()) -> type().
 decode (Map) ->
-   Data = maps:get(<<"d">>, Map),
+   #marker
    {
-      lists:map(fun shr_location:decode/1, maps:get(<<"l">>, Map)),
-      (
-         case maps:get(<<"t">>, Data) of
-            <<"mtak">> -> #matk_mrk{ character_ix = maps:get(<<"cix">>, Data) };
-            <<"spawn">> -> #spawn_mrk{ player_ix = maps:get(<<"pix">>, Data) }
-         end
-      )
+      locations = maps:get(?LOCATIONS_FIELD, Map),
+      owner_ix = maps:get(?OWNER_IX_FIELD, Map),
+      data = decode_data(maps:get(?DATA_FIELD, Map))
    }.
 
 -spec player_can_see (integer(), type()) -> boolean().
-player_can_see (PlayerIX, _Marker) -> (PlayerIX >= 0).
+player_can_see (_PlayerIX, _Marker) -> true.
 
 -spec get_name (type()) -> binary().
-get_name ({_Location, MarkerData}) when is_record(MarkerData, matk_mrk) ->
-   Prefix = <<"matk_c">>,
-   CharacterIXString = integer_to_binary(MarkerData#matk_mrk.character_ix),
-   <<Prefix/binary, CharacterIXString/binary>>;
-get_name ({_Location, MarkerData}) when is_record(MarkerData, spawn_mrk) ->
-   Prefix = <<"spawn_p">>,
-   PlayerIXString = integer_to_binary(MarkerData#spawn_mrk.player_ix),
-   <<Prefix/binary, PlayerIXString/binary>>.
+get_name (Marker) ->
+   case Marker#marker.data of
+      #matk_mrk{ character_ix = CIX } ->
+         Prefix = <<"matk_c">>,
+         CharacterIXString = integer_to_binary(CIX),
+         <<Prefix/binary, CharacterIXString/binary>>;
+
+      #spawn_mrk{} ->
+         Prefix = <<"spawn_p">>,
+         PlayerIXString = integer_to_binary(Marker#marker.owner_ix),
+         <<Prefix/binary, PlayerIXString/binary>>
+   end.
+
+-spec get_character_index (type()) -> (non_neg_integer() | -1).
+get_character_index (Marker) ->
+   case Marker#marker.data of
+      #matk_mrk{ character_ix = IX } -> IX;
+      _ -> -1
+   end.
