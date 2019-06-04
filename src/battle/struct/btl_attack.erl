@@ -36,7 +36,7 @@
       get_sequence/3,
       get_description_of/5,
       apply_to_healths_and_lucks/5,
-      new_opportunity/2,
+      attack_of_opportunity/0
    ]
 ).
 
@@ -411,7 +411,25 @@ get_description_of
       CanParry,
       DefenderLuck,
       AttackerLuck
+   );
+get_description_of
+(
+   opportunity,
+   Attacker,
+   Defender,
+   AttackerLuck,
+   DefenderLuck
+) ->
+   effect_of_attack
+   (
+      opportunity,
+      Attacker,
+      Defender,
+      false,
+      AttackerLuck,
+      DefenderLuck
    ).
+
 
 -spec apply_to_healths_and_lucks
    (
@@ -554,6 +572,9 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
       true -> [First, Counter, Second];
       _ -> [First, Second]
    end.
+
+-spec attack_of_opportunity () -> opportunity.
+attack_of_opportunity () -> opportunity.
 
 -spec encode (type()) -> {list(any())}.
 encode (Attack) ->

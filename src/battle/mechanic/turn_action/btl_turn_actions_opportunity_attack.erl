@@ -17,105 +17,6 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec handle_attack_sequence
-   (
-      btl_character:type(),
-      non_neg_integer(),
-      btl_character:type(),
-      non_neg_integer(),
-      integer(),
-      integer(),
-      list(btl_attack:step()),
-      list(btl_attack:type())
-   )
-   ->
-   {
-      list(btl_attack:type()),
-      non_neg_integer(),
-      non_neg_integer(),
-      integer(),
-      integer()
-   }.
-handle_attack_sequence
-(
-   _Character,
-   CharacterCurrentHealth,
-   _TargetCharacter,
-   TargetCurrentHealth,
-   AttackerLuck,
-   DefenderLuck,
-   AttackSequence,
-   Result
-)
-when
-(
-   (CharacterCurrentHealth == 0)
-   or (TargetCurrentHealth == 0)
-   or (AttackSequence == [])
-) ->
-   {
-      lists:reverse(Result),
-      CharacterCurrentHealth,
-      TargetCurrentHealth,
-      AttackerLuck,
-      DefenderLuck
-   };
-handle_attack_sequence
-(
-   Character,
-   AttackerHealth,
-   TargetCharacter,
-   DefenderHealth,
-   AttackerLuck,
-   DefenderLuck,
-   [NextAttack | AttackSequence],
-   Result
-) ->
-   AttackEffect =
-      btl_attack:get_description_of
-      (
-         NextAttack,
-         btl_character:get_base_character(Character),
-         btl_character:get_base_character(TargetCharacter),
-         AttackerLuck,
-         DefenderLuck
-      ),
-
-   {
-      AttackResult,
-      NewAttackerHealth,
-      NewAttackerLuck,
-      NewDefenderHealth,
-      NewDefenderLuck
-   } =
-      btl_attack:apply_to_healths_and_lucks
-      (
-         AttackEffect,
-         AttackerHealth,
-         AttackerLuck,
-         DefenderHealth,
-         DefenderLuck
-      ),
-
-   NextResult =
-      case AttackResult of
-         {nothing, _, _} -> Result;
-         _ -> [AttackResult|Result]
-      end,
-
-   handle_attack_sequence
-   (
-      Character,
-      NewAttackerHealth,
-      TargetCharacter,
-      NewDefenderHealth,
-      NewAttackerLuck,
-      NewDefenderLuck,
-      AttackSequence,
-      NextResult
-   ).
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -133,87 +34,67 @@ handle (BattleAction, Update) ->
    DefendingPlayer = btl_battle:get_player(DefendingPlayerIX, Battle),
    DefendingPlayerLuck = btl_player:get_luck(DefendingPlayer),
 
-   ActorIX = btl_action:get_target_ix(BattleAction),
-   Map = btl_battle:get_map(Battle),
-   ActorCharacterRef = btl_battle:get_character(ActorIX, Battle),
-   ActorCharacter =
-      btl_character:resolve
-      (
-         shr_tile:get_omnimods
-         (
-            shr_tile:from_id
-            (
-               shr_tile_instance:get_tile_id
-               (
-                  shr_map:get_tile_instance
-                  (
-                     btl_character:get_location(ActorCharacterRef),
-                     Map
-                  )
-               )
-            )
-         ),
-         ActorCharacterRef
-      ),
+   AttackerIX = btl_action:get_target_ix(BattleAction),
+   AttackerRef = btl_battle:get_character(AttackerIX, Battle),
+   Attacker = btl_battle:resolve_character(AttackerRef, Battle),
 
-   AttackingPlayerIX = btl_character:get_player_index(ActorCharacter),
+   AttackingPlayerIX = btl_character:get_player_index(Attacker),
    AttackingPlayer = btl_battle:get_player(AttackingPlayerIX, Battle),
    AttackingPlayerLuck = btl_player:get_luck(AttackingPlayer),
 
-   AttackSequence = btl_attack:attack_of_opportunity(),
+   Attack = btl_attack:attack_of_opportunity(),
 
-   {
-      AttackEffects,
-      RemainingAttackerHealth,
-      RemainingDefenderHealth,
-      NewAttackerLuck,
-      NewDefenderLuck
-   } =
-      handle_attack_sequence
+   AttackEffect =
+      btl_attack:get_description_of
       (
-         Character,
-         btl_character:get_current_health(Character),
-         ActorCharacter,
-         btl_character:get_current_health(ActorCharacter),
+         Attack,
+         btl_character:get_base_character(Character),
+         btl_character:get_base_character(Attacker),
          AttackingPlayerLuck,
-         DefendingPlayerLuck,
-         AttackSequence,
-         []
+         DefendingPlayerLuck
       ),
 
-   S0NewAttackerLuck =
-      case {(NewAttackerLuck =< -2), (NewAttackerLuck >= 2)}  of
-         {true, _} -> (NewAttackerLuck + 2);
-         {_, true} -> (NewAttackerLuck - 2);
+   {
+      AttackResult,
+      NewAttackerHealth,
+      S0NewAttackerLuck,
+      NewDefenderHealth,
+      S0NewDefenderLuck
+   } =
+      btl_attack:apply_to_healths_and_lucks
+      (
+         AttackEffect,
+         btl_character:get_current_health(Attacker),
+         AttackingPlayerLuck,
+         btl_character:get_current_health(Character),
+         DefendingPlayerLuck
+      ),
+
+   S1NewAttackerLuck =
+      case {(S0NewAttackerLuck =< -2), (S0NewAttackerLuck >= 2)}  of
+         {true, _} -> (S0NewAttackerLuck + 2);
+         {_, true} -> (S0NewAttackerLuck - 2);
          _ -> 0
       end,
 
-   S0NewDefenderLuck =
-      case {(NewDefenderLuck =< -2), (NewDefenderLuck >= 2)}  of
-         {true, _} -> (NewDefenderLuck + 2);
-         {_, true} -> (NewDefenderLuck - 2);
+   S1NewDefenderLuck =
+      case {(S0NewDefenderLuck =< -2), (S0NewDefenderLuck >= 2)}  of
+         {true, _} -> (S0NewDefenderLuck + 2);
+         {_, true} -> (S0NewDefenderLuck - 2);
          _ -> 0
       end,
 
    {UpdatedAttackingPlayer, AttackingPlayerAtaxiaUpdate} =
-      btl_player:ataxia_set_luck(S0NewAttackerLuck, AttackingPlayer),
+      btl_player:ataxia_set_luck(S1NewAttackerLuck, AttackingPlayer),
 
    {UpdatedDefendingPlayer, DefendingPlayerAtaxiaUpdate} =
-      btl_player:ataxia_set_luck(S0NewDefenderLuck, DefendingPlayer),
+      btl_player:ataxia_set_luck(S1NewDefenderLuck, DefendingPlayer),
 
    {UpdatedCharacter, CharacterAtaxiaUpdate} =
-      btl_character:ataxia_set_current_health
-      (
-         RemainingAttackerHealth,
-         Character
-      ),
+      btl_character:ataxia_set_current_health(NewDefenderHealth, Character),
 
-   {UpdatedTargetCharacterRef, TargetCharacterRefAtaxiaUpdate} =
-      btl_character:ataxia_set_current_health
-      (
-         RemainingDefenderHealth,
-         TargetCharacterRef
-      ),
+   {UpdatedAttackerRef, AttackerRefAtaxiaUpdate} =
+      btl_character:ataxia_set_current_health(NewAttackerHealth, AttackerRef),
 
    {S0Battle, BattleAtaxiaUpdate0} =
       btl_battle:ataxia_set_player
@@ -236,9 +117,9 @@ handle (BattleAction, Update) ->
    {S2Battle, BattleAtaxiaUpdate2} =
       btl_battle:ataxia_set_character
       (
-         TargetIX,
-         UpdatedTargetCharacterRef,
-         TargetCharacterRefAtaxiaUpdate,
+         AttackerIX,
+         UpdatedAttackerRef,
+         AttackerRefAtaxiaUpdate,
          S1Battle
       ),
 
@@ -278,9 +159,9 @@ handle (BattleAction, Update) ->
    TimelineItem =
       btl_turn_result:new_character_attacked
       (
+         AttackerIX,
          btl_character_turn_update:get_character_ix(S3Update),
-         TargetIX,
-         AttackEffects,
+         AttackResult,
          S0NewAttackerLuck,
          S0NewDefenderLuck
       ),
@@ -288,21 +169,10 @@ handle (BattleAction, Update) ->
    S4Update = btl_character_turn_update:add_to_timeline(TimelineItem, S3Update),
 
    S5Update =
-      case (RemainingAttackerHealth > 0) of
+      case (NewDefenderHealth > 0) of
          true -> S4Update;
          false ->
             btl_victory_progression:handle_character_loss(Character, S4Update)
       end,
 
-   S6Update =
-      case (RemainingAttackerHealth > 0) of
-         true -> S5Update;
-         false ->
-            btl_victory_progression:handle_character_loss
-            (
-               TargetCharacterRef,
-               S5Update
-            )
-      end,
-
-   {ok, S6Update}.
+   {ok, S5Update}.

@@ -89,6 +89,13 @@
    ]
 ).
 
+-export
+(
+   [
+     resolve_character/2
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -467,6 +474,32 @@ new (Map) ->
       players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0)
    }.
+
+-spec resolve_character
+   (
+      btl_character:unresolved(),
+      type()
+   )
+   -> btl_character:type().
+resolve_character (CharacterRef, Battle) ->
+   btl_character:resolve
+   (
+      shr_tile:get_omnimods
+      (
+         shr_tile:from_id
+         (
+            shr_tile_instance:get_tile_id
+            (
+               shr_map:get_tile_instance
+               (
+                  btl_character:get_location(CharacterRef),
+                  Battle#battle.map
+               )
+            )
+         )
+      ),
+      CharacterRef
+   ).
 
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.

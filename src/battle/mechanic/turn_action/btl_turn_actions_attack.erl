@@ -326,7 +326,7 @@ handle (BattleAction, Update) ->
       end,
 
    S6Update =
-      case (RemainingAttackerHealth > 0) of
+      case (RemainingDefenderHealth > 0) of
          true -> S5Update;
          false ->
             btl_victory_progression:handle_character_loss
