@@ -5,7 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type order() :: ('first' | 'second' | 'counter').
+-type order() :: ('first' | 'second' | 'counter' | 'opportunity').
 -type precision() :: ('misses' | 'grazes' | 'hits').
 
 -record
@@ -35,7 +35,8 @@
    [
       get_sequence/3,
       get_description_of/5,
-      apply_to_healths_and_lucks/5
+      apply_to_healths_and_lucks/5,
+      new_opportunity/2,
    ]
 ).
 
