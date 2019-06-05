@@ -26,7 +26,7 @@ rank_to_string (Rank) ->
 -spec generate
    (
       non_neg_integer(),
-      btl_character:type(),
+      btl_character:either(),
       non_neg_integer()
    )
    -> {list(any())}.

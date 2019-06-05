@@ -12,8 +12,7 @@
       related_inventory :: shr_inventory:type(),
       related_tile_ids :: ordsets:ordset(shr_tile:id()),
       map :: shr_map:type(),
-      characters ::
-         orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      characters :: orddict:orddict(non_neg_integer(), btl_character:either()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type()
    }
@@ -35,6 +34,7 @@
       get_map/1,
       get_characters/1,
       get_character/2,
+      get_resolved_character/2,
       get_players/1,
       get_player/2,
       get_current_player_turn/1,
@@ -130,12 +130,35 @@ get_map (Battle) -> Battle#battle.map.
    (
       type()
    )
-   -> orddict:orddict(non_neg_integer(), btl_character:unresolved()).
+   -> orddict:orddict(non_neg_integer(), btl_character:either()).
 get_characters (Battle) -> Battle#battle.characters.
 
--spec get_character (non_neg_integer(), type()) -> btl_character:unresolved().
-get_character (IX, Battle) ->
-   orddict:fetch(IX, Battle#battle.characters).
+-spec get_character (non_neg_integer(), type()) -> btl_character:either().
+get_character (IX, Battle) -> orddict:fetch(IX, Battle#battle.characters).
+
+-spec get_resolved_character
+   (
+      non_neg_integer(),
+      type()
+   )
+   -> {btl_character:type(), type()}.
+get_resolved_character (IX, Battle) ->
+   Character = orddict:fetch(IX, Battle#battle.characters),
+
+   case btl_character:is_unresolved(Character) of
+      true ->
+         ResolvedCharacter = resolve_character(Character, Battle),
+         {
+            ResolvedCharacter,
+            Battle#battle
+            {
+               characters =
+                  orddict:set(IX, ResolvedCharacter, Battle#battle.characters)
+            }
+         };
+
+      false -> {Character, Battle}
+   end.
 
 -spec get_players
    (
@@ -207,7 +230,7 @@ ataxia_set_map (Map, MapUpdate, Battle) ->
 
 -spec set_characters
    (
-      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      orddict:orddict(non_neg_integer(), btl_character:either()),
       type()
    )
    -> type().
@@ -219,16 +242,30 @@ set_characters (Characters, Battle) ->
 
 -spec ataxia_set_characters
    (
-      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      orddict:orddict(non_neg_integer(), btl_character:either()),
       type()
    )
    -> {type(), ataxic:basic()}.
 ataxia_set_characters (Characters, Battle) ->
-   ataxia_set_characters(Characters, ataxic:constant(Characters), Battle).
+   UnresolvedCharacters =
+      orddict:map
+      (
+         fun (_Key, Character) ->
+            btl_character:to_unresolved(Character)
+         end,
+         Characters
+      ),
+
+   ataxia_set_characters
+   (
+      Characters,
+      ataxic:constant(UnresolvedCharacters),
+      Battle
+   ).
 
 -spec ataxia_set_characters
    (
-      orddict:orddict(non_neg_integer(), btl_character:unresolved()),
+      orddict:orddict(non_neg_integer(), btl_character:either()),
       ataxic:basic(),
       type()
    )
@@ -246,7 +283,7 @@ ataxia_set_characters (Characters, CharactersUpdate, Battle) ->
 -spec set_character
    (
       non_neg_integer(),
-      btl_character:unresolved(),
+      btl_character:either(),
       type()
    )
    -> type().
@@ -258,7 +295,7 @@ set_character (IX, Character, Battle) ->
 
 -spec add_character
    (
-      btl_character:unresolved(),
+      btl_character:either(),
       type()
    )
    -> {non_neg_integer(), type()}.
@@ -268,7 +305,7 @@ add_character (Character, Battle) ->
 
 -spec ataxia_add_character
    (
-      btl_character:unresolved(),
+      btl_character:either(),
       type()
    )
    -> {non_neg_integer(), type(), ataxic:basic()}.
@@ -280,17 +317,23 @@ ataxia_add_character (Character, Battle) ->
 -spec ataxia_set_character
    (
       non_neg_integer(),
-      btl_character:unresolved(),
+      btl_character:either(),
       type()
    )
    -> {type(), ataxic:basic()}.
 ataxia_set_character (IX, Character, Battle) ->
-   ataxia_set_character(IX, Character, ataxic:constant(Character), Battle).
+   ataxia_set_character
+   (
+      IX,
+      Character,
+      ataxic:constant(btl_character:to_unresolved(Character)),
+      Battle
+   ).
 
 -spec ataxia_set_character
    (
       non_neg_integer(),
-      btl_character:unresolved(),
+      btl_character:either(),
       ataxic:basic(),
       type()
    )
@@ -477,29 +520,34 @@ new (Map) ->
 
 -spec resolve_character
    (
-      btl_character:unresolved(),
+      btl_character:either(),
       type()
    )
    -> btl_character:type().
-resolve_character (CharacterRef, Battle) ->
-   btl_character:resolve
-   (
-      shr_tile:get_omnimods
-      (
-         shr_tile:from_id
+resolve_character (Character, Battle) ->
+   case btl_character:is_unresolved(Character) of
+      true ->
+         btl_character:resolve
          (
-            shr_tile_instance:get_tile_id
+            shr_tile:get_omnimods
             (
-               shr_map:get_tile_instance
+               shr_tile:from_id
                (
-                  btl_character:get_location(CharacterRef),
-                  Battle#battle.map
+                  shr_tile_instance:get_tile_id
+                  (
+                     shr_map:get_tile_instance
+                     (
+                        btl_character:get_location(Character),
+                        Battle#battle.map
+                     )
+                  )
                )
-            )
-         )
-      ),
-      CharacterRef
-   ).
+            ),
+            Character
+         );
+
+      false -> Character
+   end.
 
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.

@@ -52,12 +52,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode_actions (map()) -> list(btl_action:type()).
-decode_actions (Act) ->
+-spec decode_actions (non_neg_integer(), map()) -> list(btl_action:type()).
+decode_actions (CharacterIX, Act) ->
    S0Result = [],
    S1Result =
       case
-         btl_action:maybe_decode_move(maps:get(?ACTIONS_MOVE_FIELD, Act))
+         btl_action:maybe_decode_move
+         (
+            CharacterIX,
+            maps:get(?ACTIONS_MOVE_FIELD, Act)
+         )
       of
          [] -> S0Result;
          [Move] -> [Move|S0Result]
@@ -67,6 +71,7 @@ decode_actions (Act) ->
       case
          btl_action:maybe_decode_attack
          (
+            CharacterIX,
             maps:get(?ACTIONS_ATTACK_FIELD, Act)
          )
       of
@@ -78,6 +83,7 @@ decode_actions (Act) ->
       case
          btl_action:maybe_decode_weapon_switch
          (
+            CharacterIX,
             maps:get(?ACTIONS_WEAPON_SWITCH_FIELD, Act)
          )
       of
@@ -94,7 +100,7 @@ decode_actions (Act) ->
 decode (Map) ->
    CharacterIX = maps:get(?CHAR_IX_FIELD, Map),
    EncodedActions = maps:get(?ACTIONS_FIELD, Map),
-   Actions = decode_actions(EncodedActions),
+   Actions = decode_actions(CharacterIX, EncodedActions),
 
    #type
    {

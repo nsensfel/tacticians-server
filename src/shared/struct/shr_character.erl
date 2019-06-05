@@ -397,14 +397,15 @@ resolve (LocalOmnimods, CharRef) ->
       extra_omnimods = LocalOmnimods
    }.
 
--spec to_unresolved (type()) -> unresolved().
-to_unresolved (Char) ->
+-spec to_unresolved (either()) -> unresolved().
+to_unresolved (Char) when is_record(Char, shr_char)->
    #shr_char_ref
    {
       name = Char#shr_char.name,
       equipment = shr_equipment:to_unresolved(Char#shr_char.equipment),
       is_using_secondary = Char#shr_char.is_using_secondary
-   }.
+   };
+to_unresolved (CharRef) when is_record(CharRef, shr_char_ref) -> CharRef.
 
 -spec decode (map()) -> unresolved().
 decode (Map) ->

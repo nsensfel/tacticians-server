@@ -1,49 +1,15 @@
 -module(btl_attack).
 
-% FIXME: this module is mostly mechanics, not structure.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type order() :: ('first' | 'second' | 'counter').
--type precision() :: ('misses' | 'grazes' | 'hits').
 
--record
-(
-   attack,
-   {
-      order :: order(),
-      precision :: precision(),
-      is_critical :: boolean(),
-      is_parry :: boolean(),
-      damage :: non_neg_integer(),
-      attacker_luck_mod :: integer(),
-      defender_luck_mod :: integer()
-   }
-).
-
--opaque type() :: #attack{}.
--type maybe_type() :: ({'nothing', integer(), integer()} | type()).
--opaque step() :: {order(), boolean()}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type([type/0, maybe_type/0, step/0]).
-
 -export
 (
    [
-      get_sequence/3,
-      get_description_of/5,
-      apply_to_healths_and_lucks/5,
-      attack_of_opportunity/0
-   ]
-).
-
--export
-(
-   [
-      encode/1
    ]
 ).
 
@@ -315,20 +281,9 @@ effect_of_attack
       defender_luck_mod = FinalDefenderLuckMod
    }.
 
--spec encode_order (order()) -> binary().
-encode_order (first) -> <<"f">>;
-encode_order (counter) -> <<"c">>;
-encode_order (second) -> <<"s">>.
-
--spec encode_precision (precision()) -> binary().
-encode_precision (hits) -> <<"h">>;
-encode_precision (grazes) -> <<"g">>;
-encode_precision (misses) -> <<"m">>.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 -spec get_description_of
    (
       step(),
@@ -555,27 +510,45 @@ get_sequence (AttackRange, AttackerWeapon, DefenderWeapon) ->
       _ -> [First, Second]
    end.
 
--spec attack_of_opportunity () -> list(step()).
+-spec standard
+   (
+      non_neg_integer(),
+      btl_character:type(),
+      btl_player:type(),
+      btl_character:type()
+      btl_player:type()
+   )
+   ->
+   {
+      % Attack Descriptions,
+      % Updated Attacker
+      % Attacker Ataxia Update
+      % Updated Defender
+      % Defender Ataxia Update
+   }
+
+-spec attack_of_opportunity
+   (
+      btl_character:type(),
+      btl_player:type(),
+      btl_character:type()
+      btl_player:type(),
+   )
+   ->
+   {
+      % Attack Descriptions,
+      % Updated Attacker
+      % Attacker Ataxia Update
+      % Updated Attacking Player
+      % Attacking Player Ataxia Update
+      % Updated Defender
+      % Defender Ataxia Update
+      % Updated Defending Player
+      % Attacking Player Ataxia Update
+   }
+
 attack_of_opportunity () ->
    [
       {first, false},
       {second, false}
    ].
-
--spec encode (type()) -> {list(any())}.
-encode (Attack) ->
-   Order = Attack#attack.order,
-   Precision = Attack#attack.precision,
-   IsCritical = Attack#attack.is_critical,
-   IsParry = Attack#attack.is_parry,
-   Damage = Attack#attack.damage,
-
-   {
-      [
-         {<<"ord">>, encode_order(Order)},
-         {<<"pre">>, encode_precision(Precision)},
-         {<<"cri">>, IsCritical},
-         {<<"par">>, IsParry},
-         {<<"dmg">>, Damage}
-      ]
-   }.

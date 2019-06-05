@@ -92,6 +92,7 @@
    [
       new/4,
       resolve/2,
+      is_unresolved/1,
       to_unresolved/1,
       decode/1,
       encode/1
@@ -149,7 +150,7 @@ get_location (#btl_char_ref{ location = R }) -> R.
 get_current_health (#btl_char{ current_health = R }) -> R;
 get_current_health (#btl_char_ref{ current_health = R }) -> R.
 
--spec get_is_alive (type()) -> boolean().
+-spec get_is_alive (either()) -> boolean().
 get_is_alive (#btl_char{ current_health = H, is_defeated = D }) ->
    ((not D) and (H > 0));
 get_is_alive (#btl_char_ref{ current_health = H, is_defeated = D }) ->
@@ -439,8 +440,8 @@ new
       base = Base
    }.
 
--spec resolve (shr_omnimods:type(), unresolved()) -> type().
-resolve (LocalOmnimods, CharRef) ->
+-spec resolve (shr_omnimods:type(), either()) -> type().
+resolve (LocalOmnimods, CharRef) when is_record(CharRef, btl_char_ref) ->
    #btl_char
    {
       player_ix = CharRef#btl_char_ref.player_ix,
@@ -450,10 +451,11 @@ resolve (LocalOmnimods, CharRef) ->
       is_active = CharRef#btl_char_ref.is_active,
       is_defeated = CharRef#btl_char_ref.is_defeated,
       base = shr_character:resolve(LocalOmnimods, CharRef#btl_char_ref.base)
-   }.
+   };
+resolve (_LocalOmnimods, Char) when is_record(Char, btl_char) -> Char.
 
--spec to_unresolved (type()) -> unresolved().
-to_unresolved (Char) ->
+-spec to_unresolved (either()) -> unresolved().
+to_unresolved (Char) when is_record(Char, btl_char) ->
    #btl_char_ref
    {
       player_ix = Char#btl_char.player_ix,
@@ -463,7 +465,11 @@ to_unresolved (Char) ->
       is_active = Char#btl_char.is_active,
       is_defeated = Char#btl_char.is_defeated,
       base = shr_character:to_unresolved(Char#btl_char.base)
-   }.
+   };
+to_unresolved (CharRef) when is_record(CharRef, btl_char_ref) -> CharRef.
+
+-spec is_unresolved (either()) -> boolean().
+is_unresolved (Char) -> is_record(Char, btl_char_ref).
 
 -spec get_rank_field() -> non_neg_integer().
 get_rank_field () -> #btl_char_ref.rank.

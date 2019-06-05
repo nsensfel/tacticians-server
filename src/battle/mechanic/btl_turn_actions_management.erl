@@ -37,15 +37,6 @@ deactivate_character (Update) ->
 
    S1Update.
 
--spec main_character_is_alive
-   (
-      btl_character_turn_update:type()
-   )
-   -> {boolean(), btl_character_turn_update:type()}.
-main_character_is_alive (Update) ->
-   {S0Update, MainCharacter} = btl_character_turn_update:get_character(Update),
-   {btl_character:get_is_alive(MainCharacter), S0Update}.
-
 -spec handle_actions
    (
       list(btl_action:type()),
@@ -54,8 +45,45 @@ main_character_is_alive (Update) ->
    -> btl_character_turn_update:type().
 handle_actions ([], Update) -> Update;
 handle_actions ([BattleAction|FutureBattleActions], Update) ->
-   {MainCharacterIsAlive, S0Update} = main_character_is_alive(Update),
+   case btl_action:get_actor_index(BattleAction) of
+      -1 -> handle_actions(FutureBattleActions, S0Update);
+      CharacterIX ->
+         S0Battle = btl_character_turn_update:get_battle(S0Update),
+         {Character, S1Battle} =
+            btl_battle:get_resolved_character(CharacterIX, S0Battle),
 
+         S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+         case btl_character:is_alive(Character) of
+            false -> handle_actions(FutureBattleActions, S1Update);
+            true ->
+               ActionResult =
+                  case btl_action:get_category(BattleAction) of
+                     move ->
+                        btl_event_move:handle
+                        (
+                           BattleAction,
+                           Character,
+                           S1Update
+                        );
+
+                     attack ->
+                        case 
+                        btl_event_attack:handle
+                        (
+                           BattleAction,
+                           Character,
+                           S1Update
+                        );
+
+                     attack_of_opportunity ->
+                        btl_event_attack_of_opportunity:handle
+                        (
+                           BattleAction,
+                           Character,
+                           S1Update
+                        );
+   end.
    ActionResult =
       case {MainCharacterIsAlive, btl_action:get_category(BattleAction)} of
          {false, _} -> {ok, S0Update};

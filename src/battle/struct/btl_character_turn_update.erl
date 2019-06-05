@@ -7,17 +7,9 @@
 (
    type,
    {
-      battle_is_outdated :: boolean(),
-      character_is_outdated :: boolean(),
-
       battle :: btl_battle:type(),
-      reversed_battle_updates :: list(ataxic:basic()),
-
-      character :: btl_character:type(),
-      reversed_character_updates :: list(ataxic:basic()),
-
       character_ix :: non_neg_integer(),
-
+      reversed_battle_updates :: list(ataxic:basic()),
       timeline :: list(any())
    }
 ).
@@ -35,14 +27,12 @@
       new/2,
 
       get_battle/1,
-      get_character/1,
 
       get_character_ix/1,
       get_battle_update/1,
       get_timeline/1,
 
       set_battle/3,
-      set_character/2,
 
       ataxia_set_battle/4,
       ataxia_set_character/3,
