@@ -37,6 +37,25 @@ deactivate_character (Update) ->
 
    S1Update.
 
+-spec perform_action
+   (
+      btl_action:type(),
+      btl_character:type(),
+      btl_character_turn_update:type()
+   )
+   ->
+   (
+      {ok, btl_character_turn_update:type()}
+      | {events, list(btl_action:type()), btl_character_turn_update:type()}
+   ).
+perform_action (Action, Character, Update) ->
+   case btl_action:get_category(Action) of
+      move -> btl_action_move:handle(Action, Character, Update);
+      attack -> btl_action_attack:handle(Action, Character, Update);
+      switch_weapon ->
+         btl_action_switch_weapon:handle(Action, Character, Update)
+   end.
+
 -spec handle_actions
    (
       list(btl_action:type()),
@@ -44,7 +63,7 @@ deactivate_character (Update) ->
    )
    -> btl_character_turn_update:type().
 handle_actions ([], Update) -> Update;
-handle_actions ([BattleAction|FutureBattleActions], Update) ->
+handle_actions ([BattleAction|FutureBattleActions], S0Update) ->
    case btl_action:get_actor_index(BattleAction) of
       -1 -> handle_actions(FutureBattleActions, S0Update);
       CharacterIX ->
@@ -57,56 +76,17 @@ handle_actions ([BattleAction|FutureBattleActions], Update) ->
          case btl_character:is_alive(Character) of
             false -> handle_actions(FutureBattleActions, S1Update);
             true ->
-               ActionResult =
-                  case btl_action:get_category(BattleAction) of
-                     move ->
-                        btl_event_move:handle
-                        (
-                           BattleAction,
-                           Character,
-                           S1Update
-                        );
-
-                     attack ->
-                        case 
-                        btl_event_attack:handle
-                        (
-                           BattleAction,
-                           Character,
-                           S1Update
-                        );
-
-                     attack_of_opportunity ->
-                        btl_event_attack_of_opportunity:handle
-                        (
-                           BattleAction,
-                           Character,
-                           S1Update
-                        );
-   end.
-   ActionResult =
-      case {MainCharacterIsAlive, btl_action:get_category(BattleAction)} of
-         {false, _} -> {ok, S0Update};
-         {true, move} -> btl_turn_actions_move:handle(BattleAction, S0Update);
-         {true, switch_weapon} ->
-            btl_turn_actions_switch_weapon:handle(S0Update);
-         {true, attack} ->
-            btl_turn_actions_attack:handle(BattleAction, S0Update);
-         {true, interrupted_move} ->
-            btl_turn_actions_move:handle(BattleAction, S0Update);
-         {true, defend} ->
-            % TODO: Attack of Opportunity
-            Update
-      end,
-
-   case ActionResult of
-      {ok, NewUpdate} -> handle_actions(FutureBattleActions, NewUpdate);
-      {events, NewEvents, NewUpdate} ->
-         handle_actions
-         (
-            (NewEvents ++ FutureBattleActions),
-            NewUpdate
-         )
+               case perform_action(BattleAction, Character, S1Update) of
+                  {ok, S2Update} ->
+                     handle_actions(FutureBattleActions, S2Update);
+                  {events, NewEvents, S2Update} ->
+                     handle_actions
+                     (
+                        (NewEvents ++ FutureBattleActions),
+                        S2Update
+                     )
+               end
+         end
    end.
 
 -spec update_timeline

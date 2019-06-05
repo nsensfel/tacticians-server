@@ -8,8 +8,8 @@
    move,
    {
       actor_ix :: non_neg_integer(),
-      path :: list(shr_direction:enum())
-      movement_points :: non_neg_integer()
+      path :: list(shr_direction:enum()),
+      movement_points :: (non_neg_integer() | -1)
    }
 ).
 
@@ -38,12 +38,12 @@
       | 'attack'
       | 'nothing'
    ).
+
 -opaque type() ::
    (
       #move{}
       | #switch_weapon{}
       | #attack{}
-      | #attack_of_opportunity{}
    ).
 
 -export_type([category/0, type/0]).
@@ -54,7 +54,7 @@
 -export
 (
    [
-      from_map_marker/2,
+      from_map_marker/3,
       maybe_decode_move/2,
       maybe_decode_weapon_switch/2,
       maybe_decode_attack/2,
@@ -65,13 +65,14 @@
 -export
 (
    [
-      new_interrupted_move/2
+      new_move/3
    ]
 ).
 
 -export
 (
    [
+      get_is_opportunistic/1,
       get_path/1,
       get_movement_points/1,
       get_target_index/1,
@@ -97,7 +98,14 @@ maybe_decode_move (_CharacterIX, []) -> [];
 maybe_decode_move (CharacterIX, PathInBinary) ->
    Path = lists:map(fun shr_direction:decode/1, PathInBinary),
 
-   [#move{ actor_ix = CharacterIX, path = Path }].
+   [
+      #move
+      {
+         actor_ix = CharacterIX,
+         path = Path,
+         movement_points = -1
+      }
+   ].
 
 -spec maybe_decode_attack
    (
@@ -107,7 +115,14 @@ maybe_decode_move (CharacterIX, PathInBinary) ->
    -> list(type()).
 maybe_decode_attack (_CharacterIX, TargetIX) when (TargetIX < 0) -> [];
 maybe_decode_attack (CharacterIX, TargetIX) ->
-   [#attack{ actor_ix = CharacterIX, target_ix = TargetIX }].
+   [
+      #attack
+      {
+         actor_ix = CharacterIX,
+         target_ix = TargetIX,
+         is_opportunistic = false
+      }
+   ].
 
 -spec maybe_decode_weapon_switch
    (
@@ -128,31 +143,23 @@ can_follow (move, attack) -> true;
 can_follow (_, _) -> false.
 
 -spec get_path (type()) -> list(shr_direction:type()).
-get_path (Action) when is_record(Action, move) ->
-   Action#move.path;
-get_path (Action) when is_record(Action, interrupted_move) ->
-   Action#interrupted_move.path;
+get_path (Action) when is_record(Action, move) -> Action#move.path;
 get_path (_) ->
    [].
 
--spec get_movement_points (type()) -> non_neg_integer().
-get_movement_points (Action) when is_record(Action, interrupted_move) ->
-   Action#interrupted_move.movement_points;
-get_movement_points (_) -> 0.
+-spec get_movement_points (type()) -> (non_neg_integer() | -1).
+get_movement_points (Action) when is_record(Action, move) ->
+   Action#move.movement_points;
+get_movement_points (_) -> -1.
 
--spec get_target_index (type()) -> non_neg_integer().
+-spec get_target_index (type()) -> (non_neg_integer() | -1).
 get_target_index (Action) when is_record(Action, attack) ->
    Action#attack.target_ix;
-get_target_index (Action) when is_record(Action, attack_of_opportunity) ->
-   Action#attack_of_opportunity.target_ix;
-get_target_index (_) ->
-   0.
+get_target_index (_) -> -1.
 
 -spec get_actor_index (type()) -> (non_neg_integer() | -1).
 get_actor_index (Action) when is_record(Action, attack) ->
    Action#attack.actor_ix;
-get_actor_index (Action) when is_record(Action, attack_of_opportunity) ->
-   Action#attack_of_opportunity.actor_ix;
 get_actor_index (Action) when is_record(Action, move) ->
    Action#move.actor_ix;
 get_actor_index (Action) when is_record(Action, switch_weapon) ->
@@ -160,37 +167,47 @@ get_actor_index (Action) when is_record(Action, switch_weapon) ->
 get_actor_index (_) ->
    -1.
 
--spec new_interrupted_move
+-spec get_is_opportunistic (type()) -> boolean().
+get_is_opportunistic (Action) when is_record(Action, attack) ->
+   Action#attack.is_opportunistic;
+get_is_opportunistic (_) -> false.
+
+-spec new_move
    (
+      non_neg_integer(),
       list(shr_direction:type()),
-      non_neg_integer()
+      (non_neg_integer() | -1)
    )
    -> type().
-new_interrupted_move (Path, MovementPoints) ->
-   #interrupted_move{ path = Path, movement_points = MovementPoints }.
+new_move (ActorIX, Path, MovementPoints) ->
+   #move
+   {
+      actor_ix = ActorIX,
+      path = Path,
+      movement_points = MovementPoints
+   }.
 
 -spec get_category (type()) -> category().
 get_category (Action) when is_record(Action, attack) -> attack;
 get_category (Action) when is_record(Action, move) -> move;
-get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon;
-get_category (Action) when is_record(Action, interrupted_move) ->
-   interrupted_move;
-get_category (Action) when is_record(Action, attack_of_opportunity) ->
-  attack_of_opportunity.
+get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon.
 
 -spec from_map_marker
    (
+      non_neg_integer(),
       btl_character:type(),
       shr_map_marker:type()
    )
    -> list(type()).
-from_map_marker (_Character, Marker) ->
+from_map_marker (CharacterIX, _Character, Marker) ->
    case shr_map_marker:get_category(Marker) of
       matk ->
          [
-            #attack_of_opportunity
+            #attack
             {
-               target_ix = shr_map_marker:get_character_index(Marker)
+               target_ix = CharacterIX,
+               actor_ix = shr_map_marker:get_character_index(Marker),
+               is_opportunistic = true
             }
          ];
 

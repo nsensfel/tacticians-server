@@ -1,4 +1,4 @@
--module(btl_turn_actions_move).
+-module(btl_action_move).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,7 +9,7 @@
 -export
 (
    [
-      handle/2
+      handle/3
    ]
 ).
 
@@ -107,6 +107,8 @@ cross (PlayerIX, Map, ForbiddenLocations, Path, Location) ->
 
 -spec get_path_cost_and_destination
    (
+      non_neg_integer(),
+      btl_character:type(),
       btl_character_turn_update:type(),
       list(shr_direction:type())
    )
@@ -115,16 +117,14 @@ cross (PlayerIX, Map, ForbiddenLocations, Path, Location) ->
       non_neg_integer(),
       shr_location:type(),
       list(shr_direction:type()),
-      list(shr_map_marker:type()),
-      btl_character_turn_update:type()
+      list(shr_map_marker:type())
    }.
-get_path_cost_and_destination (Update, Path) ->
-   {S0Update, Character} = btl_character_turn_update:get_character(Update),
-   {S1Update, Battle} = btl_character_turn_update:get_battle(S0Update),
-   CharacterIX = btl_character_turn_update:get_character_ix(S1Update),
+get_path_cost_and_destination (CharacterIX, Character, Update, Path) ->
+   Battle = btl_character_turn_update:get_battle(Update),
    Map = btl_battle:get_map(Battle),
 
-   % FIXME: This is recalculated at every move action, despite there be no need
+   % [TODO][OPTIMIZATION] Redundant calculations.
+   % This is recalculated at every move action, despite there be no need
    % to: The client will not allow the character to go somewhere that would
    % only be freed because of an event.
    ForbiddenLocations =
@@ -153,7 +153,7 @@ get_path_cost_and_destination (Update, Path) ->
          btl_character:get_location(Character)
       ),
 
-   {Cost, NewLocation, RemainingPath, Interruptions, S1Update}.
+   {Cost, NewLocation, RemainingPath, Interruptions}.
 
 -spec get_movement_points
    (
@@ -161,30 +161,34 @@ get_path_cost_and_destination (Update, Path) ->
       btl_character:type()
    )
    -> non_neg_integer().
-get_movement_points (Action, Char) ->
-   case btl_action:get_category(Action) of
-      interrupted_move -> btl_action:get_movement_points(Action);
-      _ ->
+get_movement_points (Action, Character) ->
+   case btl_action:get_movement_points(Action) of
+      -1 ->
          shr_statistics:get_movement_points
          (
             shr_character:get_statistics
             (
-               btl_character:get_base_character(Char)
+               btl_character:get_base_character(Character)
             )
-         )
+         );
+
+      Other -> Other
    end.
 
 -spec commit_move
    (
+      non_neg_integer(),
       btl_character:type(),
       btl_character_turn_update:type(),
       list(shr_direction:type()),
       shr_location:type()
    )
    -> btl_character_turn_update:type().
-commit_move (Character, Update, Path, NewLocation) ->
-   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
-   Map = btl_battle:get_map(Battle),
+commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+
+   Map = btl_battle:get_map(S0Battle),
+
    TileOmnimods =
       shr_tile:get_omnimods
       (
@@ -200,23 +204,26 @@ commit_move (Character, Update, Path, NewLocation) ->
    {UpdatedCharacter, CharacterAtaxiaUpdate} =
       btl_character:ataxia_set_location(NewLocation, TileOmnimods, Character),
 
-   S1Update =
-      btl_character_turn_update:ataxia_set_character
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_character
       (
+         CharacterIX,
          UpdatedCharacter,
          CharacterAtaxiaUpdate,
-         S0Update
+         S0Battle
       ),
 
    TimelineItem =
-      btl_turn_result:new_character_moved
-      (
-         btl_character_turn_update:get_character_ix(S1Update),
-         Path,
-         NewLocation
-      ),
+      btl_turn_result:new_character_moved(CharacterIX, Path, NewLocation),
 
-   S2Update = btl_character_turn_update:add_to_timeline(TimelineItem, S1Update),
+   S1Update = btl_character_turn_update:add_to_timeline(TimelineItem, S0Update),
+   S2Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         UpdatedBattle,
+         BattleAtaxiaUpdate,
+         S1Update
+      ),
 
    S2Update.
 
@@ -226,6 +233,7 @@ commit_move (Character, Update, Path, NewLocation) ->
 -spec handle
    (
       btl_action:type(),
+      btl_character:type(),
       btl_character_turn_update:type()
    )
    ->
@@ -233,22 +241,21 @@ commit_move (Character, Update, Path, NewLocation) ->
       {'ok', btl_character_turn_update:type()}
       | {'events', list(btl_action:type()), btl_character_turn_update:type()}
    ).
-handle (BattleAction, Update) ->
-   {S0Update, Character} = btl_character_turn_update:get_character(Update),
+handle (Action, Character, S0Update) ->
+   Path = btl_action:get_path(Action),
+   CharacterIX = btl_action:get_actor_index(Action),
 
-   Path = btl_action:get_path(BattleAction),
+   {PathCost, NewLocation, RemainingPath, Interruptions} =
+      get_path_cost_and_destination(CharacterIX, Character, S0Update, Path),
 
-   {PathCost, NewLocation, RemainingPath, Interruptions, S1Update} =
-      get_path_cost_and_destination(S0Update, Path),
-
-   MovementPoints = get_movement_points(BattleAction, Character),
+   MovementPoints = get_movement_points(Action, Character),
 
    true = (MovementPoints >= PathCost),
 
-   S2Update = commit_move(Character, S1Update, Path, NewLocation),
+   S1Update = commit_move(CharacterIX, Character, S0Update, Path, NewLocation),
 
    case RemainingPath of
-      [] -> {ok, S2Update};
+      [] -> {ok, S1Update};
       _ ->
          {events,
             (
@@ -256,7 +263,12 @@ handle (BattleAction, Update) ->
                (
                   fun (Marker, CurrentActions) ->
                      (
-                        btl_action:from_map_marker(Character, Marker)
+                        btl_action:from_map_marker
+                        (
+                           CharacterIX,
+                           Character,
+                           Marker
+                        )
                         ++
                         CurrentActions
                      )
@@ -266,13 +278,14 @@ handle (BattleAction, Update) ->
                )
                ++
                [
-                  btl_action:new_interrupted_move
+                  btl_action:new_move
                   (
+                     CharacterIX,
                      RemainingPath,
                      (MovementPoints - PathCost)
                   )
                ]
             ),
-            S2Update
+            S1Update
          }
    end.

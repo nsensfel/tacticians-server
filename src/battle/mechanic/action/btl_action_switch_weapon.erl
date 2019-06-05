@@ -9,7 +9,7 @@
 -export
 (
    [
-      handle/1
+      handle/3
    ]
 ).
 
@@ -22,12 +22,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle
    (
+      btl_action:type(),
+      btl_character:type(),
       btl_character_turn_update:type()
    )
    -> {'ok', btl_character_turn_update:type()}.
-handle (Update) ->
-   {S0Update, Character} = btl_character_turn_update:get_character(Update),
-   CharacterIX = btl_character_turn_update:get_character_ix(S0Update),
+handle (Action, Character, S0Update) ->
+   CharacterIX = btl_action:get_actor_index(Action),
+
    BaseCharacter = btl_character:get_base_character(Character),
 
    {UpdatedBaseCharacter, BaseCharacterAtaxiaUpdate} =
@@ -41,14 +43,23 @@ handle (Update) ->
          Character
       ),
 
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_character
+      (
+         CharacterIX,
+         UpdatedCharacter,
+         CharacterAtaxiaUpdate,
+         btl_character_turn_update:get_battle(S0Update)
+      ),
+
    TimelineItem = btl_turn_result:new_character_switched_weapons(CharacterIX),
 
    S1Update = btl_character_turn_update:add_to_timeline(TimelineItem, S0Update),
    S2Update =
-      btl_character_turn_update:ataxia_set_character
+      btl_character_turn_update:ataxia_set_battle
       (
-         UpdatedCharacter,
-         CharacterAtaxiaUpdate,
+         UpdatedBattle,
+         BattleAtaxiaUpdate,
          S1Update
       ),
 
