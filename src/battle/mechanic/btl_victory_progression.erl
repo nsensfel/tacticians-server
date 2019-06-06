@@ -89,8 +89,8 @@ mark_player_as_inactive (PlayerIX, Battle) ->
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-handle_player_defeat (PlayerIX, Update) ->
-   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+handle_player_defeat (PlayerIX, S0Update) ->
+   Battle = btl_character_turn_update:get_battle(S0Update),
 
    {S0Battle, BattleAtaxicUpdate0} =
       mark_characters_of_player_as_defeated(PlayerIX, Battle),
@@ -101,7 +101,6 @@ handle_player_defeat (PlayerIX, Update) ->
       btl_character_turn_update:ataxia_set_battle
       (
          S1Battle,
-         true,
          ataxic:sequence([BattleAtaxicUpdate0, BattleAtaxicUpdate1]),
          S0Update
       ),
@@ -126,7 +125,7 @@ handle_player_defeat (PlayerIX, Update) ->
    )
    -> btl_character_turn_update:type().
 handle_character_loss (Character, Update) ->
-   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
    Characters = btl_battle:get_characters(Battle),
    CharacterPlayerIX = btl_character:get_player_index(Character),
 
@@ -149,11 +148,11 @@ handle_character_loss (Character, Update) ->
             ),
 
          case StillHasAliveChar of
-            true -> S0Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, S0Update)
+            true -> Update;
+            _ -> handle_player_defeat(CharacterPlayerIX, Update)
          end;
 
-      commander -> handle_player_defeat(CharacterPlayerIX, S0Update);
+      commander -> handle_player_defeat(CharacterPlayerIX, Update);
 
       target ->
          StillHasAliveTargetChar =
@@ -170,7 +169,7 @@ handle_character_loss (Character, Update) ->
             ),
 
          case StillHasAliveTargetChar of
-            true -> S0Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, S0Update)
+            true -> Update;
+            _ -> handle_player_defeat(CharacterPlayerIX, Update)
          end
    end.

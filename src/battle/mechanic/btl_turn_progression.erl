@@ -108,8 +108,8 @@ activate_next_players_characters (NextPlayerIX, Battle) ->
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-activate_next_player (Update) ->
-   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+activate_next_player (S0Update) ->
+   Battle = btl_character_turn_update:get_battle(S0Update),
 
    {NextPlayerIX, S0Battle, BattleAtaxiaUpdate0} =
       prepare_player_turn_for_next_player(Battle),
@@ -124,7 +124,6 @@ activate_next_player (Update) ->
       btl_character_turn_update:ataxia_set_battle
       (
          S2Battle,
-         true,
          ataxic:sequence
          (
             [
@@ -149,19 +148,16 @@ activate_next_player (Update) ->
    (
       btl_character_turn_update:type()
    )
-   -> {boolean(), btl_character_turn_update:type()}.
+   -> boolean().
 has_active_characters_remaining (Update) ->
-   {S0Update, Battle} = btl_character_turn_update:get_battle(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
    Characters = btl_battle:get_characters(Battle),
 
-   {
-      lists:any
-      (
-         fun ({_IX, Char}) -> btl_character:get_is_active(Char) end,
-         orddict:to_list(Characters)
-      ),
-      S0Update
-   }.
+   lists:any
+   (
+      fun ({_IX, Char}) -> btl_character:get_is_active(Char) end,
+      orddict:to_list(Characters)
+   ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -173,6 +169,6 @@ has_active_characters_remaining (Update) ->
    -> btl_character_turn_update:type().
 handle (Update) ->
    case has_active_characters_remaining(Update) of
-      {false, S0Update} -> activate_next_player(S0Update);
-      {true, S0Update} -> S0Update
+      false -> activate_next_player(Update);
+      true -> Update
    end.

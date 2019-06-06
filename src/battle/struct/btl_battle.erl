@@ -153,7 +153,7 @@ get_resolved_character (IX, Battle) ->
             Battle#battle
             {
                characters =
-                  orddict:set(IX, ResolvedCharacter, Battle#battle.characters)
+                  orddict:store(IX, ResolvedCharacter, Battle#battle.characters)
             }
          };
 

@@ -60,7 +60,7 @@ fetch_data (Request) ->
    ) -> 'ok'.
 assert_user_is_current_player (Update, Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
-   {_SameUpdate, Battle} = btl_character_turn_update:get_battle(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
    CurrentPlayerTurn = btl_battle:get_current_player_turn(Battle),
    CurrentPlayerIX = btl_player_turn:get_player_ix(CurrentPlayerTurn),
    CurrentPlayer = btl_battle:get_player(CurrentPlayerIX, Battle),
@@ -76,8 +76,9 @@ assert_user_is_current_player (Update, Request) ->
    ) -> 'ok'.
 assert_user_owns_played_character (Update, Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
-   {_SameUpdateA, Battle} = btl_character_turn_update:get_battle(Update),
-   {_SameUpdateB, Character} = btl_character_turn_update:get_character(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
+   CharacterIX = btl_character_turn_update:get_character_ix(Update),
+   Character = btl_battle:get_character(CharacterIX, Battle),
    CharacterPlayerIX = btl_character:get_player_index(Character),
    CharacterPlayer = btl_battle:get_player(CharacterPlayerIX, Battle),
    CharacterPlayerID = btl_player:get_id(CharacterPlayer),
@@ -88,7 +89,9 @@ assert_user_owns_played_character (Update, Request) ->
 
 -spec assert_character_can_be_played (btl_character_turn_update:type()) -> 'ok'.
 assert_character_can_be_played (Update) ->
-   {_SameUpdate, Character} = btl_character_turn_update:get_character(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
+   CharacterIX = btl_character_turn_update:get_character_ix(Update),
+   Character = btl_battle:get_character(CharacterIX, Battle),
 
    true = btl_character:get_is_active(Character),
 
@@ -138,7 +141,7 @@ send_to_database (Update, Request) ->
 send_to_cache (Update, Request) ->
    PlayerID = btl_character_turn_request:get_player_id(Request),
    BattleID = btl_character_turn_request:get_battle_id(Request),
-   {_SameUpdate, Battle} = btl_character_turn_update:get_battle(Update),
+   Battle = btl_character_turn_update:get_battle(Update),
 
    shr_timed_cache:update
    (
@@ -172,6 +175,72 @@ generate_reply (Update) ->
    jiffy:encode([TurnResultReply]).
 
 %%%% MAIN LOGIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec deactivate_character
+   (
+      btl_character_turn_update:type()
+   )
+   -> btl_character_turn_update:type().
+deactivate_character (S0Update) ->
+   Battle = btl_character_turn_update:get_battle(S0Update),
+   CharacterIX = btl_character_turn_update:get_character_ix(S0Update),
+   Character = btl_battle:get_character(CharacterIX, Battle),
+
+   {UpdatedCharacter, CharacterAtaxiaUpdate} =
+      btl_character:ataxia_set_is_active(false, Character),
+
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_character
+      (
+         CharacterIX,
+         UpdatedCharacter,
+         CharacterAtaxiaUpdate,
+         Battle
+      ),
+
+   S1Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         UpdatedBattle,
+         BattleAtaxiaUpdate,
+         S0Update
+      ),
+
+   S1Update.
+
+-spec update_timeline
+   (
+      btl_character_turn_update:type()
+   )
+   -> btl_character_turn_update:type().
+update_timeline (S0Update) ->
+   NewTimelineElements = btl_character_turn_update:get_timeline(S0Update),
+   Battle = btl_character_turn_update:get_battle(S0Update),
+   PlayerTurn = btl_battle:get_current_player_turn(Battle),
+   PlayerIX = btl_player_turn:get_player_ix(PlayerTurn),
+   Player = btl_battle:get_player(PlayerIX, Battle),
+
+   {UpdatedPlayer, PlayerAtaxiaUpdate} =
+      btl_player:ataxia_add_to_timeline(NewTimelineElements, Player),
+
+   {UpdatedBattle, BattleAtaxiaUpdate} =
+      btl_battle:ataxia_set_player
+      (
+         PlayerIX,
+         UpdatedPlayer,
+         PlayerAtaxiaUpdate,
+         Battle
+      ),
+
+   S1Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         UpdatedBattle,
+         BattleAtaxiaUpdate,
+         S0Update
+      ),
+
+   S1Update.
+
 -spec handle (shr_query:type()) -> binary().
 handle (Query) ->
    Request = decode_request(Query),
@@ -183,12 +252,20 @@ handle (Query) ->
 
          S0Update = fetch_data(Request),
          assert_user_permissions(S0Update, Request),
-         S1Update = btl_turn_actions_management:handle(S0Update, Request),
-         commit_update(S1Update, Request),
+         S1Update = btl_actions_management:handle
+         (
+            btl_character_turn_request:get_actions(Request),
+            S0Update
+         ),
+         S2Update = deactivate_character(S1Update),
+         S3Update = update_timeline(S2Update),
+         S4Update = btl_turn_progression:handle(S3Update),
+
+         commit_update(S4Update, Request),
 
          shr_security:unlock_queries(PlayerID),
 
-         generate_reply(S1Update);
+         generate_reply(S4Update);
 
       error -> jiffy:encode([shr_disconnected:generate()])
    end.

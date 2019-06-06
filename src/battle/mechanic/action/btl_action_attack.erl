@@ -1,4 +1,4 @@
--module(btl_turn_actions_attack).
+-module(btl_action_attack).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ roll_precision_modifier (Statistics, TargetStatistics, TargetLuck) ->
       shr_statistics:type(),
       integer()
    )
-   -> {boolean(), integer(), integer()}.
+   -> {float(), integer(), integer()}.
 roll_critical_modifier (Statistics, Luck) ->
    CriticalHitChance = shr_statistics:get_critical_hits(Statistics),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
@@ -328,8 +328,8 @@ effect_of_attack
          Category,
          PrecisionModifier,
          CriticalModifier,
-         S1AttackerLuck,
-         S1DefenderLuck
+         ParryIsSuccessful,
+         Damage
       ),
 
    % If we "ataxia update" here, we'll get redundant ataxia updates, since
@@ -511,7 +511,11 @@ handle_attack_sequence
       )
    of
       true ->
-         Statistics = shr_character:get_statistics(S0Character),
+         Statistics =
+            shr_character:get_statistics
+            (
+               btl_character:get_base_character(S0Character)
+            ),
          DoubleAttackChance = shr_statistics:get_double_hits(Statistics),
          {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
             shr_roll:percentage_with_luck(DoubleAttackChance, S0PlayerLuck),
