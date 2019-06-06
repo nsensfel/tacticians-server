@@ -41,13 +41,13 @@ roll_precision_modifier (Statistics, TargetStatistics, TargetLuck) ->
       NegativeModifier
    }.
 
--spec roll_critical_hit_modifier
+-spec roll_critical_modifier
    (
       shr_statistics:type(),
       integer()
    )
    -> {boolean(), integer(), integer()}.
-roll_critical_hit_modifier (Statistics, Luck) ->
+roll_critical_modifier (Statistics, Luck) ->
    CriticalHitChance = shr_statistics:get_critical_hits(Statistics),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(CriticalHitChance, Luck),
@@ -171,14 +171,11 @@ get_character_abilities (Action, Character, TargetCharacter) ->
 -spec effect_of_attack
    (
       btl_attack:category(),
-      non_neg_integer(),
-      non_neg_integer(),
       btl_character:type(),
       btl_character:type(),
       integer(),
       integer(),
-      boolean(),
-      btl_character_turn_update:type()
+      boolean()
    )
    ->
    {
@@ -186,24 +183,17 @@ get_character_abilities (Action, Character, TargetCharacter) ->
       btl_character:type(),
       integer(),
       integer(),
-      btl_character_turn_update:type(),
       btl_attack:type()
    }.
 effect_of_attack
 (
    Category,
-   CharacterIX,
-   TargetCharacterIX,
-   S0Character,
-   S0TargetCharacter,
-   S0Luck,
-   S0TargetLuck,
-   TargetCanParry,
-   S0Update
+   Character,
+   TargetCharacter,
+   Luck,
+   TargetLuck,
+   TargetCanParry
 ) ->
-   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   %%%% Roll parry to see if the roles have to be swapped. %%%%%%%%%%%%%%%%%%%%%
-
    {ParryIsSuccessful, ParryPositiveLuckMod, ParryNegativeLuckMod} =
       case TargetCanParry of
          true ->
@@ -212,47 +202,99 @@ effect_of_attack
                (
                   btl_character:get_base_character(TargetCharacter)
                ),
-            roll_parry(TargetStatistics, S0TargetLuck);
+            roll_parry(TargetStatistics, TargetLuck);
 
          false -> {false, 0, 0}
       end,
 
-   { AttackerIX, DefenderIX, Attacker, Defender, AttackerLuck, DefenderLuck } =
+   {Attacker, S0Defender, S0AttackerLuck, S0DefenderLuck} =
       case ParryIsSuccessful of
-         true ->
-            {
-               TargetCharacterIX,
-               CharacterIX,
-               TargetCharacter,
-               Character,
-               TargetLuck,
-               Luck
-            };
-
-         false ->
-            {
-               CharacterIX,
-               TargetCharacterIX,
-               Character,
-               TargetCharacter,
-               Luck,
-               TargetLuck
-            }
+         false -> {Character, TargetCharacter, Luck, TargetLuck};
+         true -> {TargetCharacter, Character, TargetLuck, Luck}
       end,
 
-   AttackerStatistics =
+   AttackerBaseCharacter = btl_character:get_base_character(Attacker),
+   AttackerStatistics = shr_character:get_statistics(AttackerBaseCharacter),
+   DefenderBaseCharacter = btl_character:get_base_character(Defender),
+   DefenderStatistics = shr_character:get_statistics(DefenderBaseCharacter),
+
+   {PrecisionModifier, PrecisionPositiveLuckMod, PrecisionNegativeLuckMod} =
+      roll_precision_modifier
+      (
+         AttackerStatistics,
+         DefenderStatistics,
+         S0DefenderLuck
+      ),
+
+   {CriticalModifier, CriticalPositiveLuckMod, CriticalNegativeLuckMod} =
+      roll_critical_modifier(AttackerStatistics, S0AttackerLuck),
+
+   Damage =
+      shr_omnimods:get_attack_damage
+      (
+         (
+            PrecisionModifier
+            * CriticalModifier
+            * shr_statistics:get_damage_modifier(AttackerStatistics)
+         ),
+         shr_character:get_omnimods(AttackerBaseCharacter),
+         shr_character:get_omnimods(DefenderBaseCharacter)
+      ),
+
+   {S1AttackerLuck, S1DefenderLuck} =
+      compute_luck_changes
+      (
+         S0AttackerLuck,
+         S0DefenderLuck,
+         ParryIsSuccessful,
+         ParryPositiveLuckMod,
+         ParryNegativeLuckMod,
+         PrecisionPositiveLuckMod,
+         PrecisionNegativeLuckMod,
+         CriticalPositiveLuckMod,
+         CriticalNegativeLuckMod
+      ),
+
+   AttackReport =
+      btl_attack:new
+      (
+         Category,
+         PrecisionModifier,
+         CriticalModifier,
+         S1AttackerLuck,
+         S1DefenderLuck
+      ),
+
+   % If we "ataxia update" here, we'll get redundant ataxia updates, since
+   % both luck and health are likely to change again soon.
+   % If we don't "ataxia update" here, we'll have a bit of an ugly hack at the
+   % end that looks like: ataxia_set_current_health(get_current_health, char).
+   % I'm choosing to go with the hack. The function should not return a
+   % character_turn_update struct though, to make it clear the ataxia updates
+   % are still required.
+   S1Defender =
+      btl_character:set_current_health
+      (
+         (btl_character:get_current_health(S0Defender) - Damage),
+         S0Defender
+      ),
+
+   case ParryIsSuccessful of
+      false ->
+         {Attacker, S1Defender, S1AttackerLuck, S1DefenderLuck, AttackReport};
+
+      true ->
+         {S1Defender, Attacker, S1DefenderLuck, S1AttackerLuck, AttackReport}
+   end.
 
 -spec handle_attack_sequence
    (
       list({btl_attack:category(), boolean()}),
-      non_neg_integer(),
-      non_neg_integer(),
       btl_character:type(),
       btl_character:type(),
       integer(),
       integer(),
-      list(btl_attack:type()),
-      btl_character_turn_update:type()
+      list(btl_attack:type())
    )
    ->
    {
@@ -260,20 +302,16 @@ effect_of_attack
       btl_character:type(),
       integer(),
       integer(),
-      list(btl_attack:type()),
-      btl_character_turn_update:type()
+      list(btl_attack:type())
    }.
 handle_attack_sequence
 (
    [],
-   _CharacterIX,
-   _TargetCharacterIX,
    Character,
    TargetCharacter,
    PlayerLuck,
    TargetPlayerLuck,
-   Results,
-   Update
+   Results
 )
 ->
    {
@@ -281,20 +319,16 @@ handle_attack_sequence
       TargetCharacter,
       PlayerLuck,
       TargetPlayerLuck,
-      lists:reverse(Results),
-      Update
+      lists:reverse(Results)
    };
 handle_attack_sequence
 (
    [{first, TargetCanParry}|NextAttacks],
-   CharacterIX,
-   TargetCharacterIX,
    S0Character,
    S0TargetCharacter,
    S0PlayerLuck,
    S0TargetPlayerLuck,
-   Results,
-   S0Update
+   Results
 )
 ->
    {
@@ -302,91 +336,71 @@ handle_attack_sequence
       S1TargetCharacter,
       S1PlayerLuck,
       S1TargetPlayerLuck,
-      S1Update,
       Result
    } =
       effect_of_attack
       (
          first,
-         CharacterIX,
-         TargetCharacterIX,
          S0Character,
          S0TargetCharacter,
          S0PlayerLuck,
          S0TargetPlayerLuck,
-         TargetCanParry,
-         S0Update
+         TargetCanParry
       ),
 
    handle_attack_sequence
    (
       NextAttacks,
-      CharacterIX,
-      TargetCharacterIX,
       S1Character,
       S1TargetCharacter,
       S1PlayerLuck,
       S1TargetPlayerLuck,
-      [Result|Results],
-      S1Update
+      [Result|Results]
    );
 handle_attack_sequence
 (
    [{counter, CanParry}|NextAttacks],
-   CharacterIX,
-   TargetCharacterIX,
    S0Character,
    S0TargetCharacter,
    S0PlayerLuck,
    S0TargetPlayerLuck,
-   Results,
-   S0Update
+   Results
 )
 ->
    {
       S1TargetCharacter,
       S1Character,
-      S2TargetPlayerLuck,
-      S2PlayerLuck,
-      S1Update,
+      S1TargetPlayerLuck,
+      S1PlayerLuck,
       Result
    } =
       effect_of_attack
       (
          counter,
-         TargetCharacterIX,
-         CharacterIX,
          S0TargetCharacter,
          S0Character,
-         S1TargetPlayerLuck,
-         S1PlayerLuck,
-         CanParry,
-         S0Update
+         S0TargetPlayerLuck,
+         S0PlayerLuck,
+         CanParry
       ),
 
    handle_attack_sequence
    (
       NextAttacks,
-      CharacterIX,
-      TargetCharacterIX,
       S1Character,
       S1TargetCharacter,
-      S2PlayerLuck,
-      S2TargetPlayerLuck,
-      [Result|Results],
-      S1Update
+      S1PlayerLuck,
+      S1TargetPlayerLuck,
+      [Result|Results]
    );
 handle_attack_sequence
 (
    [{second, TargetCanParry}|NextAttacks],
-   CharacterIX,
-   TargetCharacterIX,
    S0Character,
    S0TargetCharacter,
    S0PlayerLuck,
    S0TargetPlayerLuck,
-   Results,
-   S0Update
+   Results
 )
 ->
    Statistics = shr_character:get_statistics(S0Character),
@@ -402,14 +416,11 @@ handle_attack_sequence
          handle_attack_sequence
          (
             NextAttacks,
-            CharacterIX,
-            TargetCharacterIX,
             S0Character,
             S0TargetCharacter,
             S1PlayerLuck,
             S1TargetPlayerLuck,
-            Results,
-            S0Update
+            Results
          );
 
       true ->
@@ -418,33 +429,26 @@ handle_attack_sequence
             S1TargetCharacter,
             S2PlayerLuck,
             S2TargetPlayerLuck,
-            S1Update,
             Result
          } =
             effect_of_attack
             (
                second,
-               CharacterIX,
-               TargetCharacterIX,
                S0Character,
                S0TargetCharacter,
                S1PlayerLuck,
                S1TargetPlayerLuck,
-               TargetCanParry,
-               S0Update
+               TargetCanParry
             ),
 
          handle_attack_sequence
          (
-            CharacterIX,
-            TargetCharacterIX,
             NextAttacks,
             S1Character,
             S1TargetCharacter,
             S2PlayerLuck,
             S2TargetPlayerLuck,
-            [Result|Results],
-            S1Update
+            [Result|Results]
          )
    end.
 
@@ -472,7 +476,7 @@ handle (Action, S0Character, S0Update) ->
 
    TargetPlayerIX = btl_character:get_player_index(TargetCharacter),
    TargetPlayer = btl_battle:get_player(TargetPlayerIX, S1Battle),
-   TargetPlayerLuck = btl_player:get_luck(TargetPlayer),
+   S0TargetPlayerLuck = btl_player:get_luck(TargetPlayer),
 
    {CanParry, TargetCanParry, TargetCanCounter} =
       get_character_abilities(Action, S0Character, S0TargetCharacter),
@@ -482,8 +486,7 @@ handle (Action, S0Character, S0Update) ->
       S1TargetCharacter,
       S1PlayerLuck,
       S1TargetPlayerLuck,
-      Results,
-      S1Update
+      Results
    } =
       handle_attack_sequence
       (
@@ -501,30 +504,10 @@ handle (Action, S0Character, S0Update) ->
                   {second, TargetCanParry}
                ]
          end,
-         S1Character,
-         S1TargetCharacter,
-         S1PlayerLuck,
-         S1TargetPlayerLuck,
-         Results,
-         S1Update
-      ),
-
-   {
-      AttackEffects,
-      RemainingAttackerHealth,
-      RemainingDefenderHealth,
-      NewAttackerLuck,
-      NewDefenderLuck
-   } =
-      handle_attack_sequence
-      (
-         Character,
-         btl_character:get_current_health(Character),
-         TargetCharacter,
-         btl_character:get_current_health(TargetCharacter),
-         PlayerLuck,
-         TargetPlayerLuck,
-         AttackSequence,
+         S0Character,
+         S0TargetCharacter,
+         S0PlayerLuck,
+         S0TargetPlayerLuck,
          []
       ),
 
