@@ -95,29 +95,31 @@ get_character_abilities (Action, Character, TargetCharacter) ->
       ),
 
    DefenseRange = shr_weapon:get_minimum_range(CharacterWeapon),
-   AttackRange =  shr_weapon:get_maximum_range(CharacterWeapon),
+   AttackRange = shr_weapon:get_maximum_range(CharacterWeapon),
    TargetDefenseRange = shr_weapon:get_minimum_range(TargetCharacterWeapon),
    TargetAttackRange =  shr_weapon:get_maximum_range(TargetCharacterWeapon),
 
    IsNotOpportunistic = btl_action:get_is_opportunistic(Action),
 
-   AttackRange =
+   RequiredRange =
       shr_location:dist
       (
          btl_character:get_location(Character),
          btl_character:get_location(TargetCharacter)
       ),
 
+   true = (AttackRange >= RequiredRange),
+
    {
       (DefenseRange == 0),
       (
          IsNotOpportunistic
          and (TargetDefenseRange == 0)
-         and (TargetAttackRange =< AttackRange)
+         and (TargetAttackRange =< RequiredRange)
       ),
       (
          IsNotOpportunistic
-         and (TargetAttackRange =< AttackRange)
+         and (TargetAttackRange =< RequiredRange)
       )
    }.
 
@@ -664,7 +666,7 @@ handle (Action, S0Character, S0Update) ->
       ataxic:update_field
       (
          btl_character:get_current_health_field(),
-         ataxic:constant(btl_character:get_current_health(S1Character))
+         ataxic:constant(btl_character:get_current_health(S1TargetCharacter))
       ),
 
    {S3Battle, BattleAtaxiaUpdate1} =

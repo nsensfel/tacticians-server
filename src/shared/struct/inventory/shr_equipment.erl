@@ -502,16 +502,16 @@ decode (Map) ->
       glyphs = maps:get(?GLYPHS_FIELD, Map)
    }.
 
--spec encode (unresolved()) -> {list({binary(), any()})}.
-encode (EqRef) ->
+-spec encode (either()) -> {list({binary(), any()})}.
+encode (Eq) ->
    {
       [
-         {?PRIMARY_WEAPON_FIELD, EqRef#shr_eq_ref.primary},
-         {?SECONDARY_WEAPON_FIELD, EqRef#shr_eq_ref.secondary},
-         {?ARMOR_FIELD, EqRef#shr_eq_ref.armor},
-         {?PORTRAIT_FIELD, EqRef#shr_eq_ref.portrait},
-         {?GLYPH_BOARD_FIELD, EqRef#shr_eq_ref.glyph_board},
-         {?GLYPHS_FIELD, EqRef#shr_eq_ref.glyphs}
+         {?PRIMARY_WEAPON_FIELD, get_primary_weapon_id(Eq)},
+         {?SECONDARY_WEAPON_FIELD, get_secondary_weapon_id(Eq)},
+         {?ARMOR_FIELD, get_armor_id(Eq)},
+         {?PORTRAIT_FIELD, get_portrait_id(Eq)},
+         {?GLYPH_BOARD_FIELD, get_glyph_board_id(Eq)},
+         {?GLYPHS_FIELD, get_glyph_ids(Eq)}
       ]
    }.
 

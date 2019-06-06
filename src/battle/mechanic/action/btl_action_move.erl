@@ -53,12 +53,14 @@ cross (PlayerIX, Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
    false = IsForbidden,
 
    Interruptions =
-      list:foldl
+      lists:foldl
       (
          fun (MarkerName, CurrentInterruptions) ->
             case shr_map:get_marker(MarkerName, Map) of
                {ok, Marker} ->
-                  case shr_map_marker:interrupts_movement(PlayerIX, Marker) of
+                  case
+                     shr_map_marker:interrupts_movement(PlayerIX, Marker)
+                  of
                      true -> [Marker|CurrentInterruptions];
                      _ -> CurrentInterruptions
                   end;

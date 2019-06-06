@@ -416,16 +416,24 @@ decode (Map) ->
       is_using_secondary = maps:get(?IS_USING_SECONDARY_FIELD, Map)
    }.
 
--spec encode (unresolved()) -> {list({binary(), any()})}.
-encode (CharRef) ->
+-spec encode (either()) -> {list({binary(), any()})}.
+encode (Character) ->
    {
       [
-         {?NAME_FIELD, CharRef#shr_char_ref.name},
+         {?NAME_FIELD, get_name(Character)},
          {
             ?EQUIPMENT_FIELD,
-            shr_equipment:encode(CharRef#shr_char_ref.equipment)
+            shr_equipment:encode(get_equipment(Character))
          },
-         {?IS_USING_SECONDARY_FIELD, CharRef#shr_char_ref.is_using_secondary}
+         {
+            ?IS_USING_SECONDARY_FIELD,
+            (
+               case Character of
+                  #shr_char_ref{is_using_secondary = R} -> R;
+                  #shr_char{is_using_secondary = R} -> R
+               end
+            )
+         }
       ]
    }.
 
