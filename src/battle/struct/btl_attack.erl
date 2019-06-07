@@ -73,7 +73,7 @@ new (Category, PrecisionModifier, CriticalModifier, IsParry, Damage) ->
             0.5 -> grazes;
             0.0 -> misses
          end,
-      is_critical = (CriticalModifier > 0.0),
+      is_critical = (CriticalModifier > 1.0),
       is_parry = IsParry,
       damage = Damage
    }.
