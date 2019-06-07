@@ -739,6 +739,7 @@ handle (Action, S0Character, S0Update) ->
       case (btl_character:get_current_health(S1Character) > 0) of
          true -> S2Update;
          false ->
+            % Remove melee opportunistic zone for S1Character.
             btl_victory_progression:handle_character_loss(S1Character, S2Update)
       end,
 
@@ -746,6 +747,7 @@ handle (Action, S0Character, S0Update) ->
       case (btl_character:get_current_health(S1TargetCharacter) > 0) of
          true -> S3Update;
          false ->
+            % Remove melee opportunistic zone for S1TargetCharacter.
             btl_victory_progression:handle_character_loss
             (
                S1TargetCharacter,
