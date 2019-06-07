@@ -99,7 +99,7 @@ get_character_abilities (Action, Character, TargetCharacter) ->
    TargetDefenseRange = shr_weapon:get_minimum_range(TargetCharacterWeapon),
    TargetAttackRange =  shr_weapon:get_maximum_range(TargetCharacterWeapon),
 
-   IsNotOpportunistic = btl_action:get_is_opportunistic(Action),
+   IsNotOpportunistic = (not btl_action:get_is_opportunistic(Action)),
 
    RequiredRange =
       shr_location:dist
