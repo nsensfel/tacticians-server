@@ -40,7 +40,12 @@ generate_attacks_of_opportunity_candidates
    orddict:fold
    (
       fun (CandidateIX, Candidate, Results) ->
-         case (btl_character:get_player_index(Candidate) == PlayerIX) of
+         case
+            (
+               (btl_character:get_player_index(Candidate) == PlayerIX)
+               or (not btl_character:get_is_alive(Candidate))
+            )
+         of
             true -> Results;
             false ->
                CandidateWeapon =

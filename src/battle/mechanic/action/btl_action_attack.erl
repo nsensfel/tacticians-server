@@ -115,11 +115,11 @@ get_character_abilities (Action, Character, TargetCharacter) ->
       (
          IsNotOpportunistic
          and (TargetDefenseRange == 0)
-         and (TargetAttackRange =< RequiredRange)
+         and (TargetAttackRange >= RequiredRange)
       ),
       (
          IsNotOpportunistic
-         and (TargetAttackRange =< RequiredRange)
+         and (TargetAttackRange >= RequiredRange)
       )
    }.
 
