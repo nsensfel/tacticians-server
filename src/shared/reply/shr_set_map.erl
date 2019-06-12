@@ -19,7 +19,7 @@
 -spec generate
    (
       non_neg_integer(),
-      fun ((shr_tile_instance:trigger_name()) -> boolean()),
+      fun ((shr_map_marker:name()) -> boolean()),
       shr_map:type()
    )
    -> {list(any())}.

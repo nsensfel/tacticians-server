@@ -82,6 +82,18 @@
 -export
 (
    [
+      set_locations/2,
+      add_locations/2,
+      remove_locations/2,
+      ataxia_set_locations/2,
+      ataxia_add_locations/2,
+      ataxia_remove_locations/2
+   ]
+).
+
+-export
+(
+   [
       decode/1,
       encode/1
    ]
@@ -120,6 +132,9 @@ decode_data (Map) ->
          % TODO: error.
          #spawn_mrk{}
    end.
+
+-spec get_locations_field () -> non_neg_integer().
+get_locations_field () -> #marker.locations.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,3 +205,81 @@ get_character_index (Marker) ->
       #matk_mrk{ character_ix = IX } -> IX;
       _ -> -1
    end.
+
+-spec set_locations (list(shr_location:type()), type()) -> type().
+set_locations (Locations, Marker) -> Marker#marker{ locations = Locations }.
+
+-spec ataxia_set_locations
+   (
+      list(shr_location:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_locations (Locations, Marker) ->
+   {
+      set_locations(Locations, Marker),
+      ataxic:update_field
+      (
+         get_locations_field(),
+         ataxic:constant([Locations])
+      )
+   }.
+
+-spec add_locations (list(shr_location:type()), type()) -> type().
+add_locations (Locations, Marker) ->
+   Marker#marker{ locations = (Locations ++ Marker#marker.locations) }.
+
+-spec ataxia_add_locations
+   (
+      list(shr_location:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_add_locations (Locations, Marker) ->
+   {
+      add_locations(Locations, Marker),
+      ataxic:update_field
+      (
+         get_locations_field(),
+         ataxic:apply_function
+         (
+            lists,
+            append,
+            [
+               ataxic:constant([Locations]),
+               ataxic:current_value()
+            ]
+         )
+      )
+   }.
+
+-spec remove_locations (list(shr_location:type()), type()) -> type().
+remove_locations (Locations, Marker) ->
+   Marker#marker
+   {
+      locations = lists:subtract(Marker#marker.locations, Locations)
+   }.
+
+-spec ataxia_remove_locations
+   (
+      list(shr_location:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_remove_locations (Locations, Marker) ->
+   {
+      remove_locations(Locations, Marker),
+      ataxic:update_field
+      (
+         get_locations_field(),
+         ataxic:apply_function
+         (
+            lists,
+            subtract,
+            [
+               ataxic:current_value(),
+               ataxic:constant([Locations])
+            ]
+         )
+      )
+   }.

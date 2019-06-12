@@ -55,6 +55,10 @@
 -export
 (
    [
+      reset_marker/2,
+      ataxia_reset_marker/2,
+      add_to_marker/3,
+      ataxia_add_to_marker/3,
       update_from_list/5,
       default/1
    ]
@@ -184,3 +188,290 @@ default (Owner) ->
       markers = orddict:new(),
       tile_instances = list_to_tuple(lists:duplicate(1024, DefaultTileInstance))
    }.
+
+-spec reset_marker (shr_map_marker:name(), shr_map:type()) -> shr_map:type().
+reset_marker (MarkerName, Map) ->
+   MapMarkers = Map#map.markers,
+
+   case orddict:find(MarkerName, MapMarkers) of
+      error -> Map;
+      {ok, Marker} ->
+         MapWidth = Map#map.width,
+         MarkerLocations = shr_map_marker:get_locations(Marker),
+         UpdatedTileInstances =
+            lists:foldl
+            (
+               fun (Location, TileInstances) ->
+                  case location_to_index(MapWidth, Location) of
+                     error -> TileInstances;
+                     Index ->
+                        TileInstance = element(Index, TileInstances),
+
+                        UpdatedTileInstance =
+                           shr_tile_instance:remove_trigger
+                           (
+                              MarkerName,
+                              TileInstance
+                           ),
+
+                        UpdatedTileInstances =
+                           setelement
+                           (
+                              Index,
+                              TileInstances,
+                              UpdatedTileInstance
+                           ),
+
+                        UpdatedTileInstances
+                  end
+               end,
+               Map#map.tile_instances,
+               MarkerLocations
+            ),
+         UpdatedMarker = shr_map_marker:set_locations([], Marker),
+         UpdatedMapMarkers =
+            orddict:store(MarkerName, UpdatedMarker, MapMarkers),
+         UpdatedMap =
+            Map#map
+            {
+               markers = UpdatedMapMarkers,
+               tile_instances = UpdatedTileInstances
+            },
+
+         UpdatedMap
+   end.
+
+-spec ataxia_reset_marker
+   (
+      shr_map_marker:name(),
+      shr_map:type()
+   )
+   -> {shr_map:type(), ataxic:basic()}.
+ataxia_reset_marker (MarkerName, Map) ->
+   MapMarkers = Map#map.markers,
+
+   case orddict:find(MarkerName, MapMarkers) of
+      error -> {Map, ataxic_sugar:nop()};
+      {ok, Marker} ->
+         MapWidth = Map#map.width,
+         MarkerLocations = shr_map_marker:get_locations(Marker),
+         {UpdatedTileInstances, TileInstancesAtaxiaUpdates} =
+            lists:foldl
+            (
+               fun (Location, {TileInstances, TileInstancesAtaxiaUpdates}) ->
+                  case location_to_index(MapWidth, Location) of
+                     error -> {TileInstances, TileInstancesAtaxiaUpdates};
+                     Index ->
+                        TileInstance = element(Index, TileInstances),
+
+                        {UpdatedTileInstance, TileInstanceAtaxiaUpdate} =
+                           shr_tile_instance:ataxia_remove_trigger
+                           (
+                              MarkerName,
+                              TileInstance
+                           ),
+
+                        UpdatedTileInstances =
+                           setelement
+                           (
+                              Index,
+                              TileInstances,
+                              UpdatedTileInstance
+                           ),
+
+                        TileInstancesAtaxiaUpdate =
+                           ataxic:update_field
+                           (
+                              Index,
+                              TileInstanceAtaxiaUpdate
+                           ),
+
+                        {
+                           UpdatedTileInstances,
+                           [
+                              TileInstancesAtaxiaUpdate
+                              |TileInstancesAtaxiaUpdates
+                           ]
+                        }
+                  end
+               end,
+               {Map#map.tile_instances, []},
+               MarkerLocations
+            ),
+         {UpdatedMarker, MarkerAtaxiaUpdate} =
+            shr_map_marker:ataxia_set_locations([], Marker),
+         UpdatedMapMarkers =
+            orddict:store(MarkerName, UpdatedMarker, MapMarkers),
+         MapMarkersAtaxiaUpdate =
+            ataxic_sugar:update_orddict_element(MarkerName, MarkerAtaxiaUpdate),
+         UpdatedMap =
+            Map#map
+            {
+               markers = UpdatedMapMarkers,
+               tile_instances = UpdatedTileInstances
+            },
+
+         {
+            UpdatedMap,
+            ataxic:sequence
+            (
+               [
+                  ataxic:update_field
+                  (
+                     get_markers_field(),
+                     MapMarkersAtaxiaUpdate
+                  ),
+                  ataxic:update_field
+                  (
+                     get_tile_instances_field(),
+                     ataxic:sequence(TileInstancesAtaxiaUpdates)
+                  )
+               ]
+            )
+         }
+   end.
+
+-spec add_to_marker
+   (
+      shr_map_marker:name(),
+      list(shr_location:type()),
+      shr_map:type()
+   )
+   -> ({ok, shr_map:type()} | error).
+add_to_marker (MarkerName, Locations, Map) ->
+   MapMarkers = Map#map.markers,
+   case orddict:find(MarkerName, MapMarkers) of
+      error -> error;
+      {ok, S0Marker} ->
+         UpdatedMarker = shr_map_marker:add_locations(Locations, S0Marker),
+         UpdatedMapMarkers =
+            orddict:store(MarkerName, UpdatedMarker, MapMarkers),
+         MapWidth = Map#map.width,
+         UpdatedTileInstances =
+            lists:foldl
+            (
+               fun (Location, TileInstances) ->
+                  case location_to_index(MapWidth, Location) of
+                     error -> TileInstances;
+                     Index ->
+                        TileInstance = element(Index, TileInstances),
+
+                        UpdatedTileInstance =
+                           shr_tile_instance:add_trigger
+                           (
+                              MarkerName,
+                              TileInstance
+                           ),
+                        UpdatedTileInstances =
+                           setelement
+                           (
+                              Index,
+                              TileInstances,
+                              UpdatedTileInstance
+                           ),
+
+                        UpdatedTileInstances
+                  end
+               end,
+               Map#map.tile_instances,
+               Locations
+            ),
+         UpdatedMap =
+            Map#map
+            {
+               markers = UpdatedMapMarkers,
+               tile_instances = UpdatedTileInstances
+            },
+
+         {ok, UpdatedMap}
+   end.
+
+-spec ataxia_add_to_marker
+   (
+      shr_map_marker:name(),
+      list(shr_location:type()),
+      shr_map:type()
+   )
+   -> ({ok, shr_map:type(), ataxic:basic()} | error).
+ataxia_add_to_marker (MarkerName, Locations, Map) ->
+   MapMarkers = Map#map.markers,
+   case orddict:find(MarkerName, MapMarkers) of
+      error -> error;
+      {ok, Marker} ->
+         MapWidth = Map#map.width,
+         {UpdatedTileInstances, TileInstancesAtaxiaUpdates} =
+            lists:foldl
+            (
+               fun (Location, {TileInstances, TileInstancesAtaxiaUpdates}) ->
+                  case location_to_index(MapWidth, Location) of
+                     error -> {TileInstances, TileInstancesAtaxiaUpdates};
+                     Index ->
+                        TileInstance = element(Index, TileInstances),
+
+                        {UpdatedTileInstance, TileInstanceAtaxiaUpdate} =
+                           shr_tile_instance:ataxia_add_trigger
+                           (
+                              MarkerName,
+                              TileInstance
+                           ),
+
+                        UpdatedTileInstances =
+                           setelement
+                           (
+                              Index,
+                              TileInstances,
+                              UpdatedTileInstance
+                           ),
+
+                        TileInstancesAtaxiaUpdate =
+                           ataxic:update_field
+                           (
+                              Index,
+                              TileInstanceAtaxiaUpdate
+                           ),
+
+                        {
+                           UpdatedTileInstances,
+                           [
+                              TileInstancesAtaxiaUpdate
+                              |TileInstancesAtaxiaUpdates
+                           ]
+                        }
+                  end
+               end,
+               {Map#map.tile_instances, []},
+               Locations
+            ),
+         {UpdatedMarker, MarkerAtaxiaUpdate} =
+            shr_map_marker:ataxia_add_locations(Locations, Marker),
+         UpdatedMapMarkers =
+            orddict:store(MarkerName, UpdatedMarker, MapMarkers),
+         MapMarkersAtaxiaUpdate =
+            ataxic_sugar:update_orddict_element(MarkerName, MarkerAtaxiaUpdate),
+         UpdatedMap =
+            Map#map
+            {
+               markers = UpdatedMapMarkers,
+               tile_instances = UpdatedTileInstances
+            },
+
+         {
+            ok,
+            UpdatedMap,
+            ataxic:sequence
+            (
+               [
+                  ataxic:update_field
+                  (
+                     get_markers_field(),
+                     MapMarkersAtaxiaUpdate
+                  ),
+                  ataxic:update_field
+                  (
+                     get_tile_instances_field(),
+                     ataxic:sequence(TileInstancesAtaxiaUpdates)
+                  )
+               ]
+            )
+         }
+   end.
