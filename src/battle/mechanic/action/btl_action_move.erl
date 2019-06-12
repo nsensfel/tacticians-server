@@ -2,7 +2,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+-type attack_candidate_ref() ::
+   {
+      non_neg_integer(), % Character IX
+      shr_location:type(), % Character Location
+      non_neg_integer() % Character attack range
+   }.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,74 +21,235 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec cross
+-spec generate_attacks_of_opportunity_candidates
+   (
+      btl_character:either(),
+      shr_location:type(),
+      orddict:orddict(non_neg_integer(), btl_character:either()),
+      non_neg_integer()
+   )
+   -> list(attack_candidate_ref()).
+generate_attacks_of_opportunity_candidates
+(
+   Character,
+   Location,
+   Characters,
+   StepsCount
+) ->
+   PlayerIX = btl_character:get_player_index(Character),
+   orddict:fold
+   (
+      fun (CandidateIX, Candidate, Results) ->
+         case (btl_character:get_player_index(Candidate) == PlayerIX) of
+            true -> Results;
+            false ->
+               CandidateWeapon =
+                  shr_character:get_active_weapon
+                  (
+                     btl_character:get_base_character(Candidate)
+                  ),
+               case (shr_weapon:get_minimum_range(CandidateWeapon) > 0) of
+                  true -> Results;
+                  false ->
+                     CandidateLocation = btl_character:get_location(Candidate),
+                     CandidateWeaponRange =
+                        shr_weapon:get_maximum_range(CandidateWeapon),
+
+                     Range =
+                        (
+                           shr_location:dist(Location, CandidateLocation)
+                           - CandidateWeaponRange
+                        ),
+
+                     case (Range =< StepsCount) of
+                        false -> Results;
+                        true ->
+                           [
+                              {
+                                 CandidateIX,
+                                 CandidateLocation,
+                                 CandidateWeaponRange
+                              }
+                              |Results
+                           ]
+                     end
+               end
+         end
+      end,
+      [],
+      Characters
+   ).
+
+-spec detect_attacks_of_opportunity
+   (
+      shr_location:type(),
+      list(attack_candidate_ref()),
+      non_neg_integer()
+   )
+   -> {list(attack_candidate_ref()), list(non_neg_integer())}.
+detect_attacks_of_opportunity (Location, Candidates, RemainingStepsCount) ->
+   lists:foldl
+   (
+      fun (Candidate, {FutureCandidates, Attackers}) ->
+         {CandidateIX, CandidateLocation, CandidateAttackRange} = Candidate,
+         Range =
+            (
+               shr_location:dist(Location, CandidateLocation)
+               - CandidateAttackRange
+            ),
+         if
+            (Range =< 0) -> {FutureCandidates, [CandidateIX|Attackers]};
+            (Range =< RemainingStepsCount) ->
+               {[Candidate|FutureCandidates], Attackers};
+            true -> {FutureCandidates, Attackers}
+         end
+      end,
+      {[], []},
+      Candidates
+   ).
+
+-spec generate_forbidden_locations
    (
       non_neg_integer(),
-      shr_map:type(),
-      list(shr_location:type()),
+      orddict:orddict(non_neg_integer(), btl_character:either())
+   )
+   -> sets:set(shr_location:type()).
+generate_forbidden_locations (CharacterIX, Characters) ->
+   orddict:fold
+   (
+      fun (IX, Char, Prev) ->
+         IsAlive = btl_character:get_is_alive(Char),
+         if
+            (IX == CharacterIX) -> Prev;
+            (not IsAlive) -> Prev;
+            true ->
+               sets:add_element(btl_character:get_location(Char), Prev)
+         end
+      end,
+      sets:new(),
+      Characters
+   ).
+
+-spec cross
+   (
       list(shr_direction:enum()),
+      shr_location:type(),
       non_neg_integer(),
-      shr_location:type()
+      btl_character:either(),
+      shr_map:type(),
+      sets:set(shr_location:type()),
+      list(attack_candidate_ref()),
+      non_neg_integer(),
+      non_neg_integer()
    )
    ->
    {
       shr_location:type(),
       list(shr_direction:type()),
       non_neg_integer(),
-      list(shr_map_marker:type())
+      list(btl_action:type())
    }.
-cross (_PlayerIX, _Map, _ForbiddenLocations, [], Cost, Location) ->
+cross
+(
+   [],
+   Location,
+   _CharacterIX,
+   _Character,
+   _Map,
+   _ForbiddenLocations,
+   _AttacksOfOpportunityCandidates,
+   _RemainingStepsCount,
+   Cost
+) ->
    {Location, [], Cost, []};
-cross (PlayerIX, Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
+cross
+(
+   [Step|NextSteps],
+   Location,
+   CharacterIX,
+   Character,
+   Map,
+   ForbiddenLocations,
+   AttacksOfOpportunityCandidates,
+   RemainingStepsCount,
+   Cost
+) ->
    NextLocation = shr_location:apply_direction(Step, Location),
    NextTileInstance = shr_map:get_tile_instance(NextLocation, Map),
    NextTileClassID = shr_tile_instance:get_tile_id(NextTileInstance),
    NextTile = shr_tile:from_id(NextTileClassID),
    NextCost = (Cost + shr_tile:get_cost(NextTile)),
-   IsForbidden =
-      lists:foldl
-      (
-         fun (ForbiddenLocation, Prev) ->
-            (Prev or (NextLocation == ForbiddenLocation))
-         end,
-         false,
-         ForbiddenLocations
-      ),
+   NextRemainingStepsCount = (RemainingStepsCount - 1),
+   IsForbidden = sets:is_element(NextLocation, ForbiddenLocations),
 
    false = IsForbidden,
 
-   Interruptions =
-      lists:foldl
+   {NextAttacksOfOpportunityCandidates, Attackers} =
+      detect_attacks_of_opportunity
+      (
+         NextLocation,
+         AttacksOfOpportunityCandidates,
+         NextRemainingStepsCount
+      ),
+
+   TriggerInterruptions =
+      ordsets:fold
       (
          fun (MarkerName, CurrentInterruptions) ->
             case shr_map:get_marker(MarkerName, Map) of
                {ok, Marker} ->
                   case
-                     shr_map_marker:interrupts_movement(PlayerIX, Marker)
+                     shr_map_marker:interrupts_movement
+                     (
+                        btl_character:get_player_index(Character),
+                        Marker
+                     )
                   of
-                     true -> [Marker|CurrentInterruptions];
+                     true ->
+                        [
+                           btl_action:from_map_marker
+                           (
+                              CharacterIX,
+                              Character,
+                              Marker
+                           )
+                           |CurrentInterruptions
+                        ];
+
                      _ -> CurrentInterruptions
                   end;
 
-               error ->
-                  %% TODO: Error.
-                  CurrentInterruptions
+               error -> CurrentInterruptions
             end
          end,
          [],
          shr_tile_instance:get_triggers(NextTileInstance)
       ),
 
+   AttackOfOpportunityInterruptions =
+      lists:map
+      (
+         fun (AttackerIX) ->
+            btl_action:new_attack_of_opportunity(AttackerIX, CharacterIX)
+         end,
+         Attackers
+      ),
+
+   Interruptions = (TriggerInterruptions ++ AttackOfOpportunityInterruptions),
+
    case Interruptions of
       [] ->
          cross
          (
-            PlayerIX,
+            NextSteps,
+            NextLocation,
+            CharacterIX,
+            Character,
             Map,
             ForbiddenLocations,
-            NextSteps,
-            NextCost,
-            NextLocation
+            NextAttacksOfOpportunityCandidates,
+            NextRemainingStepsCount,
+            NextCost
          );
 
       _ -> {NextLocation, NextSteps, NextCost, Interruptions}
@@ -91,21 +257,45 @@ cross (PlayerIX, Map, ForbiddenLocations, [Step|NextSteps], Cost, Location) ->
 
 -spec cross
    (
-      non_neg_integer(),
-      shr_map:type(),
-      list(shr_location:type()),
       list(shr_direction:enum()),
-      shr_location:type()
+      shr_location:type(),
+      non_neg_integer(),
+      btl_character:either(),
+      shr_map:type(),
+      sets:set(shr_location:type()),
+      list(attack_candidate_ref()),
+      non_neg_integer()
    )
    ->
    {
       shr_location:type(),
       list(shr_direction:type()),
       non_neg_integer(),
-      list(shr_map_marker:type())
+      list(btl_action:type())
    }.
-cross (PlayerIX, Map, ForbiddenLocations, Path, Location) ->
-   cross(PlayerIX, Map, ForbiddenLocations, Path, 0, Location).
+cross
+(
+   Path,
+   Location,
+   CharacterIX,
+   Character,
+   Map,
+   ForbiddenLocations,
+   AttacksOfOpportunityCandidates,
+   RemainingStepsCount
+) ->
+   cross
+   (
+      Path,
+      Location,
+      CharacterIX,
+      Character,
+      Map,
+      ForbiddenLocations,
+      AttacksOfOpportunityCandidates,
+      RemainingStepsCount,
+      0
+   ).
 
 -spec get_path_cost_and_destination
    (
@@ -116,46 +306,39 @@ cross (PlayerIX, Map, ForbiddenLocations, Path, Location) ->
    )
    ->
    {
-      non_neg_integer(),
       shr_location:type(),
       list(shr_direction:type()),
-      list(shr_map_marker:type())
+      non_neg_integer(),
+      list(btl_action:type())
    }.
 get_path_cost_and_destination (CharacterIX, Character, Update, Path) ->
    Battle = btl_character_turn_update:get_battle(Update),
    Map = btl_battle:get_map(Battle),
+   Characters = btl_battle:get_characters(Battle),
+   Location = btl_character:get_location(Character),
+   PathSteps = length(Path),
 
-   % [TODO][OPTIMIZATION] Redundant calculations.
-   % This is recalculated at every move action, despite there be no need
-   % to: The client will not allow the character to go somewhere that would
-   % only be freed because of an event.
-   ForbiddenLocations =
-      orddict:fold
+   ForbiddenLocations = generate_forbidden_locations(CharacterIX, Characters),
+   AttacksOfOpportunityCandidates =
+      generate_attacks_of_opportunity_candidates
       (
-         fun (IX, Char, Prev) ->
-            IsAlive = btl_character:get_is_alive(Char),
-            if
-               (IX == CharacterIX) -> Prev;
-               (not IsAlive) -> Prev;
-               true ->
-                  ordsets:add_element(btl_character:get_location(Char), Prev)
-            end
-         end,
-         ordsets:new(),
-         btl_battle:get_characters(Battle)
+         Character,
+         Location,
+         Characters,
+         PathSteps
       ),
 
-   {NewLocation, RemainingPath, Cost, Interruptions} =
-      cross
-      (
-         btl_character:get_player_index(Character),
-         Map,
-         ForbiddenLocations,
-         Path,
-         btl_character:get_location(Character)
-      ),
-
-   {Cost, NewLocation, RemainingPath, Interruptions}.
+   cross
+   (
+      Path,
+      Location,
+      CharacterIX,
+      Character,
+      Map,
+      ForbiddenLocations,
+      AttacksOfOpportunityCandidates,
+      PathSteps
+   ).
 
 -spec get_movement_points
    (
@@ -247,7 +430,12 @@ handle (Action, Character, S0Update) ->
    Path = btl_action:get_path(Action),
    CharacterIX = btl_action:get_actor_index(Action),
 
-   {PathCost, NewLocation, RemainingPath, Interruptions} =
+   {
+      NewLocation,
+      RemainingPath,
+      PathCost,
+      Interruptions
+   } =
       get_path_cost_and_destination(CharacterIX, Character, S0Update, Path),
 
    MovementPoints = get_movement_points(Action, Character),
@@ -261,23 +449,7 @@ handle (Action, Character, S0Update) ->
       _ ->
          {events,
             (
-               lists:foldl
-               (
-                  fun (Marker, CurrentActions) ->
-                     (
-                        btl_action:from_map_marker
-                        (
-                           CharacterIX,
-                           Character,
-                           Marker
-                        )
-                        ++
-                        CurrentActions
-                     )
-                  end,
-                  [],
-                  Interruptions
-               )
+               Interruptions
                ++
                [
                   btl_action:new_move

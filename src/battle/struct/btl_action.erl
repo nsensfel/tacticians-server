@@ -65,7 +65,8 @@
 -export
 (
    [
-      new_move/3
+      new_move/3,
+      new_attack_of_opportunity/2
    ]
 ).
 
@@ -185,6 +186,20 @@ new_move (ActorIX, Path, MovementPoints) ->
       actor_ix = ActorIX,
       path = Path,
       movement_points = MovementPoints
+   }.
+
+-spec new_attack_of_opportunity
+   (
+      non_neg_integer(),
+      non_neg_integer()
+   )
+   -> type().
+new_attack_of_opportunity (ActorIX, TargetIX) ->
+   #attack
+   {
+      actor_ix = ActorIX,
+      target_ix = TargetIX,
+      is_opportunistic = true
    }.
 
 -spec get_category (type()) -> category().
