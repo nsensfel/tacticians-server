@@ -403,7 +403,7 @@ handle_attack_sequence
    case
       (
          (btl_character:get_current_health(S0Character) > 0)
-         and (btl_character:get_current_health(S0Character) > 0)
+         and (btl_character:get_current_health(S0TargetCharacter) > 0)
       )
    of
       true ->
@@ -509,7 +509,7 @@ handle_attack_sequence
    case
       (
          (btl_character:get_current_health(S0Character) > 0)
-         and (btl_character:get_current_health(S0Character) > 0)
+         and (btl_character:get_current_health(S0TargetCharacter) > 0)
       )
    of
       true ->
