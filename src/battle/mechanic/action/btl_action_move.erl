@@ -140,6 +140,7 @@ generate_forbidden_locations (CharacterIX, Characters) ->
       sets:set(shr_location:type()),
       list(attack_candidate_ref()),
       non_neg_integer(),
+      list(shr_direction:enum()),
       non_neg_integer()
    )
    ->
@@ -147,7 +148,8 @@ generate_forbidden_locations (CharacterIX, Characters) ->
       shr_location:type(),
       list(shr_direction:type()),
       non_neg_integer(),
-      list(btl_action:type())
+      list(btl_action:type()),
+      list(shr_direction:type())
    }.
 cross
 (
@@ -159,9 +161,10 @@ cross
    _ForbiddenLocations,
    _AttacksOfOpportunityCandidates,
    _RemainingStepsCount,
+   ReversedHandledPath,
    Cost
 ) ->
-   {Location, [], Cost, []};
+   {Location, [], Cost, [], lists:reverse(ReversedHandledPath)};
 cross
 (
    [Step|NextSteps],
@@ -172,6 +175,7 @@ cross
    ForbiddenLocations,
    AttacksOfOpportunityCandidates,
    RemainingStepsCount,
+   ReversedHandledPath,
    Cost
 ) ->
    NextLocation = shr_location:apply_direction(Step, Location),
@@ -249,10 +253,18 @@ cross
             ForbiddenLocations,
             NextAttacksOfOpportunityCandidates,
             NextRemainingStepsCount,
+            [Step|ReversedHandledPath],
             NextCost
          );
 
-      _ -> {NextLocation, NextSteps, NextCost, Interruptions}
+      _ ->
+         {
+            NextLocation,
+            NextSteps,
+            NextCost,
+            Interruptions,
+            lists:reverse([Step|ReversedHandledPath])
+         }
    end.
 
 -spec cross
@@ -271,7 +283,8 @@ cross
       shr_location:type(),
       list(shr_direction:type()),
       non_neg_integer(),
-      list(btl_action:type())
+      list(btl_action:type()),
+      list(shr_direction:type())
    }.
 cross
 (
@@ -294,6 +307,7 @@ cross
       ForbiddenLocations,
       AttacksOfOpportunityCandidates,
       RemainingStepsCount,
+      [],
       0
    ).
 
@@ -309,7 +323,8 @@ cross
       shr_location:type(),
       list(shr_direction:type()),
       non_neg_integer(),
-      list(btl_action:type())
+      list(btl_action:type()),
+      list(shr_direction:type())
    }.
 get_path_cost_and_destination (CharacterIX, Character, Update, Path) ->
    Battle = btl_character_turn_update:get_battle(Update),
@@ -434,7 +449,8 @@ handle (Action, Character, S0Update) ->
       NewLocation,
       RemainingPath,
       PathCost,
-      Interruptions
+      Interruptions,
+      HandledPath
    } =
       get_path_cost_and_destination(CharacterIX, Character, S0Update, Path),
 
@@ -442,7 +458,9 @@ handle (Action, Character, S0Update) ->
 
    true = (MovementPoints >= PathCost),
 
-   S1Update = commit_move(CharacterIX, Character, S0Update, Path, NewLocation),
+   % [FIXME][IMPORTANT]: 'Path' will not be correct if there is an interruption.
+   S1Update =
+      commit_move(CharacterIX, Character, S0Update, HandledPath, NewLocation),
 
    case RemainingPath of
       [] -> {ok, S1Update};
