@@ -1,6 +1,6 @@
 -module(blc_armor).
 
--include('base_attributes.hrl').
+-include("../../../include/base_attributes.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,8 +36,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type([proto_armor/0, armor/0, factors/0]).
+-export_type([proto_armor/0, factors/0]).
 
+% FIXME: quick debug
+-compile(export_all).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +56,22 @@ get_relative_attribute (Value, BaseValue, BaseTarget) ->
    (
       BaseTarget
       -
-      math:floor((Value - BaseValue) * (BaseTarget/BaseValue))
+      math:floor((Value - BaseValue) * (BaseTarget / BaseValue))
+   ).
+
+-spec get_modifier_from_movement_points
+   (
+      non_neg_integer(),
+      non_neg_integer(),
+      float()
+   )
+   -> integer().
+get_modifier_from_movement_points (BaseValue, MovementPoints, Factor) ->
+   (
+      (MovementPoints - ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
+      * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
+      * Factor
+      * -1
    ).
 
 %%%% Defense %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,8 +89,8 @@ calc_defense_score (Defense) ->
    {_LastIndex, Result} =
       lists:foldl
       (
-         fun (E, {Index, Current}) ->
-            {(Index + 1), (Current + (Index * E))}
+         fun ({_NameA, ValueA}, {Index, Current}) ->
+            {(Index + 1), (Current + (Index * ValueA))}
          end,
          {1, 0},
          DescSortedDefense
@@ -89,7 +106,7 @@ calc_defense_score (Defense) ->
    )
    -> list(defense_entry()).
 apply_defense_score_modifier (AbsModifier, Mod, S0DescSortedDefense) ->
-   {S1DescSortedDefense, EndModifier} =
+   {S1DescSortedDefense, {_EndIndex, EndModifier}} =
       lists:mapfoldl
       (
          fun ({Name, S0Value}, {Index, RemainingModifier}) ->
@@ -161,10 +178,10 @@ get_maximum_factor_with_movement_points (Value, BaseValue, MovementPoints) ->
    )
    -> proto_armor().
 proto_armor_auto_dodge (Defense, Health, DamageModifier) ->
-   DefenseScore = get_defense_score(Defense),
+   DefenseScore = calc_defense_score(Defense),
 
    Dodge =
-      relative_attribute
+      get_relative_attribute
       (
          DefenseScore,
          ?BASE_DEFENSE_SCORE,
@@ -236,9 +253,9 @@ get_maximum_movement_points (Factor, ProtoArmor) ->
       ]
    ).
 
--spec get_maximum_factorss (non_neg_integer(), proto_armor()) -> factors().
-get_maximum_factorss (MovementPoints, ProtoArmor) ->
-   #proto_armor
+-spec get_maximum_factors (non_neg_integer(), proto_armor()) -> factors().
+get_maximum_factors (MovementPoints, ProtoArmor) ->
+   #factors
    {
       health =
          get_maximum_factor_with_movement_points
@@ -278,7 +295,7 @@ get_maximum_factorss (MovementPoints, ProtoArmor) ->
    -> proto_armor().
 proto_armor_through_health (Defense, Health) ->
    DamageModifier =
-      relative_attribute
+      get_relative_attribute
       (
          Health,
          ?BASE_HEALTH_ATTRIBUTE,
@@ -295,7 +312,7 @@ proto_armor_through_health (Defense, Health) ->
    -> proto_armor().
 proto_armor_through_damage_modifier (Defense, DamageModifier) ->
    Health =
-      relative_attribute
+      get_relative_attribute
       (
          DamageModifier,
          ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
@@ -312,20 +329,70 @@ proto_armor_through_damage_modifier (Defense, DamageModifier) ->
    )
    -> shr_omnimods:type().
 finalize_to_omnimods (MovementPoints, Factors, ProtoArmor) ->
+   HealthMod =
+      get_modifier_from_movement_points
+      (
+         ?BASE_HEALTH_ATTRIBUTE,
+         MovementPoints,
+         Factors#factors.health
+      ),
+
+   DamageModifierMod =
+      get_modifier_from_movement_points
+      (
+         ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
+         MovementPoints,
+         Factors#factors.damage_modifier
+      ),
+
+   DodgeMod =
+      get_modifier_from_movement_points
+      (
+         ?BASE_DODGE_ATTRIBUTE,
+         MovementPoints,
+         Factors#factors.dodge
+      ),
+
+   DefenseMod =
+      get_modifier_from_movement_points
+      (
+         ?BASE_DEFENSE_SCORE,
+         MovementPoints,
+         Factors#factors.defense
+      ),
+
+   DefenseActualMod =
+      case (DefenseMod >= 0) of
+         true -> 1;
+         false -> -1
+      end,
+
    shr_omnimods:new
    (
       [
          {movement_points, MovementPoints},
          {
+            health,
+            shr_math_util:ceil(ProtoArmor#proto_armor.health + HealthMod)
          },
          {
+            damage_modifier,
+            shr_math_util:ceil
+            (
+               ProtoArmor#proto_armor.damage_modifier
+               + DamageModifierMod
+            )
          },
          {
-         },
-         {
+            dodge,
+            shr_math_util:ceil(ProtoArmor#proto_armor.dodge + DodgeMod)
          }
       ],
       [],
-      [
-      ]
+      apply_defense_score_modifier
+      (
+         abs(DefenseMod),
+         DefenseActualMod,
+         ProtoArmor#proto_armor.defense
+      )
    ).
