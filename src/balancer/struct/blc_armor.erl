@@ -173,7 +173,7 @@ get_maximum_movement_points_with_factors (Value, BaseValue, Factor) ->
 get_maximum_factor_with_movement_points (Value, BaseValue, MovementPoints) ->
    MvtPointsBaseMod = (MovementPoints - ?BASE_MOVEMENT_POINTS_ATTRIBUTE),
 
-   case MvtPointsBaseMod of
+   case (MvtPointsBaseMod > 0) of
       false -> 1.0;
       true -> (Value / (MvtPointsBaseMod * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)))
    end.
