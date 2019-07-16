@@ -148,7 +148,20 @@ apply_defense_score_modifier (AbsModifier, Mod, S0DescSortedDefense) ->
    )
    -> non_neg_integer().
 get_maximum_movement_points_with_factors (Value, BaseValue, Factor) ->
-   math:floor((Value * ?BASE_MOVEMENT_POINTS_ATTRIBUTE) / (BaseValue * Factor)).
+   case (Factor == 0) of
+      true -> (?BASE_MOVEMENT_POINTS_ATTRIBUTE * 3);
+      false ->
+         (
+            (
+               Value
+               /
+               (
+                  Factor
+                  * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
+               )
+            )
+         )
+   end.
 
 -spec get_maximum_factor_with_movement_points
    (
@@ -158,17 +171,12 @@ get_maximum_movement_points_with_factors (Value, BaseValue, Factor) ->
    )
    -> float().
 get_maximum_factor_with_movement_points (Value, BaseValue, MovementPoints) ->
-   (
-      Value
-      /
-      (
-         (
-            (MovementPoints / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
-            + 1
-         )
-         * BaseValue
-      )
-   ).
+   MvtPointsBaseMod = (MovementPoints - ?BASE_MOVEMENT_POINTS_ATTRIBUTE),
+
+   case MvtPointsBaseMod of
+      false -> 1.0;
+      true -> (Value / (MvtPointsBaseMod * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)))
+   end.
 
 -spec proto_armor_auto_dodge
    (
