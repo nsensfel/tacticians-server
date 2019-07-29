@@ -175,7 +175,12 @@ get_maximum_factor_with_movement_points (Value, BaseValue, MovementPoints) ->
 
    case (MvtPointsBaseMod > 0) of
       false -> 1.0;
-      true -> (Value / (MvtPointsBaseMod * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)))
+      true ->
+         (
+            Value
+            /
+            (MvtPointsBaseMod * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE))
+         )
    end.
 
 -spec proto_armor_auto_dodge
