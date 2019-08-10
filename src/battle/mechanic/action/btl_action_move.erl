@@ -369,9 +369,9 @@ get_path_cost_and_destination (CharacterIX, Character, Update, Path) ->
 get_movement_points (Action, Character) ->
    case btl_action:get_movement_points(Action) of
       -1 ->
-         shr_statistics:get_movement_points
+         shr_attributes:get_movement_points
          (
-            shr_character:get_statistics
+            shr_character:get_attributes
             (
                btl_character:get_base_character(Character)
             )

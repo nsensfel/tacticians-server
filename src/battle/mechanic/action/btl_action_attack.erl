@@ -18,14 +18,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec roll_precision_modifier
    (
-      shr_statistics:type(),
-      shr_statistics:type(),
+      shr_attributes:type(),
+      shr_attributes:type(),
       integer()
    )
    -> {float(), integer(), integer()}.
-roll_precision_modifier (Statistics, TargetStatistics, TargetLuck) ->
-   TargetDodges = shr_statistics:get_dodges(TargetStatistics),
-   Accuracy = shr_statistics:get_accuracy(Statistics),
+roll_precision_modifier (Attributes, TargetAttributes, TargetLuck) ->
+   TargetDodges = shr_attributes:get_dodges(TargetAttributes),
+   Accuracy = shr_attributes:get_accuracy(Attributes),
    MissChance = max(0, (TargetDodges - Accuracy)),
 
    {Roll, _IsSuccess, PositiveModifier, NegativeModifier} =
@@ -43,12 +43,12 @@ roll_precision_modifier (Statistics, TargetStatistics, TargetLuck) ->
 
 -spec roll_critical_modifier
    (
-      shr_statistics:type(),
+      shr_attributes:type(),
       integer()
    )
    -> {float(), integer(), integer()}.
-roll_critical_modifier (Statistics, Luck) ->
-   CriticalHitChance = shr_statistics:get_critical_hits(Statistics),
+roll_critical_modifier (Attributes, Luck) ->
+   CriticalHitChance = shr_attributes:get_critical_hits(Attributes),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(CriticalHitChance, Luck),
 
@@ -63,12 +63,12 @@ roll_critical_modifier (Statistics, Luck) ->
 
 -spec roll_parry
    (
-      shr_statistics:type(),
+      shr_attributes:type(),
       integer()
    )
    -> {boolean(), integer(), integer()}.
-roll_parry (DefenderStatistics, DefenderLuck) ->
-   DefenderParryChance = shr_statistics:get_parries(DefenderStatistics),
+roll_parry (DefenderAttributes, DefenderLuck) ->
+   DefenderParryChance = shr_attributes:get_parries(DefenderAttributes),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(DefenderParryChance, DefenderLuck),
 
@@ -265,12 +265,12 @@ effect_of_attack
    {ParryIsSuccessful, ParryPositiveLuckMod, ParryNegativeLuckMod} =
       case TargetCanParry of
          true ->
-            TargetStatistics =
-               shr_character:get_statistics
+            TargetAttributes =
+               shr_character:get_attributes
                (
                   btl_character:get_base_character(TargetCharacter)
                ),
-            roll_parry(TargetStatistics, TargetLuck);
+            roll_parry(TargetAttributes, TargetLuck);
 
          false -> {false, 0, 0}
       end,
@@ -282,20 +282,20 @@ effect_of_attack
       end,
 
    AttackerBaseCharacter = btl_character:get_base_character(Attacker),
-   AttackerStatistics = shr_character:get_statistics(AttackerBaseCharacter),
+   AttackerAttributes = shr_character:get_attributes(AttackerBaseCharacter),
    DefenderBaseCharacter = btl_character:get_base_character(S0Defender),
-   DefenderStatistics = shr_character:get_statistics(DefenderBaseCharacter),
+   DefenderAttributes = shr_character:get_attributes(DefenderBaseCharacter),
 
    {PrecisionModifier, PrecisionPositiveLuckMod, PrecisionNegativeLuckMod} =
       roll_precision_modifier
       (
-         AttackerStatistics,
-         DefenderStatistics,
+         AttackerAttributes,
+         DefenderAttributes,
          S0DefenderLuck
       ),
 
    {CriticalModifier, CriticalPositiveLuckMod, CriticalNegativeLuckMod} =
-      roll_critical_modifier(AttackerStatistics, S0AttackerLuck),
+      roll_critical_modifier(AttackerAttributes, S0AttackerLuck),
 
    Damage =
       shr_omnimods:get_attack_damage
@@ -303,7 +303,7 @@ effect_of_attack
          (
             PrecisionModifier
             * CriticalModifier
-            * shr_statistics:get_damage_modifier(AttackerStatistics)
+            * shr_attributes:get_damage_modifier(AttackerAttributes)
          ),
          shr_character:get_omnimods(AttackerBaseCharacter),
          shr_character:get_omnimods(DefenderBaseCharacter)
@@ -513,12 +513,12 @@ handle_attack_sequence
       )
    of
       true ->
-         Statistics =
-            shr_character:get_statistics
+         Attributes =
+            shr_character:get_attributes
             (
                btl_character:get_base_character(S0Character)
             ),
-         DoubleAttackChance = shr_statistics:get_double_hits(Statistics),
+         DoubleAttackChance = shr_attributes:get_double_hits(Attributes),
          {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
             shr_roll:percentage_with_luck(DoubleAttackChance, S0PlayerLuck),
 

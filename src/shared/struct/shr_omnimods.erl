@@ -10,7 +10,7 @@
 (
    omnimods,
    {
-      stamods :: mods(),
+      attmods :: mods(),
       atkmods :: mods(),
       defmods :: mods()
    }
@@ -45,7 +45,7 @@
 -export
 (
    [
-      apply_to_statistics/2,
+      apply_to_attributes/2,
       get_attack_damage/3
    ]
 ).
@@ -89,10 +89,10 @@ encode_mods (Mods) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Creation
 -spec new (list(entry()), list(entry()), list(entry())) -> type().
-new (StatisticMods, AttackMods, DefenseMods) ->
+new (AttributeMods, AttackMods, DefenseMods) ->
    #omnimods
    {
-      stamods = dict:from_list(StatisticMods),
+      attmods = dict:from_list(AttributeMods),
       atkmods = dict:from_list(AttackMods),
       defmods = dict:from_list(DefenseMods)
    }.
@@ -105,7 +105,7 @@ default () -> new([], [], []).
 merge (OmniA, OmniB) ->
    OmniA#omnimods
    {
-      stamods = merge_mods(OmniA#omnimods.stamods, OmniB#omnimods.stamods),
+      attmods = merge_mods(OmniA#omnimods.attmods, OmniB#omnimods.attmods),
       atkmods = merge_mods(OmniA#omnimods.atkmods, OmniB#omnimods.atkmods),
       defmods = merge_mods(OmniA#omnimods.defmods, OmniB#omnimods.defmods)
    }.
@@ -114,23 +114,23 @@ merge (OmniA, OmniB) ->
 apply_coefficient (Coef, Omnimods) ->
    Omnimods#omnimods
    {
-      stamods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.stamods),
+      attmods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.attmods),
       atkmods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.atkmods),
       defmods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.defmods)
    }.
 
--spec apply_to_statistics
+-spec apply_to_attributes
    (
       type(),
-      shr_statistics:type()
+      shr_attributes:type()
    )
-   -> shr_statistics:type().
-apply_to_statistics (Omnimods, Statistics) ->
+   -> shr_attributes:type().
+apply_to_attributes (Omnimods, Attributes) ->
    dict:fold
    (
-      fun shr_statistics:apply_mod/3,
-      Statistics,
-      Omnimods#omnimods.stamods
+      fun shr_attributes:apply_mod/3,
+      Attributes,
+      Omnimods#omnimods.attmods
    ).
 
 -spec get_attack_damage (float(), type(), type()) -> non_neg_integer().
@@ -196,7 +196,7 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
 encode (Omnimods) ->
    {
       [
-         {<<"stam">>, encode_mods(Omnimods#omnimods.stamods)},
+         {<<"attm">>, encode_mods(Omnimods#omnimods.attmods)},
          {<<"atkm">>, encode_mods(Omnimods#omnimods.atkmods)},
          {<<"defm">>, encode_mods(Omnimods#omnimods.defmods)}
       ]

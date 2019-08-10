@@ -1,11 +1,11 @@
--module(shr_statistics).
+-module(shr_attributes).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -record
 (
-   statistics,
+   attributes,
    {
       movement_points :: non_neg_integer(),
       health :: non_neg_integer(),
@@ -18,7 +18,7 @@
    }
 ).
 
--opaque type() :: #statistics{}.
+-opaque type() :: #attributes{}.
 
 -export_type([type/0]).
 
@@ -54,41 +54,41 @@
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec mod_movement_points (integer(), type()) -> type().
-mod_movement_points (Mod, Stats) ->
-   Stats#statistics
+mod_movement_points (Mod, Atts) ->
+   Atts#attributes
    {
-      movement_points = (Stats#statistics.movement_points + Mod)
+      movement_points = (Atts#attributes.movement_points + Mod)
    }.
 
 -spec mod_health (integer(), type()) -> type().
-mod_health (Mod, Stats) ->
-   Stats#statistics{ health = (Stats#statistics.health + Mod) }.
+mod_health (Mod, Atts) ->
+   Atts#attributes{ health = (Atts#attributes.health + Mod) }.
 
 -spec mod_dodges (integer(), type()) -> type().
-mod_dodges (Mod, Stats) ->
-   Stats#statistics{ dodges = (Stats#statistics.dodges + Mod) }.
+mod_dodges (Mod, Atts) ->
+   Atts#attributes{ dodges = (Atts#attributes.dodges + Mod) }.
 
 -spec mod_parries (integer(), type()) -> type().
-mod_parries (Mod, Stats) ->
-   Stats#statistics{ parries = (Stats#statistics.parries + Mod) }.
+mod_parries (Mod, Atts) ->
+   Atts#attributes{ parries = (Atts#attributes.parries + Mod) }.
 
 -spec mod_accuracy (integer(), type()) -> type().
-mod_accuracy (Mod, Stats) ->
-   Stats#statistics{ accuracy = (Stats#statistics.accuracy + Mod) }.
+mod_accuracy (Mod, Atts) ->
+   Atts#attributes{ accuracy = (Atts#attributes.accuracy + Mod) }.
 
 -spec mod_double_hits (integer(), type()) -> type().
-mod_double_hits (Mod, Stats) ->
-   Stats#statistics{ double_hits = (Stats#statistics.double_hits + Mod) }.
+mod_double_hits (Mod, Atts) ->
+   Atts#attributes{ double_hits = (Atts#attributes.double_hits + Mod) }.
 
 -spec mod_critical_hits (integer(), type()) -> type().
-mod_critical_hits (Mod, Stats) ->
-   Stats#statistics{ critical_hits = (Stats#statistics.critical_hits + Mod) }.
+mod_critical_hits (Mod, Atts) ->
+   Atts#attributes{ critical_hits = (Atts#attributes.critical_hits + Mod) }.
 
 -spec mod_damage_modifier (integer(), type()) -> type().
-mod_damage_modifier (Mod, Stats) ->
-   Stats#statistics
+mod_damage_modifier (Mod, Atts) ->
+   Atts#attributes
    {
-      damage_modifier = (Stats#statistics.damage_modifier + Mod)
+      damage_modifier = (Atts#attributes.damage_modifier + Mod)
    }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,35 +96,35 @@ mod_damage_modifier (Mod, Stats) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Accessors
 -spec get_movement_points (type()) -> non_neg_integer().
-get_movement_points (Stats) -> max(0, Stats#statistics.movement_points).
+get_movement_points (Atts) -> max(0, Atts#attributes.movement_points).
 
 -spec get_health (type()) -> non_neg_integer().
-get_health (Stats) -> max(1, Stats#statistics.health).
+get_health (Atts) -> max(1, Atts#attributes.health).
 
 -spec get_dodges (type()) -> non_neg_integer().
-get_dodges (Stats) -> max(0, Stats#statistics.dodges).
+get_dodges (Atts) -> max(0, Atts#attributes.dodges).
 
 -spec get_parries (type()) -> non_neg_integer().
-get_parries (Stats) -> max(0, Stats#statistics.parries).
+get_parries (Atts) -> max(0, Atts#attributes.parries).
 
 -spec get_accuracy (type()) -> non_neg_integer().
-get_accuracy (Stats) -> max(0, Stats#statistics.accuracy).
+get_accuracy (Atts) -> max(0, Atts#attributes.accuracy).
 
 -spec get_double_hits (type()) -> non_neg_integer().
-get_double_hits (Stats) -> max(0, Stats#statistics.double_hits).
+get_double_hits (Atts) -> max(0, Atts#attributes.double_hits).
 
 -spec get_critical_hits (type()) -> non_neg_integer().
-get_critical_hits (Stats) -> max(0, Stats#statistics.critical_hits).
+get_critical_hits (Atts) -> max(0, Atts#attributes.critical_hits).
 
 -spec get_damage_modifier (type()) -> non_neg_integer().
-get_damage_modifier (Stats) -> max(0, Stats#statistics.damage_modifier).
+get_damage_modifier (Atts) -> max(0, Atts#attributes.damage_modifier).
 
 -spec get_damage_multiplier (type()) -> float().
-get_damage_multiplier (Stats) -> (get_damage_modifier(Stats) / 100).
+get_damage_multiplier (Atts) -> (get_damage_modifier(Atts) / 100).
 
 -spec default () -> type().
 default () ->
-   #statistics
+   #attributes
    {
       movement_points = 0,
       health = 1,
@@ -137,11 +137,11 @@ default () ->
    }.
 
 -spec apply_mod (atom(), integer(), type()) -> type().
-apply_mod(mheal, Value, Stats) -> mod_health(Value, Stats);
-apply_mod(mpts, Value, Stats) -> mod_movement_points(Value, Stats);
-apply_mod(dodg, Value, Stats) -> mod_dodges(Value, Stats);
-apply_mod(pary, Value, Stats) -> mod_parries(Value, Stats);
-apply_mod(accu, Value, Stats) -> mod_accuracy(Value, Stats);
-apply_mod(dhit, Value, Stats) -> mod_double_hits(Value, Stats);
-apply_mod(crit, Value, Stats) -> mod_critical_hits(Value, Stats);
-apply_mod(dmgm, Value, Stats) -> mod_damage_modifier(Value, Stats).
+apply_mod(mheal, Value, Atts) -> mod_health(Value, Atts);
+apply_mod(mpts, Value, Atts) -> mod_movement_points(Value, Atts);
+apply_mod(dodg, Value, Atts) -> mod_dodges(Value, Atts);
+apply_mod(pary, Value, Atts) -> mod_parries(Value, Atts);
+apply_mod(accu, Value, Atts) -> mod_accuracy(Value, Atts);
+apply_mod(dhit, Value, Atts) -> mod_double_hits(Value, Atts);
+apply_mod(crit, Value, Atts) -> mod_critical_hits(Value, Atts);
+apply_mod(dmgm, Value, Atts) -> mod_damage_modifier(Value, Atts).

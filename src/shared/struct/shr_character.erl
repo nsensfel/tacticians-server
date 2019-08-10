@@ -24,7 +24,7 @@
       name :: binary(),
       equipment :: shr_equipment:type(),
       is_using_secondary :: boolean(),
-      statistics :: shr_statistics:type(),
+      attributes :: shr_attributes:type(),
       equipment_but_weapons_omnimods :: shr_omnimods:type(),
       extra_omnimods :: shr_omnimods:type(),
       omnimods :: shr_omnimods:type()
@@ -45,7 +45,7 @@
    [
       get_name/1,
       get_equipment/1,
-      get_statistics/1,
+      get_attributes/1,
       get_active_weapon/1,
       get_inactive_weapon/1,
       get_omnimods/1,
@@ -169,15 +169,15 @@ set_equipment (Eq, Char) when is_record(Char, shr_char) ->
          Char#shr_char.extra_omnimods
       ),
 
-   NewStatistics =
-      shr_omnimods:apply_to_statistics(NewOmnimods, shr_statistics:default()),
+   NewAttributes =
+      shr_omnimods:apply_to_attributes(NewOmnimods, shr_attributes:default()),
 
    Char#shr_char
    {
       equipment = Eq,
       equipment_but_weapons_omnimods = EquipmentButWeaponsOmnimods,
       omnimods = NewOmnimods,
-      statistics = NewStatistics
+      attributes = NewAttributes
    };
 set_equipment (EqRef, CharRef) when is_record(CharRef, shr_char_ref) ->
    CharRef#shr_char_ref{ equipment = EqRef }.
@@ -232,14 +232,14 @@ switch_weapons (Char) when is_record(Char, shr_char) ->
          ActiveWeaponOmnimods
       ),
 
-   NewStatistics =
-      shr_omnimods:apply_to_statistics(NewOmnimods, shr_statistics:default()),
+   NewAttributes =
+      shr_omnimods:apply_to_attributes(NewOmnimods, shr_attributes:default()),
 
    Char#shr_char
    {
       is_using_secondary = (not Char#shr_char.is_using_secondary),
       omnimods = NewOmnimods,
-      statistics = NewStatistics
+      attributes = NewAttributes
    };
 switch_weapons (Char) when is_record(Char, shr_char_ref) ->
    Char#shr_char_ref
@@ -284,8 +284,8 @@ get_inactive_weapon (#shr_char_ref{ is_using_secondary = B, equipment = E }) ->
       true -> shr_equipment:get_primary_weapon(E)
    end.
 
--spec get_statistics (type()) -> shr_statistics:type().
-get_statistics (Char) -> Char#shr_char.statistics.
+-spec get_attributes (type()) -> shr_attributes:type().
+get_attributes (Char) -> Char#shr_char.attributes.
 
 -spec get_omnimods (type()) -> shr_omnimods:type().
 get_omnimods (Char) -> Char#shr_char.omnimods.
@@ -303,14 +303,14 @@ set_extra_omnimods (O, Char) ->
          O
       ),
 
-   NewStatistics =
-      shr_omnimods:apply_to_statistics(NewOmnimods, shr_statistics:default()),
+   NewAttributes =
+      shr_omnimods:apply_to_attributes(NewOmnimods, shr_attributes:default()),
 
    Char#shr_char
    {
       extra_omnimods = O,
       omnimods = NewOmnimods,
-      statistics = NewStatistics
+      attributes = NewAttributes
    }.
 
 -spec resolve (shr_omnimods:type(), unresolved()) -> type().
@@ -330,8 +330,8 @@ resolve (LocalOmnimods, CharRef) ->
          LocalOmnimods
       ),
 
-   NewStatistics =
-      shr_omnimods:apply_to_statistics(NewOmnimods, shr_statistics:default()),
+   NewAttributes =
+      shr_omnimods:apply_to_attributes(NewOmnimods, shr_attributes:default()),
 
    #shr_char
    {
@@ -339,7 +339,7 @@ resolve (LocalOmnimods, CharRef) ->
       equipment_but_weapons_omnimods = EquipmentButWeaponsOmnimods,
       equipment = Eq,
       is_using_secondary = CharRef#shr_char_ref.is_using_secondary,
-      statistics = NewStatistics,
+      attributes = NewAttributes,
       omnimods = NewOmnimods,
       extra_omnimods = LocalOmnimods
    }.

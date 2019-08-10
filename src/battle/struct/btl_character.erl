@@ -111,10 +111,10 @@
    -> {boolean(), integer()}.
 handle_max_health_change (OldBaseChar, NewBaseChar, OldHealth) ->
    OldMaxHealth =
-      shr_statistics:get_health(shr_character:get_statistics(OldBaseChar)),
+      shr_attributes:get_health(shr_character:get_attributes(OldBaseChar)),
 
    NewMaxHealth =
-      shr_statistics:get_health(shr_character:get_statistics(NewBaseChar)),
+      shr_attributes:get_health(shr_character:get_attributes(NewBaseChar)),
 
    case (OldMaxHealth == NewMaxHealth) of
       true -> {false, OldHealth};
@@ -427,14 +427,14 @@ new
    Location,
    Base
 ) ->
-   Statistics = shr_character:get_statistics(Base),
+   Attributes = shr_character:get_attributes(Base),
 
    #btl_char
    {
       player_ix = PlayerIX,
       rank = Rank,
       location = Location,
-      current_health = shr_statistics:get_health(Statistics),
+      current_health = shr_attributes:get_health(Attributes),
       is_active = (PlayerIX == 0),
       is_defeated = false,
       base = Base
