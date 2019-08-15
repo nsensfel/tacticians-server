@@ -27,7 +27,7 @@ YAWS ?= yaws
 YAWS_OPTS ?= $(ERL_NAME_VS_SNAME) query_node -erlarg '$(ERL_OPTS)'
 
 DIALYZER ?= dialyzer
-DIALYZER_OPTS ?=
+DIALYZER_OPTS ?= -I $(INCLUDE_DIR)
 
 M4 ?= m4
 M4_OPTS ?=
