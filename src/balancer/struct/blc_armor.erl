@@ -2,6 +2,33 @@
 
 -include("../../../include/base_attributes.hrl").
 
+-define
+(
+   ATTRIBUTE_ARMOR_POINTS,
+   (
+      (
+         ?ATTRIBUTE_DAMAGE_MODIFIER_COST
+         * (?ATTRIBUTE_DAMAGE_MODIFIER_BASE - ?ATTRIBUTE_DAMAGE_MODIFIER_MIN)
+      )
+      +
+      (
+         ?ATTRIBUTE_MOVEMENT_POINTS_COST
+         * (?ATTRIBUTE_MOVEMENT_POINTS_BASE - ?ATTRIBUTE_MOVEMENT_POINTS_MIN)
+      )
+      +
+      (
+         ?ATTRIBUTE_HEALTH_COST
+         * (?ATTRIBUTE_HEALTH_BASE - ?ATTRIBUTE_HEALTH_MIN)
+      )
+      +
+      (
+         ?ATTRIBUTE_DEFENSE_SCORE_COST
+         * (?ATTRIBUTE_DEFENSE_SCORE_BASE - ?ATTRIBUTE_DEFENSE_SCORE_MIN)
+      )
+      + (?ATTRIBUTE_DODGE_COST * (?ATTRIBUTE_DODGE_BASE - ?ATTRIBUTE_DODGE_MIN))
+   )
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,77 +42,37 @@
       damage_modifier :: non_neg_integer(),
       dodge :: non_neg_integer(),
       defense :: list(defense_entry()),
+      defense_coef :: list(defense_entry()),
       defense_score :: non_neg_integer()
    }
 ).
 
--record
-(
-   factors,
-   {
-      health :: float(),
-      damage_modifier :: float(),
-      dodge :: float(),
-      defense :: float()
-   }
-).
-
 -opaque proto_armor() :: #proto_armor{}.
--opaque factors() :: #factors{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type([proto_armor/0, factors/0]).
+-export_type([proto_armor/0]).
 
 % FIXME: quick debug
 -compile(export_all).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%% Generic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_relative_attribute
+-spec sort_defense_entries (list(defense_entry())) -> list(defense_entry()).
+sort_defense_entries (Entries) ->
+   lists:sort
    (
-      non_neg_integer(),
-      non_neg_integer(),
-      non_neg_integer()
-   )
-   -> non_neg_integer().
-get_relative_attribute (Value, BaseValue, BaseTarget) ->
-   (
-      BaseTarget
-      -
-      math:floor((Value - BaseValue) * (BaseTarget / BaseValue))
+      fun ({_NameA, ValueA}, {_NameB, ValueB}) ->
+         (ValueA >= ValueB)
+      end,
+      Entries
    ).
 
--spec get_modifier_from_movement_points
-   (
-      non_neg_integer(),
-      non_neg_integer(),
-      float()
-   )
-   -> integer().
-get_modifier_from_movement_points (BaseValue, MovementPoints, Factor) ->
-   (
-      (MovementPoints - ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
-      * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
-      * Factor
-      * -1
-   ).
-
-%%%% Defense %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec calc_defense_score (list(defense_entry())) -> non_neg_integer().
 calc_defense_score (Defense) ->
-   DescSortedDefense =
-      lists:sort
-      (
-         fun ({_NameA, ValueA}, {_NameB, ValueB}) ->
-            (ValueA >= ValueB)
-         end,
-         Defense
-      ),
-
    {_LastIndex, Result} =
       lists:foldl
       (
@@ -93,7 +80,7 @@ calc_defense_score (Defense) ->
             {(Index + 1), (Current + (Index * ValueA))}
          end,
          {1, 0},
-         DescSortedDefense
+         Defense
       ),
 
    Result.
@@ -110,14 +97,13 @@ apply_defense_score_modifier (AbsModifier, Mod, S0DescSortedDefense) ->
       lists:mapfoldl
       (
          fun ({Name, S0Value}, {Index, RemainingModifier}) ->
-            case ((RemainingModifier > 0) and (S0Value > 0)) of
+            case ((RemainingModifier >= Index) and (S0Value > 0)) of
                true ->
-                  S1Value = (S0Value + Mod),
                   {
-                     {Name, S1Value},
+                     {Name, (S0Value + Mod)},
                      {
                         (Index + 1),
-                        RemainingModifier - (Index * S1Value)
+                        RemainingModifier - Index
                      }
                   };
 
@@ -139,273 +125,164 @@ apply_defense_score_modifier (AbsModifier, Mod, S0DescSortedDefense) ->
          )
    end.
 
-%%%% Movement Points %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_maximum_movement_points_with_factors
+-spec generate_defense_worth
    (
       non_neg_integer(),
-      non_neg_integer(),
-      float()
+      list(defense_entry())
    )
-   -> non_neg_integer().
-get_maximum_movement_points_with_factors (Value, BaseValue, Factor) ->
-   case (Factor == 0) of
-      true -> (?BASE_MOVEMENT_POINTS_ATTRIBUTE * 3);
-      false ->
-         (
-            (
-               Value
-               /
-               (
-                  Factor
-                  * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE)
-               )
-            )
-         )
-   end.
-
--spec get_maximum_factor_with_movement_points
-   (
-      non_neg_integer(),
-      non_neg_integer(),
-      non_neg_integer()
-   )
-   -> float().
-get_maximum_factor_with_movement_points (Value, BaseValue, MovementPoints) ->
-   MvtPointsBaseMod = (MovementPoints - ?BASE_MOVEMENT_POINTS_ATTRIBUTE),
-
-   case (MvtPointsBaseMod > 0) of
-      false -> 1.0;
+   -> list(defense_entry()).
+generate_defense_worth (TargetScore, SortedRatios) ->
+   [{T0, V0}, {T1, V1}, {T2, V2}] = SortedRatios,
+   Distribution = ((V0 + 2 * V1 + 3 * V2) / 100),
+   Base = TargetScore / Distribution,
+   UnderperformingDefense =
+      [
+         {T0, trunc(Base * (V0/100))},
+         {T1, trunc(Base * (V1/100))},
+         {T2, trunc(Base * (V2/100))}
+      ],
+   MissingScore = TargetScore - calc_defense_score(UnderperformingDefense),
+   case (MissingScore >= 0) of
       true ->
+         apply_defense_score_modifier
          (
-            Value
-            /
-            (MvtPointsBaseMod * (BaseValue / ?BASE_MOVEMENT_POINTS_ATTRIBUTE))
+            MissingScore,
+            1,
+            UnderperformingDefense
+         );
+
+      false ->
+         apply_defense_score_modifier
+         (
+            (-1 * MissingScore),
+            -1,
+            UnderperformingDefense
          )
    end.
-
--spec proto_armor_auto_dodge
-   (
-      list(defense_entry()),
-      non_neg_integer(),
-      non_neg_integer()
-   )
-   -> proto_armor().
-proto_armor_auto_dodge (Defense, Health, DamageModifier) ->
-   DefenseScore = calc_defense_score(Defense),
-
-   Dodge =
-      get_relative_attribute
-      (
-         DefenseScore,
-         ?BASE_DEFENSE_SCORE,
-         ?BASE_DODGE_ATTRIBUTE
-      ),
-
-   #proto_armor
-   {
-      health = Health,
-      damage_modifier = DamageModifier,
-      dodge = Dodge,
-      defense = Defense,
-      defense_score = DefenseScore
-   }.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_maximum_damage_modifier () -> non_neg_integer().
-get_maximum_damage_modifier () -> (?BASE_DAMAGE_MODIFIER_ATTRIBUTE * 2).
-
--spec get_maximum_movement_points () -> non_neg_integer().
-get_maximum_movement_points () -> (?BASE_MOVEMENT_POINTS_ATTRIBUTE * 2).
-
--spec get_maximum_health () -> non_neg_integer().
-get_maximum_health () -> (?BASE_HEALTH_ATTRIBUTE * 2).
-
--spec get_maximum_dodge () -> non_neg_integer().
-get_maximum_dodge () -> (?BASE_DODGE_ATTRIBUTE * 2).
-
--spec get_maximum_defense_score () -> non_neg_integer().
-get_maximum_defense_score () -> (?BASE_DEFENSE_SCORE * 2).
-
-
--spec get_maximum_movement_points
-   (
-      factors(),
-      proto_armor()
-   )
-   -> non_neg_integer().
-get_maximum_movement_points (Factor, ProtoArmor) ->
-   lists:min
-   (
-      [
-         get_maximum_movement_points_with_factors
-         (
-            ProtoArmor#proto_armor.health,
-            ?BASE_HEALTH_ATTRIBUTE,
-            Factor#factors.health
-         ),
-         get_maximum_movement_points_with_factors
-         (
-            ProtoArmor#proto_armor.damage_modifier,
-            ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
-            Factor#factors.damage_modifier
-         ),
-         get_maximum_movement_points_with_factors
-         (
-            ProtoArmor#proto_armor.defense_score,
-            ?BASE_DEFENSE_SCORE,
-            Factor#factors.defense
-         ),
-         get_maximum_movement_points_with_factors
-         (
-            ProtoArmor#proto_armor.dodge,
-            ?BASE_DODGE_ATTRIBUTE,
-            Factor#factors.dodge
-         )
-      ]
-   ).
-
--spec get_maximum_factors (non_neg_integer(), proto_armor()) -> factors().
-get_maximum_factors (MovementPoints, ProtoArmor) ->
-   #factors
-   {
-      health =
-         get_maximum_factor_with_movement_points
-         (
-            ProtoArmor#proto_armor.health,
-            ?BASE_HEALTH_ATTRIBUTE,
-            MovementPoints
-         ),
-      damage_modifier =
-         get_maximum_factor_with_movement_points
-         (
-            ProtoArmor#proto_armor.damage_modifier,
-            ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
-            MovementPoints
-         ),
-      dodge =
-         get_maximum_factor_with_movement_points
-         (
-            ProtoArmor#proto_armor.dodge,
-            ?BASE_DODGE_ATTRIBUTE,
-            MovementPoints
-         ),
-      defense =
-         get_maximum_factor_with_movement_points
-         (
-            ProtoArmor#proto_armor.defense_score,
-            ?BASE_DEFENSE_SCORE,
-            MovementPoints
-         )
-   }.
-
--spec proto_armor_through_health
-   (
-      list(defense_entry()),
-      non_neg_integer()
-   )
-   -> proto_armor().
-proto_armor_through_health (Defense, Health) ->
-   DamageModifier =
-      get_relative_attribute
-      (
-         Health,
-         ?BASE_HEALTH_ATTRIBUTE,
-         ?BASE_DAMAGE_MODIFIER_ATTRIBUTE
-      ),
-
-   proto_armor_auto_dodge(Defense, Health, DamageModifier).
-
--spec proto_armor_through_damage_modifier
-   (
-      list(defense_entry()),
-      non_neg_integer()
-   )
-   -> proto_armor().
-proto_armor_through_damage_modifier (Defense, DamageModifier) ->
-   Health =
-      get_relative_attribute
-      (
-         DamageModifier,
-         ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
-         ?BASE_HEALTH_ATTRIBUTE
-      ),
-
-   proto_armor_auto_dodge(Defense, Health, DamageModifier).
-
--spec finalize_to_omnimods
+-spec increase_health_by
    (
       non_neg_integer(),
-      factors(),
       proto_armor()
    )
-   -> shr_omnimods:type().
-finalize_to_omnimods (MovementPoints, Factors, ProtoArmor) ->
-   HealthMod =
-      get_modifier_from_movement_points
-      (
-         ?BASE_HEALTH_ATTRIBUTE,
-         MovementPoints,
-         Factors#factors.health
-      ),
-
-   DamageModifierMod =
-      get_modifier_from_movement_points
-      (
-         ?BASE_DAMAGE_MODIFIER_ATTRIBUTE,
-         MovementPoints,
-         Factors#factors.damage_modifier
-      ),
-
-   DodgeMod =
-      get_modifier_from_movement_points
-      (
-         ?BASE_DODGE_ATTRIBUTE,
-         MovementPoints,
-         Factors#factors.dodge
-      ),
-
-   DefenseMod =
-      get_modifier_from_movement_points
-      (
-         ?BASE_DEFENSE_SCORE,
-         MovementPoints,
-         Factors#factors.defense
-      ),
-
-   DefenseActualMod =
-      case (DefenseMod >= 0) of
-         true -> 1;
-         false -> -1
-      end,
-
-   shr_omnimods:new
-   (
-      [
-         {movement_points, MovementPoints},
+   -> {proto_armor(), non_neg_integer()}.
+increase_health_by (Amount, Armor) ->
+   NewHealth = Armor#proto_armor.health + Amount,
+   case (NewHealth > ?ATTRIBUTE_HEALTH_MAX) of
+      true ->
          {
-            health,
-            shr_math_util:ceil(ProtoArmor#proto_armor.health + HealthMod)
-         },
-         {
-            damage_modifier,
-            shr_math_util:ceil
+            Armor#proto_armor{ health = ?ATTRIBUTE_HEALTH_MAX },
             (
-               ProtoArmor#proto_armor.damage_modifier
-               + DamageModifierMod
+               (?ATTRIBUTE_HEALTH_MAX - Armor#proto_armor.health)
+               * ?ATTRIBUTE_HEALTH_COST
             )
-         },
+         };
+
+      false ->
          {
-            dodge,
-            shr_math_util:ceil(ProtoArmor#proto_armor.dodge + DodgeMod)
+            Armor#proto_armor{ health = NewHealth },
+            (Amount * ?ATTRIBUTE_HEALTH_COST)
          }
-      ],
-      [],
-      apply_defense_score_modifier
-      (
-         abs(DefenseMod),
-         DefenseActualMod,
-         ProtoArmor#proto_armor.defense
-      )
-   ).
+   end.
+
+-spec increase_damage_modifier_by
+   (
+      non_neg_integer(),
+      proto_armor()
+   )
+   -> {proto_armor(), non_neg_integer()}.
+increase_damage_modifier_by (Amount, Armor) ->
+   NewDamageModifier = Armor#proto_armor.damage_modifier + Amount,
+   case (NewDamageModifier > ?ATTRIBUTE_DAMAGE_MODIFIER_MAX) of
+      true ->
+         {
+            Armor#proto_armor
+            {
+               damage_modifier = ?ATTRIBUTE_DAMAGE_MODIFIER_MAX
+            },
+            (
+               (
+                  ?ATTRIBUTE_DAMAGE_MODIFIER_MAX
+                  - Armor#proto_armor.damage_modifier
+               )
+               * ?ATTRIBUTE_DAMAGE_MODIFIER_COST
+            )
+         };
+
+      false ->
+         {
+            Armor#proto_armor{ damage_modifier = NewDamageModifier },
+            (Amount * ?ATTRIBUTE_DAMAGE_MODIFIER_COST)
+         }
+   end.
+
+-spec increase_dodge_chance_by
+   (
+      non_neg_integer(),
+      proto_armor()
+   )
+   -> {proto_armor(), non_neg_integer()}.
+increase_dodge_chance_by (Amount, Armor) ->
+   NewDodgeChance = Armor#proto_armor.dodge + Amount,
+   case (NewDodgeChance > ?ATTRIBUTE_DODGE_CHANCE_MAX) of
+      true ->
+         {
+            Armor#proto_armor{ dodge = ?ATTRIBUTE_DODGE_CHANCE_MAX },
+            (
+               (?ATTRIBUTE_DODGE_CHANCE_MAX - Armor#proto_armor.dodge)
+               * ?ATTRIBUTE_DODGE_CHANCE_COST
+            )
+         };
+
+      false ->
+         {
+            Armor#proto_armor{ dodge = NewDodgeChance },
+            (Amount * ?ATTRIBUTE_DODGE_CHANCE_COST)
+         }
+   end.
+
+-spec increase_defense_score_by
+   (
+      non_neg_integer(),
+      proto_armor()
+   )
+   -> {proto_armor(), non_neg_integer()}.
+increase_defense_score_by (Amount, Armor) ->
+   NewDefenseScore = Armor#proto_armor.defense_score + Amount,
+   case (NewDefenseScore > ?ATTRIBUTE_DEFENSE_SCORE_MAX) of
+      true ->
+         {
+            Armor#proto_armor
+            {
+               defense_score = ?ATTRIBUTE_DEFENSE_SCORE_MAX,
+               defense =
+                  generate_defense_worth
+                  (
+                     NewDefenseScore,
+                     Armor#proto_armor.defense_coef
+                  )
+            },
+            (
+               (?ATTRIBUTE_DEFENSE_SCORE_MAX - Armor#proto_armor.defense_score)
+               * Amount
+            )
+         };
+
+      false ->
+         {
+            Armor#proto_armor
+            {
+               defense_score = NewDefenseScore,
+               defense =
+                  generate_defense_worth
+                  (
+                     NewDefenseScore,
+                     Armor#proto_armor.defense_coef
+                  )
+            },
+            (Amount * ?ATTRIBUTE_DEFENSE_SCORE_COST)
+         }
+   end.
