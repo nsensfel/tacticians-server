@@ -1,6 +1,6 @@
 -module(blc_armor).
 
--include("../../../include/base_attributes.hrl").
+-include("base_attributes.hrl").
 
 -define
 (

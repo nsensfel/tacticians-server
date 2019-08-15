@@ -18,7 +18,7 @@ ERL_NAME_VS_SNAME ?= -sname
 
 ## Binaries
 ERLC ?= erlc
-ERLC_OPTS ?=
+ERLC_OPTS ?= -I $(INCLUDE_DIR)
 
 ERL ?= erl
 ERL_OPTS ?= -connect_all false -pa `find $(BIN_DIR) -type d`
