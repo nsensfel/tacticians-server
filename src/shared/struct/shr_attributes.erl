@@ -98,11 +98,17 @@ mod_accuracy (Mod, Atts) ->
 
 -spec mod_double_hit_chance (integer(), type()) -> type().
 mod_double_hit_chance (Mod, Atts) ->
-   Atts#attributes{ double_hit_chance = (Atts#attributes.double_hit_chance + Mod) }.
+   Atts#attributes
+   {
+      double_hit_chance = (Atts#attributes.double_hit_chance + Mod)
+   }.
 
 -spec mod_critical_hit_chance (integer(), type()) -> type().
 mod_critical_hit_chance (Mod, Atts) ->
-   Atts#attributes{ critical_hit_chance = (Atts#attributes.critical_hit_chance + Mod) }.
+   Atts#attributes
+   {
+      critical_hit_chance = (Atts#attributes.critical_hit_chance + Mod)
+   }.
 
 -spec mod_damage_modifier (integer(), type()) -> type().
 mod_damage_modifier (Mod, Atts) ->

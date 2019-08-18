@@ -1,6 +1,7 @@
 -module(blc_armor).
 
 -include("tacticians/attributes.hrl").
+-include("tacticians/damage_types.hrl").
 
 -define
 (
@@ -75,7 +76,8 @@
 (
    [
       new/1,
-      get_remaining_points/1
+      get_remaining_points/1,
+      generate/1
    ]
 ).
 
@@ -122,6 +124,17 @@ increase_attribute_by (Attribute, S0Amount, Armor) ->
                   )
             }
          }
+   end.
+
+-spec get_max_attribute_ratio (shr_attributes:meta_enum()) -> float().
+get_max_attribute_ratio (Attribute) ->
+   {AttMin, _AttDef, AttMax, AttCost} = blc_attribute:get_info(Attribute),
+
+   Contrib = (AttCost * (AttMax - AttMin)),
+
+   case (Contrib == 0) of
+      true -> 0.0;
+      false -> (?SPENDABLE_ARMOR_POINTS / Contrib) * 100.0
    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,3 +326,122 @@ increase_defense_score_for (GivenPoints, Armor) ->
 
 -spec get_remaining_points (type()) -> non_neg_integer().
 get_remaining_points (Armor) -> Armor#proto_armor.remaining_points.
+
+-spec generate (non_neg_integer()) -> list(type()).
+generate (Step) ->
+   MaxDamageModifier = get_max_attribute_ratio(?ATTRIBUTE_DAMAGE_MODIFIER),
+   MaxDodgeChance = get_max_attribute_ratio(?ATTRIBUTE_DODGE_CHANCE),
+   MaxMovementPoints = get_max_attribute_ratio(?ATTRIBUTE_MOVEMENT_POINTS),
+   MaxHealth = get_max_attribute_ratio(?ATTRIBUTE_HEALTH),
+   MaxDefenseScore = get_max_attribute_ratio(?ATTRIBUTE_DEFENSE_SCORE),
+
+   Distributions = blc_distribution:generate(5, Step),
+   ValidDistributions =
+      lists:filtermap
+      (
+         fun
+         (
+            [
+               DamageModifier,
+               DodgeChance,
+               MovementPoints,
+               Health,
+               DefenseScore
+            ]
+         ) ->
+            if
+               (DamageModifier > MaxDamageModifier) -> false;
+               (DodgeChance > MaxDodgeChance) -> false;
+               (MovementPoints > MaxMovementPoints) -> false;
+               (Health > MaxHealth) -> false;
+               (DefenseScore > MaxDefenseScore) -> false;
+               true ->
+                  {
+                     true,
+                     [
+                        {?ATTRIBUTE_DAMAGE_MODIFIER, DamageModifier},
+                        {?ATTRIBUTE_DODGE_CHANCE, DodgeChance},
+                        {?ATTRIBUTE_MOVEMENT_POINTS, MovementPoints},
+                        {?ATTRIBUTE_HEALTH, Health},
+                        {?ATTRIBUTE_DEFENSE_SCORE, DefenseScore}%,
+%                        {
+%                           extra,
+%                           (
+%                              100
+%                              -
+%                              (
+%                                 DamageModifier
+%                                 + DodgeChance
+%                                 + MovementPoints
+%                                 + Health
+%                                 + DefenseScore
+%                              )
+%                           )
+%                        }
+                     ]
+                  }
+            end
+         end,
+         Distributions
+      ),
+
+   BaseArmorsCoefs = [{?DAMAGE_TYPE_SLASH, 100}],
+
+   BaseArmor = new(BaseArmorsCoefs),
+   BaseArmors =
+      lists:map
+      (
+         fun (Distribution) ->
+            PointsUsed =
+               lists:map
+               (
+                  fun ({Attribute, Percent}) ->
+                     {
+                        Attribute,
+                        trunc((?SPENDABLE_ARMOR_POINTS * Percent) / 100)
+                     }
+                  end,
+                  Distribution
+               ),
+
+            FinalArmor =
+               lists:foldl
+               (
+                  fun ({Attribute, Points}, Armor) ->
+                     case Attribute of
+                        ?ATTRIBUTE_DEFENSE_SCORE ->
+                           {ok, NewArmor} =
+                              increase_defense_score_for(Points, Armor),
+                           NewArmor;
+
+                        ?ATTRIBUTE_DODGE_CHANCE ->
+                           {ok, NewArmor} =
+                              increase_dodge_chance_for(Points, Armor),
+                           NewArmor;
+
+                        ?ATTRIBUTE_HEALTH ->
+                           {ok, NewArmor} =
+                              increase_health_for(Points, Armor),
+                           NewArmor;
+
+                        ?ATTRIBUTE_DAMAGE_MODIFIER ->
+                           {ok, NewArmor} =
+                              increase_damage_modifier_for(Points, Armor),
+                           NewArmor;
+
+                        ?ATTRIBUTE_MOVEMENT_POINTS ->
+                           {ok, NewArmor} =
+                              increase_movement_points_for(Points, Armor),
+                           NewArmor
+                     end
+                  end,
+                  BaseArmor,
+                  PointsUsed
+               ),
+
+            FinalArmor
+         end,
+         ValidDistributions
+      ),
+
+   BaseArmors.

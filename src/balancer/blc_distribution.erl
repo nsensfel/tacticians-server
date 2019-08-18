@@ -1,4 +1,5 @@
--module(shr_lists_util).
+-module(blc_distribution).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,50 +10,50 @@
 -export
 (
    [
-      %%% Gentoo hasn't marked Erlang/OTP 21 as stable yet, but I'd like to
-      %%% use this function.
-      %%% TODO: remove once lists:search/2 is available.
-      search/2,
-      product/3
+      generate/2
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec product_internals
+-spec generate_internals
    (
-      list(A),
-      list(B),
-      fun((A, B) -> C),
-      list(C)
+      non_neg_integer(),
+      list(list(0..100)),
+      list(0..100)
    )
-   -> list(C).
-product_internals ([], _ListB, _Fun, Result) ->
-   Result;
-product_internals ([A|Next], ListB, Fun, Result) ->
-   product_internals
+   -> list(list(0..100)).
+generate_internals (0, CurrentResult, _Sequence) ->
+   CurrentResult;
+generate_internals (N, CurrentResult, Sequence) ->
+   generate_internals
    (
-      Next,
-      ListB,
-      Fun,
+      (N - 1),
+      lists:filter
       (
-         lists:map(fun (B) -> Fun(A, B) end, ListB)
-         ++ Result
-      )
+         fun (E) -> (lists:sum(E) =< 100) end,
+         shr_lists_util:product
+         (
+            fun (L, E) ->
+               [E|L]
+            end,
+            CurrentResult,
+            Sequence
+         )
+      ),
+      Sequence
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Copy/pasted from the Erlang OTP's source code...
-search (Pred, [Hd|Tail]) ->
-   case Pred(Hd) of
-      true -> {value, Hd};
-      false -> search(Pred, Tail)
-   end;
-search (Pred, []) when is_function(Pred, 1) ->
-   false.
-
--spec product (fun((A, B) -> C), list(A), list(B)) -> list(C).
-product (Fun, ListA, ListB) ->
-   product_internals(ListA, ListB, Fun, []).
+-spec generate (non_neg_integer(), 0..100) -> list(list(0..100)).
+generate (0, _Step) -> [];
+generate (Elements, Step) ->
+   Sequence = lists:seq(0, 100, Step),
+   generate_internals
+   (
+      (Elements - 1),
+      lists:map(fun (E) -> [E] end, Sequence),
+      Sequence
+   ).
