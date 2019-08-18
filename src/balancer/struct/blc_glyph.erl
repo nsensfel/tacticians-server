@@ -16,8 +16,8 @@
       remaining_positive_points :: non_neg_integer(),
       points_balance :: integer(),
       omnimods :: shr_omnimods:type(),
-      defense_coef :: blc_damage_type:coefficient(),
-      attack_coef :: blc_damage_type:coefficient(),
+      defense_coef :: list(blc_damage_type:coefficient()),
+      attack_coef :: list(blc_damage_type:coefficient()),
       defense_score :: non_neg_integer(),
       defense_sign :: integer(),
       attack_score :: non_neg_integer(),
@@ -156,7 +156,8 @@ increase_attribute_by (?ATTRIBUTE_DEFENSE_SCORE, S0Amount, Glyph) ->
 increase_attribute_by (Attribute, S0Amount, Glyph) ->
    {_AttMin, _AttDef, AttMax, AttCost} = blc_attribute:get_info(Attribute),
    CurrentOmnimods = Glyph#proto_glyph.omnimods,
-   CurrentValue = shr_omnimods:get_attribute(Attribute, CurrentOmnimods),
+   CurrentValue =
+      shr_omnimods:get_attribute_modifier(Attribute, CurrentOmnimods),
 
    S1Amount =
       case ((CurrentValue + S0Amount) > AttMax) of
@@ -177,7 +178,7 @@ increase_attribute_by (Attribute, S0Amount, Glyph) ->
             Glyph#proto_glyph
             {
                omnimods =
-                  shr_omnimods:mod_attribute
+                  shr_omnimods:mod_attribute_modifier
                   (
                      Attribute,
                      S1Amount,
@@ -274,9 +275,10 @@ decrease_attribute_by (?ATTRIBUTE_DEFENSE_SCORE, Amount, Glyph) ->
 decrease_attribute_by (Attribute, Amount, Glyph) ->
    {_AttMin, _AttDef, _AttMax, AttCost} = blc_attribute:get_info(Attribute),
    CurrentOmnimods = Glyph#proto_glyph.omnimods,
-   CurrentValue = shr_omnimods:get_attribute(Attribute, CurrentOmnimods),
+   CurrentValue =
+      shr_omnimods:get_attribute_modifier(Attribute, CurrentOmnimods),
 
-   Cost = ((Amount * AttCost) * ?NEGATIVE_POINTS_MULTIPLIER),
+   Cost = trunc((Amount * AttCost) * ?NEGATIVE_POINTS_MULTIPLIER),
 
    if
       (CurrentValue > 0) -> {error, incompatible};
@@ -287,7 +289,7 @@ decrease_attribute_by (Attribute, Amount, Glyph) ->
             Glyph#proto_glyph
             {
                omnimods =
-                  shr_omnimods:mod_attribute
+                  shr_omnimods:mod_attribute_modifier
                   (
                      Attribute,
                      (-1 * Amount),
@@ -407,7 +409,7 @@ new (AttackCoefficients, DefenseCoefficients) ->
    {
       remaining_positive_points = ?SPENDABLE_GLYPH_POINTS,
       points_balance = 0,
-      omnimods = omnimods:new(),
+      omnimods = shr_omnimods:new(),
       attack_coef = blc_damage_type:sort_entries(AttackCoefficients),
       attack_score = 0,
       attack_sign = 0,

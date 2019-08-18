@@ -24,7 +24,7 @@
    )
    -> {float(), integer(), integer()}.
 roll_precision_modifier (Attributes, TargetAttributes, TargetLuck) ->
-   TargetDodges = shr_attributes:get_dodges(TargetAttributes),
+   TargetDodges = shr_attributes:get_dodge_chance(TargetAttributes),
    Accuracy = shr_attributes:get_accuracy(Attributes),
    MissChance = max(0, (TargetDodges - Accuracy)),
 
@@ -48,7 +48,7 @@ roll_precision_modifier (Attributes, TargetAttributes, TargetLuck) ->
    )
    -> {float(), integer(), integer()}.
 roll_critical_modifier (Attributes, Luck) ->
-   CriticalHitChance = shr_attributes:get_critical_hits(Attributes),
+   CriticalHitChance = shr_attributes:get_critical_hit_chance(Attributes),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(CriticalHitChance, Luck),
 
@@ -68,7 +68,7 @@ roll_critical_modifier (Attributes, Luck) ->
    )
    -> {boolean(), integer(), integer()}.
 roll_parry (DefenderAttributes, DefenderLuck) ->
-   DefenderParryChance = shr_attributes:get_parries(DefenderAttributes),
+   DefenderParryChance = shr_attributes:get_parry_chance(DefenderAttributes),
    {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(DefenderParryChance, DefenderLuck),
 
@@ -518,7 +518,7 @@ handle_attack_sequence
             (
                btl_character:get_base_character(S0Character)
             ),
-         DoubleAttackChance = shr_attributes:get_double_hits(Attributes),
+         DoubleAttackChance = shr_attributes:get_double_hit_chance(Attributes),
          {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
             shr_roll:percentage_with_luck(DoubleAttackChance, S0PlayerLuck),
 

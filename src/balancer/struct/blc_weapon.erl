@@ -7,15 +7,9 @@
 -define(WEAPON_ATTRIBUTE_RANGE_DEFAULT,   0).
 -define(WEAPON_ATTRIBUTE_RANGE_COST,      1).
 
--define(WEAPON_ATTRIBUTE_TYPE_MIN,     0).
--define(WEAPON_ATTRIBUTE_TYPE_MAX,     1).
--define(WEAPON_ATTRIBUTE_TYPE_DEFAULT, 0).
--define(WEAPON_ATTRIBUTE_TYPE_COST,    100).
-
-
 -define
 (
-   SPENDABLE_WEAPON_POINTS,
+   BASE_SPENDABLE_WEAPON_POINTS,
    (
       (
          ?ATTRIBUTE_ACCURACY_COST
@@ -52,42 +46,57 @@
    )
 ).
 
+-define
+(
+   MELEE_SPENDABLE_WEAPON_POINTS,
+   (
+      ?BASE_SPENDABLE_WEAPON_POINTS
+      +
+      (
+         ?ATTRIBUTE_PARRY_CHANCE_COST
+         * (?ATTRIBUTE_PARRY_CHANCE_DEFAULT - ?ATTRIBUTE_PARRY_CHANCE_MIN)
+      )
+   )
+).
+
+-define(RANGED_SPENDABLE_WEAPON_POINTS, ?BASE_SPENDABLE_WEAPON_POINTS).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-type range_type() :: (melee | ranged).
+
 -record
 (
    proto_weapon,
    {
       range :: non_neg_integer(),
-      type :: non_neg_integer(),
-      accuracy :: non_neg_integer(),
-      critical_hit_chance :: non_neg_integer(),
-      double_hit_chance :: non_neg_integer(),
-      attack :: list(blc_damage_type:entry()),
+      range_type :: range_type(),
+      omnimods :: shr_omnimods:type(),
       attack_coef :: list(blc_damage_type:coefficient()),
-      attack_score :: non_neg_integer()
+      attack_score :: non_neg_integer(),
+      remaining_points :: non_neg_integer()
    }
 ).
 
--opaque proto_weapon() :: #proto_weapon{}.
+-opaque type() :: #proto_weapon{}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--export_type([proto_weapon/0]).
+-export_type([type/0,range_type/0]).
 
 -export
 (
    [
       increase_range_by/2,
-      increase_type_by/2,
+      increase_parry_chance_by/2,
       increase_accuracy_by/2,
       increase_critical_hit_chance_by/2,
       increase_double_hit_chance_by/2,
       increase_attack_score_by/2,
       increase_range_for/2,
-      increase_type_for/2,
+      increase_parry_chance_for/2,
       increase_accuracy_for/2,
       increase_critical_hit_chance_for/2,
       increase_double_hit_chance_for/2,
@@ -99,14 +108,55 @@
 -export
 (
    [
-      new/1,
-      get_spendable_points/0
+      new/2,
+      get_remaining_points/1
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec increase_attribute_by
+   (
+      shr_attributes:enum(),
+      non_neg_integer(),
+      type()
+   )
+   -> ({ok, type()} | blc_error:type()).
+increase_attribute_by (Attribute, S0Amount, Weapon) ->
+   CurrentOmnimods = Weapon#proto_weapon.omnimods,
+   CurrentValue =
+      shr_omnimods:get_attribute_modifier(Attribute, CurrentOmnimods),
+
+   {_AttMin, _AttDef, AttMax, AttCost} = blc_attribute:get_info(Attribute),
+
+   S1Amount =
+      case ((CurrentValue + S0Amount) > AttMax) of
+         true -> (AttMax - CurrentValue);
+         false -> S0Amount
+      end,
+
+   Cost = (S1Amount * AttCost),
+   RemainingPoints = Weapon#proto_weapon.remaining_points,
+
+   case (Cost > RemainingPoints) of
+      true -> {error, balance, RemainingPoints, Cost};
+      false ->
+         {
+            ok,
+            Weapon#proto_weapon
+            {
+               remaining_points = (RemainingPoints - Cost),
+               omnimods =
+                  shr_omnimods:mod_attribute_modifier
+                  (
+                     Attribute,
+                     S1Amount,
+                     Weapon#proto_weapon.omnimods
+                  )
+            }
+         }
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,301 +164,221 @@
 -spec increase_accuracy_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_accuracy_by (Amount, Weapon) ->
-   NewAccuracy = (Weapon#proto_weapon.accuracy + Amount),
-   case (NewAccuracy > ?ATTRIBUTE_ACCURACY_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon{ accuracy = ?ATTRIBUTE_ACCURACY_MAX },
-            (
-               (?ATTRIBUTE_ACCURACY_MAX - Weapon#proto_weapon.accuracy)
-               * ?ATTRIBUTE_ACCURACY_COST
-            )
-         };
-
-      false ->
-         {
-            Weapon#proto_weapon{ accuracy = NewAccuracy },
-            (Amount * ?ATTRIBUTE_ACCURACY_COST)
-         }
-   end.
+   increase_attribute_by(?ATTRIBUTE_ACCURACY, Amount, Weapon).
 
 -spec increase_range_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_range_by (Amount, Weapon) ->
-   NewDamageModifier = Weapon#proto_weapon.range + Amount,
-   case (NewDamageModifier > ?WEAPON_ATTRIBUTE_RANGE_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon
-            {
-               range = ?WEAPON_ATTRIBUTE_RANGE_MAX
-            },
-            (
-               (
-                  ?WEAPON_ATTRIBUTE_RANGE_MAX
-                  - Weapon#proto_weapon.range
-               )
-               * ?WEAPON_ATTRIBUTE_RANGE_COST
-            )
-         };
+   increase_attribute_by(?ATTRIBUTE_ACCURACY, Amount, Weapon).
 
-      false ->
-         {
-            Weapon#proto_weapon{ range = NewDamageModifier },
-            (Amount * ?WEAPON_ATTRIBUTE_RANGE_COST)
-         }
-   end.
-
--spec increase_type_by
+-spec increase_parry_chance_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
-increase_type_by (Amount, Weapon) ->
-   NewType = Weapon#proto_weapon.type + Amount,
-   case (NewType > ?WEAPON_ATTRIBUTE_TYPE_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon { type = ?WEAPON_ATTRIBUTE_TYPE_MAX },
-            (
-               (?WEAPON_ATTRIBUTE_TYPE_MAX - Weapon#proto_weapon.type)
-               * ?WEAPON_ATTRIBUTE_TYPE_COST
-            )
-         };
-
-      false ->
-         {
-            Weapon#proto_weapon{ type = NewType },
-            (Amount * ?WEAPON_ATTRIBUTE_TYPE_COST)
-         }
+   -> ({ok, type()} | blc_error:type()).
+increase_parry_chance_by (Amount, Weapon) ->
+   case (Weapon#proto_weapon.range_type) of
+      ranged -> {error, incompatible};
+      _ -> increase_attribute_by(?ATTRIBUTE_PARRY_CHANCE, Amount, Weapon)
    end.
 
 -spec increase_critical_hit_chance_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_critical_hit_chance_by (Amount, Weapon) ->
-   NewCriticalHitChance = (Weapon#proto_weapon.critical_hit_chance + Amount),
-   case (NewCriticalHitChance > ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon
-            {
-               critical_hit_chance = ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MAX
-            },
-            (
-               (
-                  ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MAX
-                  - Weapon#proto_weapon.critical_hit_chance
-               )
-               * ?ATTRIBUTE_CRITICAL_HIT_CHANCE_COST
-            )
-         };
-
-      false ->
-         {
-            Weapon#proto_weapon{ critical_hit_chance = NewCriticalHitChance },
-            (Amount * ?ATTRIBUTE_CRITICAL_HIT_CHANCE_COST)
-         }
-   end.
+   increase_attribute_by(?ATTRIBUTE_CRITICAL_HIT_CHANCE, Amount, Weapon).
 
 -spec increase_double_hit_chance_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_double_hit_chance_by (Amount, Weapon) ->
-   NewDoubleHitChance = Weapon#proto_weapon.double_hit_chance + Amount,
-   case (NewDoubleHitChance > ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon
-            {
-               double_hit_chance = ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MAX
-            },
-            (
-               (
-                  ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MAX
-                  - Weapon#proto_weapon.double_hit_chance
-               )
-               * ?ATTRIBUTE_DOUBLE_HIT_CHANCE_COST
-            )
-         };
-
-      false ->
-         {
-            Weapon#proto_weapon{ double_hit_chance = NewDoubleHitChance },
-            (Amount * ?ATTRIBUTE_DOUBLE_HIT_CHANCE_COST)
-         }
-   end.
-
+   increase_attribute_by(?ATTRIBUTE_DOUBLE_HIT_CHANCE, Amount, Weapon).
 
 -spec increase_attack_score_by
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
-increase_attack_score_by (Amount, Weapon) ->
-   NewAttackScore = (Weapon#proto_weapon.attack_score + Amount),
-   case (NewAttackScore > ?ATTRIBUTE_ATTACK_SCORE_MAX) of
-      true ->
-         {
-            Weapon#proto_weapon
+   -> ({ok, type()} | blc_error:type()).
+increase_attack_score_by (S0Amount, Weapon) ->
+   CurrentValue = Weapon#proto_weapon.attack_score,
+   S0NewValue = CurrentValue + S0Amount,
+   {S1Amount, S1NewValue} =
+      case (S0NewValue > ?ATTRIBUTE_ATTACK_SCORE_MAX) of
+         false -> {S0Amount, S0NewValue};
+         true ->
             {
-               attack_score = ?ATTRIBUTE_ATTACK_SCORE_MAX,
-               attack =
-                  blc_damage_type:generate_entries_from_score
-                  (
-                     NewAttackScore,
-                     Weapon#proto_weapon.attack_coef
-                  )
-            },
-            (
-               (?ATTRIBUTE_ATTACK_SCORE_MAX - Weapon#proto_weapon.attack_score)
-               * Amount
-            )
-         };
+               (?ATTRIBUTE_ATTACK_SCORE_MAX - CurrentValue),
+               ?ATTRIBUTE_ATTACK_SCORE_MAX
+            }
+      end,
 
+   Cost = (S1Amount * ?ATTRIBUTE_ATTACK_SCORE_COST),
+   RemainingPoints = Weapon#proto_weapon.remaining_points,
+
+   case (Cost > RemainingPoints) of
+      true -> {error, balance, RemainingPoints, Cost};
       false ->
          {
+            ok,
             Weapon#proto_weapon
             {
-               attack_score = NewAttackScore,
-               attack =
-                  blc_damage_type:generate_entries_from_score
+               remaining_points = (RemainingPoints - Cost),
+               attack_score = S1NewValue,
+               omnimods =
+                  shr_omnimods:set_attack_modifiers
                   (
-                     NewAttackScore,
-                     Weapon#proto_weapon.attack_coef
+                     blc_damage_type:generate_entries_from_score
+                     (
+                        S1NewValue,
+                        Weapon#proto_weapon.attack_coef
+                     ),
+                     Weapon#proto_weapon.omnimods
                   )
-            },
-            (Amount * ?ATTRIBUTE_ATTACK_SCORE_COST)
+            }
          }
    end.
 
 -spec set_attack_coefficients
    (
       list(blc_damage_type:coefficient()),
-      proto_weapon()
+      type()
    )
-   -> proto_weapon().
+   -> type().
 set_attack_coefficients (Coefficients, Weapon) ->
-   {Result, 0} =
-      increase_attack_score_by
-      (
-         0,
-         Weapon#proto_weapon
-         {
-            attack_coef = blc_damage_type:sort_entries(Coefficients)
-         }
-      ),
+   NewCoefs = blc_damage_type:sort_entries(Coefficients),
 
-   Result.
+   Weapon#proto_weapon
+   {
+      attack_coef = NewCoefs,
+      omnimods =
+         shr_omnimods:set_attack_modifiers
+         (
+            blc_damage_type:generate_entries_from_score
+            (
+               Weapon#proto_weapon.attack_score,
+               NewCoefs
+            ),
+            Weapon#proto_weapon.omnimods
+         )
+   }.
 
--spec new (list(blc_damage_type:coefficient())) -> proto_weapon().
-new (Coefficients) ->
-   {Result, _AttackScoreIncreaseCost} =
-      increase_attack_score_by
-      (
-         ?ATTRIBUTE_ATTACK_SCORE_MIN,
-         #proto_weapon
-         {
-            range = ?WEAPON_ATTRIBUTE_RANGE_MIN,
-            type = ?WEAPON_ATTRIBUTE_TYPE_MIN,
-            accuracy = ?ATTRIBUTE_ACCURACY_MIN,
-            critical_hit_chance = ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MIN,
-            double_hit_chance = ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MIN,
-            attack = [],
-            attack_coef = blc_damage_type:sort_entries(Coefficients),
-            attack_score = 0
-         }
-      ),
+-spec new (range_type(), list(blc_damage_type:coefficient())) -> type().
+new (RangeType, Coefficients) ->
+   SortedCoefficients = blc_damage_type:sort_entries(Coefficients),
 
-   Result.
+   #proto_weapon
+   {
+      range = ?WEAPON_ATTRIBUTE_RANGE_MIN,
+      range_type = RangeType,
+      omnimods =
+         shr_omnimods:new
+         (
+            [
+               {?ATTRIBUTE_ACCURACY, ?ATTRIBUTE_ACCURACY_MIN},
+               {?ATTRIBUTE_PARRY_CHANCE, ?ATTRIBUTE_PARRY_CHANCE_MIN},
+               {
+                  ?ATTRIBUTE_CRITICAL_HIT_CHANCE,
+                  ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MIN
+               },
+               {
+                  ?ATTRIBUTE_DOUBLE_HIT_CHANCE,
+                  ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MIN
+               }
+            ],
+            blc_damage_type:generate_entries_from_score
+            (
+               ?ATTRIBUTE_ATTACK_SCORE_MIN,
+               SortedCoefficients
+            ),
+            []
+         ),
+
+      attack_coef = SortedCoefficients,
+      attack_score = ?ATTRIBUTE_ATTACK_SCORE_MIN,
+      remaining_points =
+         case RangeType of
+            melee -> ?MELEE_SPENDABLE_WEAPON_POINTS;
+            ranged -> ?RANGED_SPENDABLE_WEAPON_POINTS
+         end
+   }.
 
 -spec increase_range_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_range_for (GivenPoints, Weapon) ->
    AmountOfIncrease = trunc(GivenPoints / ?WEAPON_ATTRIBUTE_RANGE_COST),
-   {Result, SpentPoints} = increase_range_by(AmountOfIncrease, Weapon),
-   {Result, (GivenPoints - SpentPoints)}.
+   increase_range_by(AmountOfIncrease, Weapon).
 
--spec increase_type_for
+-spec increase_parry_chance_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
-increase_type_for (GivenPoints, Weapon) ->
-   AmountOfIncrease = trunc(GivenPoints / ?WEAPON_ATTRIBUTE_TYPE_COST),
-   {Result, SpentPoints} = increase_type_by(AmountOfIncrease, Weapon),
-   {Result, (GivenPoints - SpentPoints)}.
+   -> ({ok, type()} | blc_error:type()).
+increase_parry_chance_for (GivenPoints, Weapon) ->
+   AmountOfIncrease = trunc(GivenPoints / ?ATTRIBUTE_PARRY_CHANCE_COST),
+   increase_parry_chance_by(AmountOfIncrease, Weapon).
 
 -spec increase_accuracy_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_accuracy_for (GivenPoints, Weapon) ->
    AmountOfIncrease = trunc(GivenPoints / ?ATTRIBUTE_ACCURACY_COST),
-   {Result, SpentPoints} = increase_accuracy_by(AmountOfIncrease, Weapon),
-   {Result, (GivenPoints - SpentPoints)}.
+   increase_accuracy_by(AmountOfIncrease, Weapon).
 
 -spec increase_critical_hit_chance_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_critical_hit_chance_for (GivenPoints, Weapon) ->
    AmountOfIncrease = trunc(GivenPoints / ?ATTRIBUTE_CRITICAL_HIT_CHANCE_COST),
-   {Result, SpentPoints} =
-      increase_critical_hit_chance_by(AmountOfIncrease, Weapon),
-
-   {Result, (GivenPoints - SpentPoints)}.
+   increase_critical_hit_chance_by(AmountOfIncrease, Weapon).
 
 -spec increase_double_hit_chance_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_double_hit_chance_for (GivenPoints, Weapon) ->
    AmountOfIncrease = trunc(GivenPoints / ?ATTRIBUTE_DOUBLE_HIT_CHANCE_COST),
-   {Result, SpentPoints} =
-      increase_double_hit_chance_by(AmountOfIncrease, Weapon),
-
-   {Result, (GivenPoints - SpentPoints)}.
+   increase_double_hit_chance_by(AmountOfIncrease, Weapon).
 
 
 -spec increase_attack_score_for
    (
       non_neg_integer(),
-      proto_weapon()
+      type()
    )
-   -> {proto_weapon(), non_neg_integer()}.
+   -> ({ok, type()} | blc_error:type()).
 increase_attack_score_for (GivenPoints, Weapon) ->
    AmountOfIncrease = trunc(GivenPoints / ?ATTRIBUTE_ATTACK_SCORE_COST),
-   {Result, SpentPoints} = increase_attack_score_by(AmountOfIncrease, Weapon),
-   {Result, (GivenPoints - SpentPoints)}.
+   increase_attack_score_by(AmountOfIncrease, Weapon).
 
 
--spec get_spendable_points () -> non_neg_integer().
-get_spendable_points () -> ?SPENDABLE_WEAPON_POINTS.
+-spec get_remaining_points (type()) -> non_neg_integer().
+get_remaining_points (Weapon) -> Weapon#proto_weapon.remaining_points.

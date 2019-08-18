@@ -54,7 +54,10 @@
       apply_coefficient/2,
       set_attribute_modifiers/2,
       set_attack_modifiers/2,
-      set_defense_modifiers/2
+      set_defense_modifiers/2,
+      mod_attribute_modifier/3,
+      mod_attack_modifier/3,
+      mod_defense_modifier/3
    ]
 ).
 
@@ -173,6 +176,66 @@ set_attack_modifiers (NewAttackModifiers, Omnimods) ->
       atkmods = dict:from_list(NewAttackModifiers)
    }.
 
+-spec mod_attribute_modifier
+   (
+      shr_attributes:enum(),
+      integer(),
+      type()
+   )
+   -> type().
+mod_attribute_modifier (Attribute, Mod, Omnimods) ->
+   Omnimods#omnimods
+   {
+      attmods =
+         dict:update
+         (
+            Attribute,
+            fun (Current) -> (Current + Mod) end,
+            Mod,
+            Omnimods#omnimods.attmods
+         )
+   }.
+
+-spec mod_attack_modifier
+   (
+      shr_damage_type:type(),
+      integer(),
+      type()
+   )
+   -> type().
+mod_attack_modifier (DamageType, Mod, Omnimods) ->
+   Omnimods#omnimods
+   {
+      atkmods =
+         dict:update
+         (
+            DamageType,
+            fun (Current) -> (Current + Mod) end,
+            Mod,
+            Omnimods#omnimods.atkmods
+         )
+   }.
+
+-spec mod_defense_modifier
+   (
+      shr_damage_type:type(),
+      integer(),
+      type()
+   )
+   -> type().
+mod_defense_modifier (DamageType, Mod, Omnimods) ->
+   Omnimods#omnimods
+   {
+      defmods =
+         dict:update
+         (
+            DamageType,
+            fun (Current) -> (Current + Mod) end,
+            Mod,
+            Omnimods#omnimods.defmods
+         )
+   }.
+
 %%%% Access
 -spec apply_to_attributes
    (
@@ -269,13 +332,13 @@ get_defense_modifier (DamageType, Omnimods) ->
    end.
 
 -spec get_attribute_modifiers (type()) -> list(attribute_entry()).
-get_attribute_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.attmods).
+get_attribute_modifiers (Omnimods) -> dict:to_list(Omnimods#omnimods.attmods).
 
 -spec get_attack_modifiers (type()) -> list(damage_type_entry()).
-get_attack_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.atkmods).
+get_attack_modifiers (Omnimods) -> dict:to_list(Omnimods#omnimods.atkmods).
 
 -spec get_defense_modifiers (type()) -> list(damage_type_entry()).
-get_defense_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.defmods).
+get_defense_modifiers (Omnimods) -> dict:to_list(Omnimods#omnimods.defmods).
 
 
 %%% Export
