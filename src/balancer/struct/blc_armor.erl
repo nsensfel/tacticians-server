@@ -1,6 +1,6 @@
 -module(blc_armor).
 
--include("base_attributes.hrl").
+-include("tacticians/attributes.hrl").
 
 -define
 (
@@ -57,7 +57,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -export_type([proto_armor/0]).
 
-% FIXME: quick debug
 -export
 (
    [
@@ -97,7 +96,7 @@
    )
    -> {proto_armor(), non_neg_integer()}.
 increase_health_by (Amount, Armor) ->
-   NewHealth = Armor#proto_armor.health + Amount,
+   NewHealth = (Armor#proto_armor.health + Amount),
    case (NewHealth > ?ATTRIBUTE_HEALTH_MAX) of
       true ->
          {
@@ -122,7 +121,7 @@ increase_health_by (Amount, Armor) ->
    )
    -> {proto_armor(), non_neg_integer()}.
 increase_damage_modifier_by (Amount, Armor) ->
-   NewDamageModifier = Armor#proto_armor.damage_modifier + Amount,
+   NewDamageModifier = (Armor#proto_armor.damage_modifier + Amount),
    case (NewDamageModifier > ?ATTRIBUTE_DAMAGE_MODIFIER_MAX) of
       true ->
          {
@@ -153,7 +152,7 @@ increase_damage_modifier_by (Amount, Armor) ->
    )
    -> {proto_armor(), non_neg_integer()}.
 increase_dodge_chance_by (Amount, Armor) ->
-   NewDodgeChance = Armor#proto_armor.dodge + Amount,
+   NewDodgeChance = (Armor#proto_armor.dodge + Amount),
    case (NewDodgeChance > ?ATTRIBUTE_DODGE_CHANCE_MAX) of
       true ->
          {
@@ -178,7 +177,7 @@ increase_dodge_chance_by (Amount, Armor) ->
    )
    -> {proto_armor(), non_neg_integer()}.
 increase_movement_points_by (Amount, Armor) ->
-   NewMvtPoints = Armor#proto_armor.mvt_points + Amount,
+   NewMvtPoints = (Armor#proto_armor.mvt_points + Amount),
    case (NewMvtPoints > ?ATTRIBUTE_MOVEMENT_POINTS_MAX) of
       true ->
          {

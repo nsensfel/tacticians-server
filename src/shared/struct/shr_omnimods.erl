@@ -3,22 +3,36 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type entry() :: {atom(), integer()}.
--type mods() :: dict:dict(atom(), integer()).
+-type attribute_entry() :: {shr_attributes:enum(), integer()}.
+-type attribute_mods() :: dict:dict(shr_attributes:enum(), integer()).
+
+-type damage_type_entry() :: {shr_damage_type:type(), integer()}.
+-type damage_type_mods() :: dict:dict(shr_damage_type:type(), integer()).
+
+-type entry() :: (attribute_entry() | damage_type_entry()).
+-type mods() :: (attribute_mods() | damage_type_mods()).
 
 -record
 (
    omnimods,
    {
-      attmods :: mods(),
-      atkmods :: mods(),
-      defmods :: mods()
+      attmods :: attribute_mods(),
+      atkmods :: damage_type_mods(),
+      defmods :: damage_type_mods()
    }
 ).
 
 -opaque type() :: #omnimods{}.
 
--export_type([type/0, entry/0]).
+-export_type
+(
+   [
+      type/0,
+      attribute_entry/0,
+      damage_type_entry/0,
+      entry/0
+   ]
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,7 +41,7 @@
 -export
 (
    [
-      default/0,
+      new/0,
       new/3
    ]
 ).
@@ -37,7 +51,10 @@
 (
    [
       merge/2,
-      apply_coefficient/2
+      apply_coefficient/2,
+      set_attribute_modifiers/2,
+      set_attack_modifiers/2,
+      set_defense_modifiers/2
    ]
 ).
 
@@ -46,7 +63,13 @@
 (
    [
       apply_to_attributes/2,
-      get_attack_damage/3
+      get_attack_damage/3,
+      get_attribute_modifier/2,
+      get_attack_modifier/2,
+      get_defense_modifier/2,
+      get_attribute_modifiers/1,
+      get_attack_modifiers/1,
+      get_defense_modifiers/1
    ]
 ).
 
@@ -61,11 +84,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec apply_coefficient_to_mods (float(), mods()) -> mods().
+-spec apply_coefficient_to_mods
+   (float(), attribute_mods()) -> attribute_mods();
+   (float(), damage_type_mods()) -> damage_type_mods().
 apply_coefficient_to_mods (Coef, Mods) ->
    dict:map(fun (_Name, Val) -> shr_math_util:ceil(Coef * Val) end, Mods).
 
--spec merge_mods (mods(), mods()) -> mods().
+-spec merge_mods
+   (attribute_mods(), attribute_mods()) -> attribute_mods();
+   (damage_type_mods(), damage_type_mods()) -> damage_type_mods().
 merge_mods (ModsA, ModsB) ->
    dict:merge(fun (_Name, ValA, ValB) -> (ValA + ValB) end, ModsA, ModsB).
 
@@ -88,7 +115,13 @@ encode_mods (Mods) ->
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Creation
--spec new (list(entry()), list(entry()), list(entry())) -> type().
+-spec new
+   (
+      list(attribute_entry()),
+      list(damage_type_entry()),
+      list(damage_type_entry())
+   )
+   -> type().
 new (AttributeMods, AttackMods, DefenseMods) ->
    #omnimods
    {
@@ -97,8 +130,8 @@ new (AttributeMods, AttackMods, DefenseMods) ->
       defmods = dict:from_list(DefenseMods)
    }.
 
--spec default () -> type().
-default () -> new([], [], []).
+-spec new () -> type().
+new () -> new([], [], []).
 
 %%% Modification
 -spec merge (type(), type()) -> type().
@@ -119,6 +152,28 @@ apply_coefficient (Coef, Omnimods) ->
       defmods = apply_coefficient_to_mods(Coef, Omnimods#omnimods.defmods)
    }.
 
+-spec set_attribute_modifiers (list(attribute_entry()), type()) -> type().
+set_attribute_modifiers (NewAttributeModifiers, Omnimods) ->
+   Omnimods#omnimods
+   {
+      attmods = dict:from_list(NewAttributeModifiers)
+   }.
+
+-spec set_defense_modifiers (list(damage_type_entry()), type()) -> type().
+set_defense_modifiers (NewDefenseModifiers, Omnimods) ->
+   Omnimods#omnimods
+   {
+      defmods = dict:from_list(NewDefenseModifiers)
+   }.
+
+-spec set_attack_modifiers (list(damage_type_entry()), type()) -> type().
+set_attack_modifiers (NewAttackModifiers, Omnimods) ->
+   Omnimods#omnimods
+   {
+      atkmods = dict:from_list(NewAttackModifiers)
+   }.
+
+%%%% Access
 -spec apply_to_attributes
    (
       type(),
@@ -133,6 +188,7 @@ apply_to_attributes (Omnimods, Attributes) ->
       Omnimods#omnimods.attmods
    ).
 
+% FIXME: 'base' is no longer used.
 -spec get_attack_damage (float(), type(), type()) -> non_neg_integer().
 get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
    AttackerOmnimodsAttmods = AttackerOmnimods#omnimods.atkmods,
@@ -190,6 +246,37 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
    io:format("Defender took a total of ~p damage.~n", [Result]),
 
    Result.
+
+-spec get_attribute_modifier (shr_attributes:enum(), type()) -> integer().
+get_attribute_modifier (Attribute, Omnimods) ->
+   case dict:find(Attribute, Omnimods#omnimods.attmods) of
+      {ok, Value} -> Value;
+      error -> 0
+   end.
+
+-spec get_attack_modifier (shr_damage_type:type(), type()) -> integer().
+get_attack_modifier (DamageType, Omnimods) ->
+   case dict:find(DamageType, Omnimods#omnimods.atkmods) of
+      {ok, Value} -> Value;
+      error -> 0
+   end.
+
+-spec get_defense_modifier (shr_damage_type:type(), type()) -> integer().
+get_defense_modifier (DamageType, Omnimods) ->
+   case dict:find(DamageType, Omnimods#omnimods.defmods) of
+      {ok, Value} -> Value;
+      error -> 0
+   end.
+
+-spec get_attribute_modifiers (type()) -> list(attribute_entry()).
+get_attribute_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.attmods).
+
+-spec get_attack_modifiers (type()) -> list(damage_type_entry()).
+get_attack_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.atkmods).
+
+-spec get_defense_modifiers (type()) -> list(damage_type_entry()).
+get_defense_modifiers (Omnimods) -> lists:to_list(Omnimods#omnimods.defmods).
+
 
 %%% Export
 -spec encode (type()) -> {list(any())}.
