@@ -99,7 +99,11 @@ generate_entries_from_score (TargetScore, SortedRatios) ->
          SortedRatios
       ),
 
-   Base = (TargetScore / (Distribution / 100)),
+   Base =
+      case Distribution of
+         0 -> 0;
+         _ -> (TargetScore / (Distribution / 100))
+      end,
 
    UnderperformingEntries =
       lists:map
@@ -110,8 +114,19 @@ generate_entries_from_score (TargetScore, SortedRatios) ->
 
    MissingScore = (TargetScore - compute_score(UnderperformingEntries)),
 
-   case (MissingScore >= 0) of
-      true -> apply_score_modifier(MissingScore, 1, UnderperformingEntries);
-      false ->
-         apply_score_modifier((-1 * MissingScore), -1, UnderperformingEntries)
+   case Base of
+      0 -> [];
+      _ ->
+         case (MissingScore >= 0) of
+            true ->
+               apply_score_modifier(MissingScore, 1, UnderperformingEntries);
+
+            false ->
+               apply_score_modifier
+               (
+                  (-1 * MissingScore),
+                  -1,
+                  UnderperformingEntries
+               )
+         end
    end.

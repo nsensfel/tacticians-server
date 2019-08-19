@@ -80,7 +80,8 @@
 -export
 (
    [
-      encode/1
+      encode/1,
+      export/1
    ]
 ).
 
@@ -112,6 +113,22 @@ encode_mods (Mods) ->
          }
       end,
       dict:to_list(Mods)
+   ).
+
+-spec mod_list_to_string_list (mods()) -> list().
+mod_list_to_string_list (Mods) ->
+   (
+      "__MOD_LIST("
+      ++
+      lists:map
+      (
+         fun ({Name, Value}) ->
+            io_lib:format("__MOD_~p(~p),", [Name, Value])
+         end,
+         Mods
+      )
+      ++
+      ")"
    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -351,3 +368,13 @@ encode (Omnimods) ->
          {<<"defm">>, encode_mods(Omnimods#omnimods.defmods)}
       ]
    }.
+
+-spec export (type()) -> list().
+export (Omnimods) ->
+   (
+      mod_list_to_string_list(dict:to_list(Omnimods#omnimods.attmods))
+      ++ "\n"
+      ++ mod_list_to_string_list(dict:to_list(Omnimods#omnimods.atkmods))
+      ++ "\n"
+      ++ mod_list_to_string_list(dict:to_list(Omnimods#omnimods.defmods))
+   ).

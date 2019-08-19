@@ -10,7 +10,8 @@
 -export
 (
    [
-      generate/2
+      generate/2,
+      generate/3
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,7 +51,12 @@ generate_internals (N, CurrentResult, Sequence) ->
 -spec generate (non_neg_integer(), 0..100) -> list(list(0..100)).
 generate (0, _Step) -> [];
 generate (Elements, Step) ->
-   Sequence = lists:seq(0, 100, Step),
+   generate(Elements, 0, Step).
+
+-spec generate (non_neg_integer(), 0..100, 0..100) -> list(list(0..100)).
+generate (0, _Min, _Step) -> [];
+generate (Elements, Min, Step) ->
+   Sequence = lists:seq(Min, 100, Step),
    generate_internals
    (
       (Elements - 1),

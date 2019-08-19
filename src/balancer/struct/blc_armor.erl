@@ -77,7 +77,9 @@
    [
       new/1,
       get_remaining_points/1,
-      generate/1
+      generate/3,
+      finalize/1,
+      export/1
    ]
 ).
 
@@ -327,15 +329,15 @@ increase_defense_score_for (GivenPoints, Armor) ->
 -spec get_remaining_points (type()) -> non_neg_integer().
 get_remaining_points (Armor) -> Armor#proto_armor.remaining_points.
 
--spec generate (non_neg_integer()) -> list(type()).
-generate (Step) ->
+-spec generate (0..100, 0..100, 0..100) -> list(type()).
+generate (AttributeMin, AttributeStep, ElementStep) ->
    MaxDamageModifier = get_max_attribute_ratio(?ATTRIBUTE_DAMAGE_MODIFIER),
    MaxDodgeChance = get_max_attribute_ratio(?ATTRIBUTE_DODGE_CHANCE),
    MaxMovementPoints = get_max_attribute_ratio(?ATTRIBUTE_MOVEMENT_POINTS),
    MaxHealth = get_max_attribute_ratio(?ATTRIBUTE_HEALTH),
    MaxDefenseScore = get_max_attribute_ratio(?ATTRIBUTE_DEFENSE_SCORE),
 
-   Distributions = blc_distribution:generate(5, Step),
+   Distributions = blc_distribution:generate(5, AttributeMin, AttributeStep),
    ValidDistributions =
       lists:filtermap
       (
@@ -439,9 +441,92 @@ generate (Step) ->
                   PointsUsed
                ),
 
-            FinalArmor
+            lists:foldl
+            (
+               fun ({Attribute, _}, Armor) ->
+                  NewArmor =
+                     case Attribute of
+                        ?ATTRIBUTE_DEFENSE_SCORE ->
+                           increase_defense_score_for
+                           (
+                              Armor#proto_armor.remaining_points,
+                              Armor
+                           );
+
+                        _ -> increase_attribute_by(Attribute, 1, Armor)
+                     end,
+
+                  case NewArmor of
+                     {ok, NextArmor} -> NextArmor;
+                     _ -> Armor
+                  end
+               end,
+               FinalArmor,
+               lists:sort
+               (
+                  fun ({_AttributeA, ScoreA}, {_AttributeB, ScoreB}) ->
+                     (ScoreA > ScoreB)
+                  end,
+                  lists:map
+                  (
+                     fun (Attribute) ->
+                        case Attribute of
+                           ?ATTRIBUTE_DEFENSE_SCORE ->
+                              {
+                                 ?ATTRIBUTE_DEFENSE_SCORE,
+                                 FinalArmor#proto_armor.defense_score
+                              };
+
+                           _ ->
+                              {
+                                 Attribute,
+                                 shr_omnimods:get_attribute_modifier
+                                 (
+                                    Attribute,
+                                    FinalArmor#proto_armor.omnimods
+                                 )
+                              }
+                        end
+                     end,
+                     [
+                        ?ATTRIBUTE_DEFENSE_SCORE,
+                        ?ATTRIBUTE_DODGE_CHANCE,
+                        ?ATTRIBUTE_HEALTH,
+                        ?ATTRIBUTE_DAMAGE_MODIFIER,
+                        ?ATTRIBUTE_MOVEMENT_POINTS
+                     ]
+                  )
+               )
+            )
          end,
          ValidDistributions
       ),
 
-   BaseArmors.
+   shr_lists_util:product
+   (
+      fun (Armor, ElementDistribution) ->
+         set_defense_coefficients(ElementDistribution, Armor)
+      end,
+      BaseArmors,
+      lists:map
+      (
+         fun ([A, B, C]) ->
+            [
+               {?DAMAGE_TYPE_SLASH, A},
+               {?DAMAGE_TYPE_PIERCE, B},
+               {?DAMAGE_TYPE_BLUNT, C}
+            ]
+         end,
+         blc_distribution:generate(3, ElementStep)
+      )
+   ).
+
+-spec export (type()) -> list().
+export (Armor) -> shr_omnimods:export(Armor#proto_armor.omnimods).
+
+-spec finalize (type()) -> {shr_omnimods:type(), non_neg_integer()}.
+finalize (Armor) ->
+   {
+      Armor#proto_armor.omnimods,
+      Armor#proto_armor.remaining_points
+   }.
