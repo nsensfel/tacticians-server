@@ -1,11 +1,15 @@
 -module(blc_weapon).
 
 -include("tacticians/attributes.hrl").
+-include("tacticians/damage_types.hrl").
 
+-define(WEAPON_ATTRIBUTE_RANGE,           rnge).
 -define(WEAPON_ATTRIBUTE_RANGE_MIN,       0).
 -define(WEAPON_ATTRIBUTE_RANGE_MAX,       2).
 -define(WEAPON_ATTRIBUTE_RANGE_DEFAULT,   0).
--define(WEAPON_ATTRIBUTE_RANGE_COST,      1).
+-define(WEAPON_ATTRIBUTE_RANGE_COST,      200).
+
+-define(WEAPON_RANGED_DEFENSE_RANGE, 1).
 
 -define
 (
@@ -109,7 +113,10 @@
 (
    [
       new/2,
-      get_remaining_points/1
+      get_remaining_points/1,
+      generate/4,
+      export/1,
+      finalize/1
    ]
 ).
 
@@ -118,11 +125,35 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec increase_attribute_by
    (
-      shr_attributes:enum(),
+      (shr_attributes:enum() | ?WEAPON_ATTRIBUTE_RANGE),
       non_neg_integer(),
       type()
    )
    -> ({ok, type()} | blc_error:type()).
+increase_attribute_by (?WEAPON_ATTRIBUTE_RANGE, S0Amount, Weapon) ->
+   CurrentValue = Weapon#proto_weapon.range,
+
+   S1Amount =
+      case ((CurrentValue + S0Amount) > ?WEAPON_ATTRIBUTE_RANGE_MAX) of
+         true -> (?WEAPON_ATTRIBUTE_RANGE_MAX - CurrentValue);
+         false -> S0Amount
+      end,
+
+   Cost = (S1Amount * ?WEAPON_ATTRIBUTE_RANGE_COST),
+   RemainingPoints = Weapon#proto_weapon.remaining_points,
+
+   case (Cost > RemainingPoints) of
+      true -> {error, balance, RemainingPoints, Cost};
+      false ->
+         {
+            ok,
+            Weapon#proto_weapon
+            {
+               remaining_points = (RemainingPoints - Cost),
+               range = (CurrentValue + S1Amount)
+            }
+         }
+   end;
 increase_attribute_by (Attribute, S0Amount, Weapon) ->
    CurrentOmnimods = Weapon#proto_weapon.omnimods,
    CurrentValue =
@@ -158,6 +189,34 @@ increase_attribute_by (Attribute, S0Amount, Weapon) ->
          }
    end.
 
+-spec get_max_attribute_ratio
+   (
+      non_neg_integer(),
+      shr_attributes:meta_enum()
+      | ?WEAPON_ATTRIBUTE_RANGE
+   )
+   -> float().
+get_max_attribute_ratio (SpendablePoints, ?WEAPON_ATTRIBUTE_RANGE) ->
+   Contrib =
+      (
+         ?WEAPON_ATTRIBUTE_RANGE_COST
+         * (?WEAPON_ATTRIBUTE_RANGE_MAX - ?WEAPON_ATTRIBUTE_RANGE_MIN)
+      ),
+
+   case (Contrib == 0) of
+      true -> 0.0;
+      false -> (SpendablePoints / Contrib) * 100.0
+   end;
+get_max_attribute_ratio (SpendablePoints, Attribute) ->
+   {AttMin, _AttDef, AttMax, AttCost} = blc_attribute:get_info(Attribute),
+
+   Contrib = (AttCost * (AttMax - AttMin)),
+
+   case (Contrib == 0) of
+      true -> 0.0;
+      false -> (SpendablePoints / Contrib) * 100.0
+   end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,7 +236,7 @@ increase_accuracy_by (Amount, Weapon) ->
    )
    -> ({ok, type()} | blc_error:type()).
 increase_range_by (Amount, Weapon) ->
-   increase_attribute_by(?ATTRIBUTE_ACCURACY, Amount, Weapon).
+   increase_attribute_by(?WEAPON_ATTRIBUTE_RANGE, Amount, Weapon).
 
 -spec increase_parry_chance_by
    (
@@ -187,7 +246,12 @@ increase_range_by (Amount, Weapon) ->
    -> ({ok, type()} | blc_error:type()).
 increase_parry_chance_by (Amount, Weapon) ->
    case (Weapon#proto_weapon.range_type) of
-      ranged -> {error, incompatible};
+      ranged ->
+         if
+            (Amount == 0) -> {ok, Weapon};
+            true -> {error, incompatible}
+         end;
+
       _ -> increase_attribute_by(?ATTRIBUTE_PARRY_CHANCE, Amount, Weapon)
    end.
 
@@ -382,3 +446,253 @@ increase_attack_score_for (GivenPoints, Weapon) ->
 
 -spec get_remaining_points (type()) -> non_neg_integer().
 get_remaining_points (Weapon) -> Weapon#proto_weapon.remaining_points.
+
+-spec generate (range_type(), 0..100, 0..100, 0..100) -> list(type()).
+generate (RangeType, AttributeMin, AttributeStep, ElementStep) ->
+   BasePoints =
+      case RangeType of
+         ranged -> ?RANGED_SPENDABLE_WEAPON_POINTS;
+         melee -> ?MELEE_SPENDABLE_WEAPON_POINTS
+      end,
+
+   MaxAccuracy = get_max_attribute_ratio(BasePoints, ?ATTRIBUTE_ACCURACY),
+   MaxCriticalHitChance =
+      get_max_attribute_ratio(BasePoints, ?ATTRIBUTE_CRITICAL_HIT_CHANCE),
+   MaxDoubleHitChance =
+      get_max_attribute_ratio(BasePoints, ?ATTRIBUTE_DOUBLE_HIT_CHANCE),
+   MaxRange = get_max_attribute_ratio(BasePoints, ?WEAPON_ATTRIBUTE_RANGE),
+   MaxParryChance =
+      get_max_attribute_ratio(BasePoints, ?ATTRIBUTE_PARRY_CHANCE),
+   MaxAttackScore =
+      get_max_attribute_ratio(BasePoints, ?ATTRIBUTE_ATTACK_SCORE),
+
+   AttributeCount =
+      case RangeType of
+         melee -> 6;
+         _ -> 5
+      end,
+
+   Distributions =
+      blc_distribution:generate(AttributeCount, AttributeMin, AttributeStep),
+
+   ValidDistributions =
+      lists:filtermap
+      (
+         fun (Input) ->
+            [
+               Accuracy,
+               CriticalHitChance,
+               DoubleHitChance,
+               Range,
+               AttackScore
+               | MaybeParryChance
+            ]
+               = Input,
+            ParryChance =
+               case MaybeParryChance of
+                  [] -> 0;
+                  [E] -> E
+               end,
+            if
+               (Accuracy > MaxAccuracy) -> false;
+               (CriticalHitChance > MaxCriticalHitChance) -> false;
+               (DoubleHitChance > MaxDoubleHitChance) -> false;
+               (Range > MaxRange) -> false;
+               (ParryChance > MaxParryChance) -> false;
+               (AttackScore > MaxAttackScore) -> false;
+               true ->
+                  {
+                     true,
+                     [
+                        {?ATTRIBUTE_ACCURACY, Accuracy},
+                        {?ATTRIBUTE_CRITICAL_HIT_CHANCE, CriticalHitChance},
+                        {?ATTRIBUTE_DOUBLE_HIT_CHANCE, DoubleHitChance},
+                        {?WEAPON_ATTRIBUTE_RANGE, Range},
+                        {?ATTRIBUTE_ATTACK_SCORE, AttackScore},
+                        {?ATTRIBUTE_PARRY_CHANCE, ParryChance}%,
+                     ]
+                  }
+            end
+         end,
+         Distributions
+      ),
+
+   BaseWeaponsCoefs = [{?DAMAGE_TYPE_SLASH, 100}],
+
+
+   BaseWeapon = new(RangeType, BaseWeaponsCoefs),
+
+   BaseWeapons =
+      lists:map
+      (
+         fun (Distribution) ->
+            PointsUsed =
+               lists:map
+               (
+                  fun ({Attribute, Percent}) ->
+                     {
+                        Attribute,
+                        trunc((BasePoints * Percent) / 100)
+                     }
+                  end,
+                  Distribution
+               ),
+
+            FinalWeapon =
+               lists:foldl
+               (
+                  fun ({Attribute, Points}, Weapon) ->
+                     case Attribute of
+                        ?ATTRIBUTE_ATTACK_SCORE ->
+                           {ok, NewWeapon} =
+                              increase_attack_score_for(Points, Weapon),
+                           NewWeapon;
+
+                        ?ATTRIBUTE_CRITICAL_HIT_CHANCE ->
+                           {ok, NewWeapon} =
+                              increase_critical_hit_chance_for(Points, Weapon),
+                           NewWeapon;
+
+                        ?WEAPON_ATTRIBUTE_RANGE ->
+                           {ok, NewWeapon} =
+                              increase_range_for(Points, Weapon),
+                           NewWeapon;
+
+                        ?ATTRIBUTE_ACCURACY ->
+                           {ok, NewWeapon} =
+                              increase_accuracy_for(Points, Weapon),
+                           NewWeapon;
+
+                        ?ATTRIBUTE_PARRY_CHANCE ->
+                           {ok, NewWeapon} =
+                              increase_parry_chance_for(Points, Weapon),
+                           NewWeapon;
+
+                        ?ATTRIBUTE_DOUBLE_HIT_CHANCE ->
+                           {ok, NewWeapon} =
+                              increase_double_hit_chance_for(Points, Weapon),
+                           NewWeapon
+                     end
+                  end,
+                  BaseWeapon,
+                  PointsUsed
+               ),
+
+            lists:foldl
+            (
+               fun ({Attribute, _}, Weapon) ->
+                  NewWeapon =
+                     case Attribute of
+                        ?ATTRIBUTE_ATTACK_SCORE ->
+                           increase_attack_score_for
+                           (
+                              Weapon#proto_weapon.remaining_points,
+                              Weapon
+                           );
+
+                        ?WEAPON_ATTRIBUTE_RANGE->
+                           increase_range_for
+                           (
+                              Weapon#proto_weapon.remaining_points,
+                              Weapon
+                           );
+
+                        _ -> increase_attribute_by(Attribute, 1, Weapon)
+                     end,
+
+                  case NewWeapon of
+                     {ok, NextWeapon} -> NextWeapon;
+                     _ -> Weapon
+                  end
+               end,
+               FinalWeapon,
+               lists:sort
+               (
+                  fun ({_AttributeA, ScoreA}, {_AttributeB, ScoreB}) ->
+                     (ScoreA > ScoreB)
+                  end,
+                  lists:map
+                  (
+                     fun (Attribute) ->
+                        case Attribute of
+                           ?ATTRIBUTE_ATTACK_SCORE ->
+                              {
+                                 ?ATTRIBUTE_ATTACK_SCORE,
+                                 FinalWeapon#proto_weapon.attack_score
+                              };
+
+                           _ ->
+                              {
+                                 Attribute,
+                                 shr_omnimods:get_attribute_modifier
+                                 (
+                                    Attribute,
+                                    FinalWeapon#proto_weapon.omnimods
+                                 )
+                              }
+                        end
+                     end,
+                     [
+                        ?ATTRIBUTE_ATTACK_SCORE,
+                        ?ATTRIBUTE_CRITICAL_HIT_CHANCE,
+                        ?WEAPON_ATTRIBUTE_RANGE,
+                        ?ATTRIBUTE_ACCURACY,
+                        ?ATTRIBUTE_DOUBLE_HIT_CHANCE
+                     ]
+                  )
+               )
+            )
+         end,
+         ValidDistributions
+      ),
+
+   shr_lists_util:product
+   (
+      fun (Weapon, ElementDistribution) ->
+         set_attack_coefficients(ElementDistribution, Weapon)
+      end,
+      BaseWeapons,
+      lists:map
+      (
+         fun ([A, B, C]) ->
+            [
+               {?DAMAGE_TYPE_SLASH, A},
+               {?DAMAGE_TYPE_PIERCE, B},
+               {?DAMAGE_TYPE_BLUNT, C}
+            ]
+         end,
+         blc_distribution:generate(3, ElementStep)
+      )
+   ).
+
+-spec export (type()) -> list().
+export (Weapon) ->
+   Range = Weapon#proto_weapon.range,
+   {DefenseRange, AttackRange} =
+      case Weapon#proto_weapon.range_type of
+         melee -> {0, (Range + 1)};
+         ranged ->
+            {
+               (?WEAPON_RANGED_DEFENSE_RANGE + Range),
+               (?WEAPON_RANGED_DEFENSE_RANGE + Range + 2)
+            }
+      end,
+   (
+      io_lib:format("   ~B,~n   ~B,~n", [DefenseRange, AttackRange])
+      ++ shr_omnimods:export(Weapon#proto_weapon.omnimods)
+   ).
+
+-spec finalize (type()) ->
+   {
+      range_type(),
+      non_neg_integer(),
+      shr_omnimods:type(),
+      non_neg_integer()
+   }.
+finalize (Weapon) ->
+   {
+      Weapon#proto_weapon.range_type,
+      Weapon#proto_weapon.range,
+      Weapon#proto_weapon.omnimods,
+      Weapon#proto_weapon.remaining_points
+   }.

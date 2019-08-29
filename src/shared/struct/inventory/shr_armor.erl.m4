@@ -61,7 +61,7 @@ get_omnimods (Ar) -> Ar#armor.omnimods.
 
 -spec from_id (id()) -> type().
 m4_include(__MAKEFILE_DATA_DIR/armor/global.m4.conf)m4_dnl
-m4_include(__MAKEFILE_DATA_DIR/armor/20_20_20.m4d)m4_dnl
+m4_include(__MAKEFILE_DATA_DIR/armor/10_25_25.m4d)m4_dnl
 from_id(_) ->
    default().
 

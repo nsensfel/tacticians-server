@@ -25,7 +25,7 @@
    )
    -> list(list(0..100)).
 generate_internals (0, CurrentResult, _Sequence) ->
-   CurrentResult;
+   lists:filter(fun (E) -> (lists:sum(E) == 100) end, CurrentResult);
 generate_internals (N, CurrentResult, Sequence) ->
    generate_internals
    (
