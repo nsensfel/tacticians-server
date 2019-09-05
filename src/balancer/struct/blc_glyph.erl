@@ -3,8 +3,7 @@
 -include("tacticians/attributes.hrl").
 
 -define(SPENDABLE_GLYPH_POINTS, 100).
--define(NEGATIVE_POINTS_MODIFIER, 0.75).
--define(NEGATIVE_POINTS_MULTIPLIER, (2 - ?NEGATIVE_POINTS_MODIFIER)).
+-define(NEGATIVE_POINTS_MULTIPLIER, 1.25).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -440,9 +439,9 @@ increase_attribute_for (Attribute, GivenPoints, Glyph) ->
 decrease_attribute_for (Attribute, GivenPoints, Glyph) ->
    {_AttMin, _AttDef, _AttMax, AttCost} = blc_attribute:get_info(Attribute),
    AmountOfDecrease =
-      trunc((GivenPoints * ?NEGATIVE_POINTS_MULTIPLIER) / AttCost),
+      trunc(GivenPoints / (?NEGATIVE_POINTS_MULTIPLIER * AttCost)),
 
-   increase_attribute_by(Attribute, AmountOfDecrease, Glyph).
+   decrease_attribute_by(Attribute, AmountOfDecrease, Glyph).
 
 -spec get_remaining_positive_points (type()) -> non_neg_integer().
 get_remaining_positive_points (Glyph) ->
