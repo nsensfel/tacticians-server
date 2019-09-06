@@ -1,9 +1,9 @@
 -module(blc_glyph).
 
 -include("tacticians/attributes.hrl").
+-include("tacticians/damage_types.hrl").
 
 -define(SPENDABLE_GLYPH_POINTS, 100).
--define(NEGATIVE_POINTS_MULTIPLIER, 1.25).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,9 +35,9 @@
 (
    [
       increase_attribute_by/3,
-      decrease_attribute_by/3,
+      decrease_attribute_by/4,
       increase_attribute_for/3,
-      decrease_attribute_for/3,
+      decrease_attribute_for/4,
       set_attack_coefficients/2,
       set_defense_coefficients/2
    ]
@@ -47,14 +47,69 @@
 (
    [
       new/2,
+      new/4,
+      generate/0,
       get_remaining_positive_points/1,
-      get_points_balance/1
+      get_points_balance/1,
+      export/1
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec attribute_coefficent
+   (
+      shr_attributes:meta_enum(),
+      shr_attributes:meta_enum()
+   )
+   -> ({ok, float()} | error).
+attribute_coefficent (Attr0, Attr1) ->
+   case {Attr0, Attr1} of
+      {?ATTRIBUTE_ACCURACY, ?ATTRIBUTE_CRITICAL_HIT_CHANCE} -> {ok, 0.75};
+      {?ATTRIBUTE_ACCURACY, ?ATTRIBUTE_DODGE_CHANCE} -> {ok, 0.75};
+      {?ATTRIBUTE_ACCURACY, ?ATTRIBUTE_HEALTH} -> {ok, 1.00};
+      {?ATTRIBUTE_ACCURACY, ?ATTRIBUTE_MOVEMENT_POINTS} -> {ok, 1.00};
+
+      {?ATTRIBUTE_CRITICAL_HIT_CHANCE, ?ATTRIBUTE_DOUBLE_HIT_CHANCE} ->
+         {ok, 0.75};
+      {?ATTRIBUTE_CRITICAL_HIT_CHANCE, ?ATTRIBUTE_DAMAGE_MODIFIER} ->
+         {ok, 0.75};
+      {?ATTRIBUTE_CRITICAL_HIT_CHANCE, ?ATTRIBUTE_DODGE_CHANCE} -> {ok, 1.00};
+      {?ATTRIBUTE_CRITICAL_HIT_CHANCE, ?ATTRIBUTE_PARRY_CHANCE} -> {ok, 1.00};
+
+      {?ATTRIBUTE_DOUBLE_HIT_CHANCE, ?ATTRIBUTE_ACCURACY} -> {ok, 0.75};
+      {?ATTRIBUTE_DOUBLE_HIT_CHANCE, ?ATTRIBUTE_DAMAGE_MODIFIER} -> {ok, 0.75};
+      {?ATTRIBUTE_DOUBLE_HIT_CHANCE, ?ATTRIBUTE_HEALTH} -> {ok, 1.00};
+      {?ATTRIBUTE_DOUBLE_HIT_CHANCE, ?ATTRIBUTE_MOVEMENT_POINTS} -> {ok, 1.00};
+
+      {?ATTRIBUTE_DAMAGE_MODIFIER, ?ATTRIBUTE_DODGE_CHANCE} -> {ok, 1.00};
+      {?ATTRIBUTE_DAMAGE_MODIFIER, ?ATTRIBUTE_HEALTH} -> {ok, 0.75};
+      {?ATTRIBUTE_DAMAGE_MODIFIER, ?ATTRIBUTE_MOVEMENT_POINTS} -> {ok, 1.00};
+      {?ATTRIBUTE_DAMAGE_MODIFIER, ?ATTRIBUTE_DEFENSE_SCORE} -> {ok, 0.75};
+
+      {?ATTRIBUTE_DODGE_CHANCE, ?ATTRIBUTE_HEALTH} -> {ok, 0.75};
+      {?ATTRIBUTE_DODGE_CHANCE, ?ATTRIBUTE_PARRY_CHANCE} -> {ok, 0.75};
+
+      {?ATTRIBUTE_HEALTH, ?ATTRIBUTE_MOVEMENT_POINTS} -> {ok, 0.75};
+      {?ATTRIBUTE_HEALTH, ?ATTRIBUTE_ATTACK_SCORE} -> {ok, 0.75};
+
+      {?ATTRIBUTE_MOVEMENT_POINTS, ?ATTRIBUTE_DODGE_CHANCE} -> {ok, 0.75};
+      {?ATTRIBUTE_MOVEMENT_POINTS, ?ATTRIBUTE_ATTACK_SCORE} -> {ok, 0.75};
+      {?ATTRIBUTE_MOVEMENT_POINTS, ?ATTRIBUTE_DEFENSE_SCORE} -> {ok, 1.00};
+
+      {?ATTRIBUTE_PARRY_CHANCE, ?ATTRIBUTE_ACCURACY} -> {ok, 0.75};
+      {?ATTRIBUTE_PARRY_CHANCE, ?ATTRIBUTE_MOVEMENT_POINTS} -> {ok, 0.75};
+      {?ATTRIBUTE_PARRY_CHANCE, ?ATTRIBUTE_ATTACK_SCORE} -> {ok, 1.00};
+      {?ATTRIBUTE_PARRY_CHANCE, ?ATTRIBUTE_DEFENSE_SCORE} -> {ok, 0.75};
+
+      {?ATTRIBUTE_ATTACK_SCORE, ?ATTRIBUTE_CRITICAL_HIT_CHANCE} -> {ok, 0.75};
+
+      {?ATTRIBUTE_DEFENSE_SCORE, ?ATTRIBUTE_DOUBLE_HIT_CHANCE} -> {ok, 0.75};
+
+      _ -> error
+   end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -194,17 +249,24 @@ increase_attribute_by (Attribute, S0Amount, Glyph) ->
    (
       shr_attributes:meta_enum(),
       non_neg_integer(),
+      float(),
       type()
    )
    -> ({ok, type()} | blc_error:type()).
-decrease_attribute_by (?ATTRIBUTE_ATTACK_SCORE, Amount, Glyph) ->
+decrease_attribute_by
+(
+   ?ATTRIBUTE_ATTACK_SCORE,
+   Amount,
+   PointsMultiplier,
+   Glyph
+) ->
    NewAttackScore = (Glyph#proto_glyph.attack_score + Amount),
 
    Cost =
       trunc
       (
          (Amount * ?ATTRIBUTE_ATTACK_SCORE_COST)
-         * ?NEGATIVE_POINTS_MULTIPLIER
+         * PointsMultiplier
       ),
 
    if
@@ -234,14 +296,20 @@ decrease_attribute_by (?ATTRIBUTE_ATTACK_SCORE, Amount, Glyph) ->
             }
          }
    end;
-decrease_attribute_by (?ATTRIBUTE_DEFENSE_SCORE, Amount, Glyph) ->
+decrease_attribute_by
+(
+   ?ATTRIBUTE_DEFENSE_SCORE,
+   Amount,
+   PointsMultiplier,
+   Glyph
+) ->
    NewDefenseScore = (Glyph#proto_glyph.defense_score + Amount),
 
    Cost =
       trunc
       (
          (Amount * ?ATTRIBUTE_DEFENSE_SCORE_COST)
-         * ?NEGATIVE_POINTS_MULTIPLIER
+         * PointsMultiplier
       ),
 
    if
@@ -271,13 +339,13 @@ decrease_attribute_by (?ATTRIBUTE_DEFENSE_SCORE, Amount, Glyph) ->
             }
          }
    end;
-decrease_attribute_by (Attribute, Amount, Glyph) ->
+decrease_attribute_by (Attribute, Amount, PointsMultiplier, Glyph) ->
    {_AttMin, _AttDef, _AttMax, AttCost} = blc_attribute:get_info(Attribute),
    CurrentOmnimods = Glyph#proto_glyph.omnimods,
    CurrentValue =
       shr_omnimods:get_attribute_modifier(Attribute, CurrentOmnimods),
 
-   Cost = trunc((Amount * AttCost) * ?NEGATIVE_POINTS_MULTIPLIER),
+   Cost = trunc((Amount * AttCost) * PointsMultiplier),
 
    if
       (CurrentValue > 0) -> {error, incompatible};
@@ -417,6 +485,46 @@ new (AttackCoefficients, DefenseCoefficients) ->
       defense_sign = 0
    }.
 
+-spec new
+   (
+      list(blc_damage_type:coefficient()),
+      list(blc_damage_type:coefficient()),
+      shr_attributes:meta_enum(),
+      shr_attributes:meta_enum()
+   )
+   -> ({ok, type()} | error).
+new (AttackCoefficients, DefenseCoefficients, IncreasedAtt, DecreasedAtt) ->
+   case attribute_coefficent(IncreasedAtt, DecreasedAtt) of
+      error -> error;
+      {ok, PointsReduction} ->
+         PointsMultiplier = (2.0 - PointsReduction),
+         S0Result = new(AttackCoefficients, DefenseCoefficients),
+         case
+            decrease_attribute_for
+            (
+               DecreasedAtt,
+               get_remaining_positive_points(S0Result),
+               PointsMultiplier,
+               S0Result
+            )
+         of
+            {ok, S1Result} ->
+               case
+                  increase_attribute_for
+                  (
+                     IncreasedAtt,
+                     get_points_balance(S1Result),
+                     S1Result
+                  )
+               of
+                  {ok, S2Result} -> {ok, S2Result};
+                  _ -> error
+               end;
+
+            _ -> error
+         end
+   end.
+
 -spec increase_attribute_for
    (
       shr_attributes:meta_enum(),
@@ -433,15 +541,16 @@ increase_attribute_for (Attribute, GivenPoints, Glyph) ->
    (
       shr_attributes:meta_enum(),
       non_neg_integer(),
+      float(),
       type()
    )
    -> ({ok, type} | blc_error:type()).
-decrease_attribute_for (Attribute, GivenPoints, Glyph) ->
+decrease_attribute_for (Attribute, GivenPoints, PointsMultiplier, Glyph) ->
    {_AttMin, _AttDef, _AttMax, AttCost} = blc_attribute:get_info(Attribute),
    AmountOfDecrease =
-      trunc(GivenPoints / (?NEGATIVE_POINTS_MULTIPLIER * AttCost)),
+      trunc(GivenPoints / (PointsMultiplier * AttCost)),
 
-   decrease_attribute_by(Attribute, AmountOfDecrease, Glyph).
+   decrease_attribute_by(Attribute, AmountOfDecrease, PointsMultiplier, Glyph).
 
 -spec get_remaining_positive_points (type()) -> non_neg_integer().
 get_remaining_positive_points (Glyph) ->
@@ -450,3 +559,123 @@ get_remaining_positive_points (Glyph) ->
 -spec get_points_balance (type()) -> non_neg_integer().
 get_points_balance (Glyph) ->
    Glyph#proto_glyph.points_balance.
+
+-spec generate () -> list(type()).
+generate () ->
+   Attributes =
+      [
+         ?ATTRIBUTE_ACCURACY,
+         ?ATTRIBUTE_ATTACK_SCORE,
+         ?ATTRIBUTE_CRITICAL_HIT_CHANCE,
+         ?ATTRIBUTE_DAMAGE_MODIFIER,
+         ?ATTRIBUTE_DEFENSE_SCORE,
+         ?ATTRIBUTE_DODGE_CHANCE,
+         ?ATTRIBUTE_DOUBLE_HIT_CHANCE,
+         ?ATTRIBUTE_HEALTH,
+         ?ATTRIBUTE_MOVEMENT_POINTS,
+         ?ATTRIBUTE_PARRY_CHANCE
+      ],
+
+   DamageTypeDistributions =
+      lists:map
+      (
+         fun ([A, B, C]) ->
+            [
+               {?DAMAGE_TYPE_SLASH, A},
+               {?DAMAGE_TYPE_PIERCE, B},
+               {?DAMAGE_TYPE_BLUNT, C}
+            ]
+         end,
+         blc_distribution:generate(3, 25)
+      ),
+
+   S0Result =
+      shr_lists_util:product
+      (
+         fun (IncreasedAttribute, DecreasedAttribute) ->
+            case {IncreasedAttribute, DecreasedAttribute} of
+               {A, B} when
+                  (
+                     (
+                        (A =:= ?ATTRIBUTE_DEFENSE_SCORE)
+                        or (B =:= ?ATTRIBUTE_ATTACK_SCORE)
+                     )
+                     and
+                     (
+                        (A =:= ?ATTRIBUTE_ATTACK_SCORE)
+                        or (B =:= ?ATTRIBUTE_DEFENSE_SCORE)
+                     )
+                  ) ->
+                     shr_lists_util:product
+                     (
+                        fun (AttackCoefs, DefenseCoefs) ->
+                           new
+                           (
+                              AttackCoefs,
+                              DefenseCoefs,
+                              IncreasedAttribute,
+                              DecreasedAttribute
+                           )
+                        end,
+                        DamageTypeDistributions,
+                        DamageTypeDistributions
+                     );
+
+               {A, B} when
+                     (
+                        (A =:= ?ATTRIBUTE_DEFENSE_SCORE)
+                        or (B =:= ?ATTRIBUTE_DEFENSE_SCORE)
+                     ) ->
+                  lists:map
+                  (
+                     fun (DefenseCoefs) ->
+                        new
+                        (
+                           [],
+                           DefenseCoefs,
+                           IncreasedAttribute,
+                           DecreasedAttribute
+                        )
+                     end,
+                     DamageTypeDistributions
+                  );
+
+               {A, B} when
+                     (
+                        (A =:= ?ATTRIBUTE_ATTACK_SCORE)
+                        or (B =:= ?ATTRIBUTE_ATTACK_SCORE)
+                     ) ->
+                  lists:map
+                  (
+                     fun (AttackCoefs) ->
+                        new
+                        (
+                           AttackCoefs,
+                           [],
+                           IncreasedAttribute,
+                           DecreasedAttribute
+                        )
+                     end,
+                     DamageTypeDistributions
+                  );
+
+               _ -> [new([], [], IncreasedAttribute, DecreasedAttribute)]
+            end
+         end,
+         Attributes,
+         Attributes
+      ),
+
+   lists:filtermap
+   (
+      fun (Candidate) ->
+         case Candidate of
+            {ok, Result} -> {true, Result};
+            _ -> false
+         end
+      end,
+      lists:flatten(S0Result)
+   ).
+
+-spec export (type()) -> list().
+export (Glyph) -> shr_omnimods:export(Glyph#proto_glyph.omnimods).

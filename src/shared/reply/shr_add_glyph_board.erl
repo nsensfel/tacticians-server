@@ -23,10 +23,6 @@ generate (GlyphBoard) ->
          {<<"msg">>, <<"add_glyph_board">>},
          {<<"id">>, shr_glyph_board:get_id(GlyphBoard)},
          {<<"nam">>, shr_glyph_board:get_name(GlyphBoard)},
-         {<<"slot">>, shr_glyph_board:get_slots(GlyphBoard)},
-         {
-            <<"omni">>,
-            shr_omnimods:encode(shr_glyph_board:get_omnimods(GlyphBoard))
-         }
+         {<<"slot">>, shr_glyph_board:get_slots(GlyphBoard)}
       ]
    }.

@@ -11,7 +11,6 @@
    {
       id :: id(),
       name :: binary(),
-      omnimods :: shr_omnimods:type(),
       slots :: list(integer())
    }
 ).
@@ -35,7 +34,6 @@
    [
       get_id/1,
       get_name/1,
-      get_omnimods/1,
       get_slots/1
    ]
 ).
@@ -82,9 +80,6 @@ get_id (GlyphBoard) -> GlyphBoard#glyph_board.id.
 -spec get_name (type()) -> binary().
 get_name (GlyphBoard) -> GlyphBoard#glyph_board.name.
 
--spec get_omnimods (type()) -> shr_omnimods:type().
-get_omnimods (GlyphBoard) -> GlyphBoard#glyph_board.omnimods.
-
 -spec get_slots (type()) -> list(non_neg_integer()).
 get_slots (GlyphBoard) -> GlyphBoard#glyph_board.slots.
 
@@ -104,11 +99,15 @@ default () -> from_id(<<"0">>).
    )
    -> shr_omnimods:type().
 get_omnimods_with_glyphs (Glyphs, GlyphBoard) ->
-   BoardOmnimods = GlyphBoard#glyph_board.omnimods,
    BoardSlots = GlyphBoard#glyph_board.slots,
 
    {ok, Omnimods} =
-      get_omnimods_with_glyphs_internals(BoardOmnimods, Glyphs, BoardSlots),
+      get_omnimods_with_glyphs_internals
+      (
+         shr_omnimods:new(),
+         Glyphs,
+         BoardSlots
+      ),
 
    Omnimods.
 
