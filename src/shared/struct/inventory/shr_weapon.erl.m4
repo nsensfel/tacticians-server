@@ -82,7 +82,7 @@ from_id (_) ->
    default().
 
 -spec default () -> type().
-default () -> from_id(<<"0">>).
+default () -> from_id(<<"s0">>).
 
 -spec default_id () -> id().
-default_id () -> <<"0">>.
+default_id () -> <<"s0">>.

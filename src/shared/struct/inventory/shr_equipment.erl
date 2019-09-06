@@ -468,14 +468,20 @@ ataxia_set_glyph_ids (V, VUpdate, Eq) ->
 
 -spec default () -> type().
 default () ->
+   DefaultGlyphBoard = shr_glyph_board:default(),
    #shr_eq
    {
       primary = shr_weapon:default(),
       secondary = shr_weapon:default(),
       armor = shr_armor:default(),
       portrait = shr_portrait:default(),
-      glyph_board = shr_glyph_board:default(),
-      glyphs = []
+      glyph_board = DefaultGlyphBoard,
+      glyphs =
+         lists:map
+         (
+            fun (_E) -> shr_glyph:default() end,
+            shr_glyph_board:get_slots(DefaultGlyphBoard)
+         )
    }.
 
 -spec default_unresolved () -> unresolved().
@@ -487,7 +493,12 @@ default_unresolved () ->
       armor = shr_armor:default_id(),
       portrait = shr_portrait:default_id(),
       glyph_board = shr_glyph_board:default_id(),
-      glyphs = []
+      glyphs =
+         lists:map
+         (
+            fun (_E) -> shr_glyph:default() end,
+            shr_glyph_board:get_slots(shr_glyph_board:default())
+         )
    }.
 
 -spec decode (map()) -> unresolved().
