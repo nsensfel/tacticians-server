@@ -10,6 +10,7 @@
    glyph,
    {
       id :: id(),
+      family_id :: id(),
       name :: binary(),
       omnimods :: shr_omnimods:type()
    }
@@ -35,6 +36,7 @@
    [
       get_id/1,
       get_name/1,
+      get_family_id/1,
       get_omnimods/1
    ]
 ).
@@ -43,7 +45,8 @@
 (
    [
       default/0,
-      default_id/0
+      default_id/0,
+      default_family_id/0
    ]
 ).
 
@@ -56,6 +59,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_id (type()) -> id().
 get_id (Glyph) -> Glyph#glyph.id.
+
+-spec get_family_id (type()) -> id().
+get_family_id (Glyph) -> Glyph#glyph.family_id.
 
 -spec get_name (type()) -> binary().
 get_name (Glyph) -> Glyph#glyph.name.
@@ -74,3 +80,6 @@ default () -> from_id(<<"0">>).
 
 -spec default_id () -> id().
 default_id () -> <<"0">>.
+
+-spec default_family_id () -> id().
+default_family_id () -> <<"0">>.
