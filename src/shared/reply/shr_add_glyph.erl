@@ -23,6 +23,7 @@ generate (Glyph) ->
          {<<"msg">>, <<"add_glyph">>},
          {<<"id">>, shr_glyph:get_id(Glyph)},
          {<<"nam">>, shr_glyph:get_name(Glyph)},
+         {<<"fam">>, shr_glyph:get_family_id(Glyph)},
          {<<"omni">>, shr_omnimods:encode(shr_glyph:get_omnimods(Glyph))}
       ]
    }.

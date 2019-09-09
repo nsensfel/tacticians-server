@@ -496,7 +496,7 @@ default_unresolved () ->
       glyphs =
          lists:map
          (
-            fun (_E) -> shr_glyph:default() end,
+            fun (_E) -> shr_glyph:default_id() end,
             shr_glyph_board:get_slots(shr_glyph_board:default())
          )
    }.
