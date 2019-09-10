@@ -65,7 +65,7 @@ update_data (QueryState, Input) ->
    Player = QueryState#query_state.player,
 
    case shr_player:password_is(InputPassword, Player) of
-      true -> error({password, QueryState#query_state.player_id});
+      false -> error({password, QueryState#query_state.player_id});
       _ -> ok
    end,
 
