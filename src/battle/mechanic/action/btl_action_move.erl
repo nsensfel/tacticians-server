@@ -191,7 +191,10 @@ cross
    NextRemainingStepsCount = (RemainingStepsCount - 1),
    IsForbidden = sets:is_element(NextLocation, ForbiddenLocations),
 
-   false = IsForbidden,
+   case IsForbidden of
+      true -> error({forbidden, tile, NextLocation});
+      false -> ok
+   end,
 
    {NextAttacksOfOpportunityCandidates, Attackers} =
       detect_attacks_of_opportunity
@@ -461,7 +464,10 @@ handle (Action, Character, S0Update) ->
 
    MovementPoints = get_movement_points(Action, Character),
 
-   true = (MovementPoints >= PathCost),
+   case (MovementPoints >= PathCost) of
+      true -> ok;
+      _ -> error({movement, MovementPoints, PathCost})
+   end,
 
    % [FIXME][IMPORTANT]: 'Path' will not be correct if there is an interruption.
    S1Update =

@@ -65,9 +65,18 @@ assert_user_is_current_player (Update, Request) ->
    CurrentPlayerIX = btl_player_turn:get_player_ix(CurrentPlayerTurn),
    CurrentPlayer = btl_battle:get_player(CurrentPlayerIX, Battle),
 
-   true = (PlayerID == btl_player:get_id(CurrentPlayer)),
-
-   ok.
+   case (PlayerID == btl_player:get_id(CurrentPlayer)) of
+      true -> ok;
+      _ ->
+         error
+         (
+            {
+               player_id,
+               btl_player:get_id(CurrentPlayer),
+               PlayerID
+            }
+         )
+   end.
 
 -spec assert_user_owns_played_character
    (
@@ -83,9 +92,10 @@ assert_user_owns_played_character (Update, Request) ->
    CharacterPlayer = btl_battle:get_player(CharacterPlayerIX, Battle),
    CharacterPlayerID = btl_player:get_id(CharacterPlayer),
 
-   true = (PlayerID == CharacterPlayerID),
-
-   ok.
+   case (PlayerID == CharacterPlayerID) of
+      true -> ok;
+      _ -> error({player_id, CharacterPlayerID, PlayerID})
+   end.
 
 -spec assert_character_can_be_played (btl_character_turn_update:type()) -> 'ok'.
 assert_character_can_be_played (Update) ->
@@ -93,9 +103,10 @@ assert_character_can_be_played (Update) ->
    CharacterIX = btl_character_turn_update:get_character_ix(Update),
    Character = btl_battle:get_character(CharacterIX, Battle),
 
-   true = btl_character:get_is_active(Character),
-
-   ok.
+   case btl_character:get_is_active(Character) of
+      true -> ok;
+      _ -> error({character, active, CharacterIX})
+   end.
 
 -spec assert_user_permissions
    (

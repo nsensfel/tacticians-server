@@ -108,7 +108,10 @@ get_character_abilities (Action, Character, TargetCharacter) ->
          btl_character:get_location(TargetCharacter)
       ),
 
-   true = (AttackRange >= RequiredRange),
+   case (AttackRange >= RequiredRange) of
+      true -> ok;
+      _ -> error({attack, range, AttackRange, RequiredRange})
+   end,
 
    {
       (DefenseRange == 0),

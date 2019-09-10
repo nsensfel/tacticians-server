@@ -228,5 +228,4 @@ encode (TurnResult) when is_record(TurnResult, player_turn_started) ->
       ]
    };
 encode (Other) ->
-   io:format("~n invalid encode param\"~p\"~n", [Other]),
-   true = Other.
+   error(io_lib:format("~n invalid encode param\"~p\"~n", [Other])).

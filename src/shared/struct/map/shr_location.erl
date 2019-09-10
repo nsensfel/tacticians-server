@@ -86,7 +86,11 @@ decode (Map) ->
    X = maps:get(<<"x">>, Map),
    Y = maps:get(<<"y">>, Map),
 
-   true = (is_integer(X) and is_integer(Y)),
+   if
+      (not is_integer(X)) -> error({map, width, X});
+      (not is_integer(Y)) -> error({map, height, Y});
+      true -> ok
+   end,
 
    validate({X, Y}).
 

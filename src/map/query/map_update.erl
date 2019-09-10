@@ -46,9 +46,21 @@ parse_input (Query) ->
    EncodedMapContent = maps:get(<<"t">>, JSONReqMap),
 
    %% TODO [LOW]: those checks should be done while queries are locked.
-   true = (MapWidth > 0),
-   true = (MapHeight > 0),
-   true = (length(EncodedMapContent) == (MapWidth * MapHeight)),
+   if
+      (MapWidth =< 0) -> error({map, width, MapWidth});
+      (MapHeight =< 0) -> error({map, height, MapHeight});
+      (length(EncodedMapContent) =/= (MapWidth * MapHeight)) ->
+         error
+         (
+            {
+               map,
+               content_size,
+               (MapWidth * MapHeight),
+               length(EncodedMapContent)
+            }
+         );
+      true -> ok
+   end,
 
    MapContent = lists:map(fun shr_tile_instance:decode/1, EncodedMapContent),
 

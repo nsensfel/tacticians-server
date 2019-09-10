@@ -64,7 +64,10 @@ update_data (QueryState, Input) ->
    InputPassword = Input#input.password,
    Player = QueryState#query_state.player,
 
-   true = (shr_player:password_is(InputPassword, Player)),
+   case shr_player:password_is(InputPassword, Player) of
+      true -> error({password, QueryState#query_state.player_id});
+      _ -> ok
+   end,
 
    S0Player = shr_player:new_token(Player),
    S1Player = shr_player:refresh_active(S0Player),
