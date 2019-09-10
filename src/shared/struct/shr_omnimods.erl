@@ -1,5 +1,7 @@
 -module(shr_omnimods).
 
+-include("tacticians/attributes.hrl").
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,21 +270,12 @@ apply_to_attributes (Omnimods, Attributes) ->
       Omnimods#omnimods.attmods
    ).
 
-% FIXME: 'base' is no longer used.
 -spec get_attack_damage (float(), type(), type()) -> non_neg_integer().
-get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
-   AttackerOmnimodsAttmods = AttackerOmnimods#omnimods.atkmods,
+get_attack_damage (AttackMultiplier, AttackerOmnimods, DefenderOmnimods) ->
+   AttackerOmnimodsAtkmods = AttackerOmnimods#omnimods.atkmods,
    DefenderOmnimodsDefmods = DefenderOmnimods#omnimods.defmods,
 
    io:format("Attack!~n"),
-
-   BaseDefense =
-      case dict:find(base, DefenderOmnimodsDefmods) of
-         {ok, BaseDefValue} -> BaseDefValue;
-         _ -> 0
-      end,
-
-   io:format("Defender base defense: ~p~n", [BaseDefense]),
 
    Result =
       dict:fold
@@ -290,9 +283,14 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
          fun (Name, BaseDmg, CurrentResult) ->
             io:format("Precalc damage from ~p: ~p~n", [Name, BaseDmg]),
             NormDmg = max(0, BaseDmg),
-            ModifiedDmg =
-               (shr_math_util:ceil(NormDmg * AttackModifier) - BaseDefense),
-            io:format("Actual attack damage from ~p: ~p~n", [Name, ModifiedDmg]),
+            ModifiedDmg = (shr_math_util:ceil(NormDmg * AttackMultiplier)),
+
+            io:format
+            (
+               "Actual attack damage from ~p: ~p~n",
+               [Name, ModifiedDmg]
+            ),
+
             case dict:find(Name, DefenderOmnimodsDefmods) of
                {ok, Def} when (Def >= ModifiedDmg) ->
                   io:format
@@ -310,6 +308,7 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
                      [Def, Name, DamageTaken]
                   ),
                   (CurrentResult + DamageTaken);
+
                _ ->
                   io:format
                   (
@@ -320,7 +319,7 @@ get_attack_damage (AttackModifier, AttackerOmnimods, DefenderOmnimods) ->
             end
          end,
          0,
-         AttackerOmnimodsAttmods
+         AttackerOmnimodsAtkmods
       ),
 
    io:format("Defender took a total of ~p damage.~n", [Result]),

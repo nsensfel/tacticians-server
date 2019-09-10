@@ -303,7 +303,7 @@ effect_of_attack
          (
             PrecisionModifier
             * CriticalModifier
-            * shr_attributes:get_damage_modifier(AttackerAttributes)
+            * shr_attributes:get_damage_multiplier(AttackerAttributes)
          ),
          shr_character:get_omnimods(AttackerBaseCharacter),
          shr_character:get_omnimods(DefenderBaseCharacter)
