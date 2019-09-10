@@ -152,14 +152,14 @@ get_damage_multiplier (Atts) -> (get_damage_modifier(Atts) / 100).
 default () ->
    #attributes
    {
-      movement_points = 0,
-      health = 1,
-      dodge_chance = 0,
-      parry_chance = 0,
-      accuracy = 0,
-      double_hit_chance = 0,
-      critical_hit_chance = 0,
-      damage_modifier = 100
+      movement_points = ?ATTRIBUTE_MOVEMENT_POINTS_MIN,
+      health = ?ATTRIBUTE_HEALTH_MIN,
+      dodge_chance = ?ATTRIBUTE_DODGE_CHANCE_MIN,
+      parry_chance = ?ATTRIBUTE_PARRY_CHANCE_MIN,
+      accuracy = ?ATTRIBUTE_ACCURACY_MIN,
+      double_hit_chance = ?ATTRIBUTE_DOUBLE_HIT_CHANCE_MIN,
+      critical_hit_chance = ?ATTRIBUTE_CRITICAL_HIT_CHANCE_MIN,
+      damage_modifier = ?ATTRIBUTE_DAMAGE_MODIFIER_MIN
    }.
 
 -spec apply_mod (enum(), integer(), type()) -> type().
