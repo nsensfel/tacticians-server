@@ -94,7 +94,17 @@
    (float(), attribute_mods()) -> attribute_mods();
    (float(), damage_type_mods()) -> damage_type_mods().
 apply_coefficient_to_mods (Coef, Mods) ->
-   dict:map(fun (_Name, Val) -> shr_math_util:ceil(Coef * Val) end, Mods).
+   dict:map
+   (
+      fun (_Name, S0Value) ->
+         S1Value = (Coef * S0Value),
+         case S1Value >= 0 of
+            true -> shr_math_util:ceil(S1Value);
+            false -> floor(S1Value)
+         end
+      end,
+      Mods
+   ).
 
 -spec merge_mods
    (attribute_mods(), attribute_mods()) -> attribute_mods();
