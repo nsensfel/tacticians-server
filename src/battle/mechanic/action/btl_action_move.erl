@@ -21,7 +21,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec generate_attacks_of_opportunity_candidates
+-spec generate_attack_of_opportunity_candidates
    (
       btl_character:either(),
       shr_location:type(),
@@ -29,7 +29,7 @@
       non_neg_integer()
    )
    -> list(attack_candidate_ref()).
-generate_attacks_of_opportunity_candidates
+generate_attack_of_opportunity_candidates
 (
    Character,
    Location,
@@ -103,9 +103,12 @@ detect_attacks_of_opportunity (Location, Candidates, RemainingStepsCount) ->
                - CandidateAttackRange
             ),
          if
-            (Range =< 0) -> {FutureCandidates, [CandidateIX|Attackers]};
+            (Range =< 0) ->
+               {[Candidate|FutureCandidates], [CandidateIX|Attackers]};
+
             (Range =< RemainingStepsCount) ->
                {[Candidate|FutureCandidates], Attackers};
+
             true -> {FutureCandidates, Attackers}
          end
       end,
@@ -343,7 +346,7 @@ get_path_cost_and_destination (CharacterIX, Character, Update, Path) ->
 
    ForbiddenLocations = generate_forbidden_locations(CharacterIX, Characters),
    AttacksOfOpportunityCandidates =
-      generate_attacks_of_opportunity_candidates
+      generate_attack_of_opportunity_candidates
       (
          Character,
          Location,
