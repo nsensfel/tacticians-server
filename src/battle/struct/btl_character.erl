@@ -7,6 +7,7 @@
 -define(IS_ACTIVE_FIELD, <<"ena">>).
 -define(IS_DEFEATED_FIELD, <<"dea">>).
 -define(BASE_CHAR_FIELD, <<"bas">>).
+-define(CONDITION_FIELD, <<"con">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,6 +92,13 @@
       get_location_field/0,
       get_base_character_field/0,
       get_conditions_field/0
+   ]
+).
+
+-export
+(
+   [
+      get_conditions_on/2
    ]
 ).
 
@@ -184,6 +192,27 @@ get_is_defeated (#btl_char_ref{ is_defeated = R }) -> R.
    (unresolved()) -> shr_character:unresolved().
 get_base_character (#btl_char{ base = R }) -> R;
 get_base_character (#btl_char_ref{ base = R }) -> R.
+
+-spec get_conditions
+   (type()) -> list(btl_condition:type());
+   (unresolved()) -> list(btl_conditions:type()).
+get_conditions (#btl_char{ conditions = R }) -> R;
+get_conditions (#btl_char_ref{ conditions = R }) -> R.
+
+-spec get_conditions_on
+   (
+      shr_condition:trigger(),
+      either()
+   )
+   -> list(btl_condition:type()).
+get_conditions_on (Trigger, Char) ->
+   lists:filter
+   (
+      fun (Condition) ->
+         btl_condition:triggers_on(Trigger, Condition)
+      end,
+      get_conditions(Char)
+   ).
 
 -spec set_rank
    (rank(), type()) -> type();
@@ -418,13 +447,56 @@ ataxia_set_base_character (NewBaseCharacter, Char) ->
       Char
    ).
 
+-spec set_conditions
+   (list(btl_condition:type()), type()) -> type();
+   (list(btl_condition:type()), unresolved()) -> unresolved().
+set_conditions (Conditions, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ conditions = Conditions };
+set_conditions (Conditions, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ conditions = Conditions }.
+
+
+-spec ataxia_set_conditions
+   (
+      list(btl_condition:type()),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()};
+   (
+      list(btl_condition:type()),
+      ataxic:basic(),
+      unresolved()
+   ) -> {unresolved(), ataxic:basic()}.
+ataxia_set_conditions (Conditions, Update, Char) ->
+   {
+      set_conditions(Conditions, Char),
+      ataxic:update_field
+      (
+         get_conditions_field(),
+         Update
+      )
+   }.
+
+-spec ataxia_set_conditions
+   (list(btl_condition:type()), type()) -> {type(), ataxic:basic()};
+   (list(btl_condition:type()), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_conditions (Conditions, Char) ->
+   ataxia_set_conditions
+   (
+      Conditions,
+      ataxic:constant(Conditions),
+      Char
+   ).
+
 %%%% Utils
 -spec new
    (
       non_neg_integer(),
       rank(),
       shr_location:type(),
-      shr_character:type()
+      shr_character:type(),
+      list(btl_condition:type())
    )
    -> type().
 new
@@ -432,7 +504,8 @@ new
    PlayerIX,
    Rank,
    Location,
-   Base
+   Base,
+   Conditions
 ) ->
    Attributes = shr_character:get_attributes(Base),
 
@@ -444,7 +517,8 @@ new
       current_health = shr_attributes:get_health(Attributes),
       is_active = (PlayerIX == 0),
       is_defeated = false,
-      base = Base
+      base = Base,
+      conditions = Conditions
    }.
 
 -spec resolve (shr_omnimods:type(), either()) -> type().
@@ -457,7 +531,8 @@ resolve (LocalOmnimods, CharRef) when is_record(CharRef, btl_char_ref) ->
       current_health = CharRef#btl_char_ref.current_health,
       is_active = CharRef#btl_char_ref.is_active,
       is_defeated = CharRef#btl_char_ref.is_defeated,
-      base = shr_character:resolve(LocalOmnimods, CharRef#btl_char_ref.base)
+      base = shr_character:resolve(LocalOmnimods, CharRef#btl_char_ref.base),
+      conditions = CharRef#btl_char_ref.conditions
    };
 resolve (_LocalOmnimods, Char) when is_record(Char, btl_char) -> Char.
 
@@ -471,7 +546,8 @@ to_unresolved (Char) when is_record(Char, btl_char) ->
       current_health = Char#btl_char.current_health,
       is_active = Char#btl_char.is_active,
       is_defeated = Char#btl_char.is_defeated,
-      base = shr_character:to_unresolved(Char#btl_char.base)
+      base = shr_character:to_unresolved(Char#btl_char.base),
+      conditions = Char#btl_char.conditions
    };
 to_unresolved (CharRef) when is_record(CharRef, btl_char_ref) -> CharRef.
 
@@ -490,18 +566,26 @@ get_is_active_field () -> #btl_char_ref.is_active.
 get_is_defeated_field () -> #btl_char_ref.is_defeated.
 -spec get_base_character_field() -> non_neg_integer().
 get_base_character_field () -> #btl_char_ref.base.
+-spec get_conditions_field() -> non_neg_integer().
+get_conditions_field () -> #btl_char_ref.conditions.
 
 -spec decode (map()) -> unresolved().
 decode (Map) ->
    #btl_char_ref
    {
-      player_ix =  maps:get(?PLAYER_IX_FIELD, Map),
+      player_ix = maps:get(?PLAYER_IX_FIELD, Map),
       rank = maps:get(?RANK_FIELD, Map),
       location = shr_location:decode(maps:get(?LOCATION_FIELD, Map)),
       current_health = maps:get(?CURRENT_HEALTH_FIELD, Map),
       is_active = maps:get(?IS_ACTIVE_FIELD, Map),
       is_defeated = maps:get(?IS_DEFEATED_FIELD, Map),
-      base = shr_character:decode(maps:get(?BASE_CHAR_FIELD, Map))
+      base = shr_character:decode(maps:get(?BASE_CHAR_FIELD, Map)),
+      conditions =
+         lists:map
+         (
+            fun btl_condition:decode/1,
+            maps:get(?CONDITIONS_FIELD, Map)
+         )
    }.
 
 -spec encode (unresolved()) -> {list({binary(), any()})}.
@@ -514,6 +598,14 @@ encode (CharRef) ->
          {?CURRENT_HEALTH_FIELD, CharRef#btl_char_ref.current_health},
          {?IS_ACTIVE_FIELD, CharRef#btl_char_ref.is_active},
          {?IS_DEFEATED_FIELD, CharRef#btl_char_ref.is_defeated},
-         {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)}
+         {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)},
+         {
+            ?CONDITIONS_FIELD,
+            lists:map
+            (
+               fun btl_condition:encode/1,
+               CharRef#btl_char_ref.conditions
+            )
+         }
       ]
    }.

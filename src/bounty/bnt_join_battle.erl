@@ -82,7 +82,8 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
    ResolvedBaseChar = shr_character:resolve(TileOmnimods, RosterChar),
 
    % TODO: link rank to roster.
-   Result = btl_character:new(PlayerIX, optional, Location, ResolvedBaseChar),
+   Result =
+      btl_character:new(PlayerIX, optional, Location, ResolvedBaseChar, []),
 
    btl_character:to_unresolved(Result).
 
