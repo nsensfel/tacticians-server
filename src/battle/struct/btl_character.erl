@@ -23,7 +23,8 @@
       current_health :: integer(), %% Negative integers let us reverse attacks.
       is_active :: boolean(),
       is_defeated :: boolean(),
-      base :: shr_character:unresolved()
+      base :: shr_character:unresolved(),
+      conditions :: list(btl_condition:type())
    }
 ).
 
@@ -37,7 +38,8 @@
       current_health :: integer(), %% Negative integers let us reverse attacks.
       is_active :: boolean(),
       is_defeated :: boolean(),
-      base :: shr_character:type()
+      base :: shr_character:type(),
+      conditions :: list(btl_condition:type())
    }
 ).
 
@@ -61,6 +63,7 @@
       get_is_active/1,
       get_is_defeated/1,
       get_base_character/1,
+      get_conditions/1,
 
       set_rank/2,
       set_location/3,
@@ -68,6 +71,7 @@
       set_is_active/2,
       set_is_defeated/2,
       set_base_character/2,
+      set_conditions/2,
 
       ataxia_set_rank/2,
       ataxia_set_location/3,
@@ -75,7 +79,9 @@
       ataxia_set_is_active/2,
       ataxia_set_is_defeated/2,
       ataxia_set_base_character/2,
+      ataxia_set_conditions/2,
 
+      ataxia_set_conditions/3,
       ataxia_set_base_character/3,
 
       get_rank_field/0,
@@ -83,7 +89,8 @@
       get_is_active_field/0,
       get_is_defeated_field/0,
       get_location_field/0,
-      get_base_character_field/0
+      get_base_character_field/0,
+      get_conditions_field/0
    ]
 ).
 

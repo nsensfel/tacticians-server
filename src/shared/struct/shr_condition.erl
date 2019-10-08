@@ -12,8 +12,7 @@
    {
       id :: id(),
       name :: binary(),
-      description :: binary(),
-      triggers :: ordset:ordset(trigger())
+      description :: binary()
    }
 ).
 

@@ -26,16 +26,15 @@
       btl_character_turn_update:type()
    ) ->
    {
-      btl_condition:type(),
-      [ataxic:basic()],
+      [{btl_condition:type(), ataxic:basic()}],
       btl_character_turn_update:type()
    }.
 apply (Condition, Update) ->
    {TargetIX, Amount} =
-      case btl_condition:get_parameter(Condition) of
+      case btl_condition:get_parameters(Condition) of
          {StoredTargetIX, StoredAmount} -> {StoredTargetIX, StoredAmount};
          Other -> error({condition, parameter, Other})
       end,
 
    % TODO
-   {Condition, [], Update}.
+   {[{Condition, []}], Update}.

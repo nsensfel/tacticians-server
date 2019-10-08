@@ -36,7 +36,7 @@ cast_logic (TargetIX, Amount, S0Update) ->
          {TargetIX, HealAmount}
       ),
 
-   {_S1Healing, _HealingUpdates, S1Update} =
+   {_S1HealindAndUpdate, S1Update} =
       btl_cond_heal:apply
       (
          Healing,
