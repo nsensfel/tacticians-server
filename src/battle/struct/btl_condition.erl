@@ -3,6 +3,80 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
+
+-type trigger() ::
+   (
+      {
+         (
+            ?CONDITION_TRIGGER_START_OF_PLAYER_TURN
+            | ?CONDITION_TRIGGER_END_OF_PLAYER_TURN
+         ),
+         non_neg_integer()
+      }
+
+      |
+         {
+            (
+               ?CONDITION_TRIGGER_START_OF_CHARACTER_TURN
+               | ?CONDITION_TRIGGER_END_OF_CHARACTER_TURN
+               | ?CONDITION_WEAPON_SWITCH
+               | ?CONDITION_TRIGGER_SKILL_USE
+               | ?CONDITION_TRIGGER_DEATH
+            ),
+            non_neg_integer()
+         }
+
+      |
+         {
+            (
+               ?CONDITION_TRIGGER_START_OF_OWN_ATTACK
+               | ?CONDITION_TRIGGER_END_OF_OWN_ATTACK
+               | ?CONDITION_TRIGGER_START_OF_OWN_HIT
+               | ?CONDITION_TRIGGER_END_OF_OWN_HIT
+               | ?CONDITION_TRIGGER_OWN_DODGE
+               | ?CONDITION_TRIGGER_OWN_CRITICAL
+               | ?CONDITION_TRIGGER_OWN_DOUBLE_HIT
+               | ?CONDITION_TRIGGER_OWN_DAMAGE
+               | ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK
+               | ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK
+               | ?CONDITION_TRIGGER_START_OF_TARGET_HIT
+               | ?CONDITION_TRIGGER_END_OF_TARGET_HIT
+               | ?CONDITION_TRIGGER_TARGET_DODGE
+               | ?CONDITION_TRIGGER_TARGET_CRITICAL
+               | ?CONDITION_TRIGGER_TARGET_DOUBLE_HIT
+               | ?CONDITION_TRIGGER_TARGET_DAMAGE
+            ),
+            {
+               non_neg_integer(),
+               btl_character:type(),
+               non_neg_integer(),
+               btl_character:type(),
+            }
+         }
+
+      |
+         {
+            (
+               ?CONDITION_TRIGGER_START_OF_MOVEMENT
+               | ?CONDITION_TRIGGER_END_OF_MOVEMENT
+            ),
+            {
+               non_neg_integer(),
+               list(shr_direction:type())
+            }
+         }
+
+      |
+         {
+            (
+               ?CONDITION_TRIGGER_START_OF_BATTLE
+               | ?CONDITION_TRIGGER_END_OF_BATTLE
+            ),
+            none
+         }
+   ).
+
 -record
 (
    btl_cond,
@@ -17,7 +91,7 @@
 
 -opaque type() :: #btl_cond{}.
 
--export_type([type/0]).
+-export_type([type/0, trigger/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

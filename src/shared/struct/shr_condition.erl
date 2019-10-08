@@ -12,7 +12,9 @@
    {
       id :: id(),
       name :: binary(),
-      description :: binary()
+      description :: binary(),
+      % can it be removed or stolen? Not ranks, for example.
+      is_transferable :: boolean()
    }
 ).
 
