@@ -1,25 +1,8 @@
--module(shr_condition).
-
+-module(btl_skill_shields_up).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type id() :: ataxia_id:type().
--type trigger() :: atom().
-
--record
-(
-   condition,
-   {
-      id :: id(),
-      name :: binary(),
-      description :: binary(),
-      triggers :: ordset:ordset(trigger())
-   }
-).
-
--opaque type() :: #condition{}.
-
--export_type([id/0, type/0, trigger/0]).
+-include("tacticians/skills.hrl")
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,8 +10,10 @@
 -export
 (
    [
+      cast/5
    ]
 ).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,3 +21,20 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec cast
+   (
+      shr_skill:variant(),
+      non_neg_integer(),
+      list(non_neg_integer()),
+      list(shr_location:type()),
+      btl_character_turn_update:type()
+   ) -> btl_character_turn_update:type().
+cast (Variant, _UserIX, TargetIXs, _Locations, Update) ->
+   % TODO: Add condition to TargetIXs:
+   % {
+   %     Effect: Defense Percentage Increase
+   %     Trigger: Start of Own Attack, Start of Target Attack
+   %     Duration: {Beta} Turns
+   %     Uses: -1 (Infinite)
+   %     Parameter: {Alpha}.
+   Update.

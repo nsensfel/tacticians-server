@@ -66,6 +66,7 @@
 (
    [
       new_move/3,
+      new_attack/2,
       new_attack_of_opportunity/2
    ]
 ).
@@ -200,6 +201,15 @@ new_attack_of_opportunity (ActorIX, TargetIX) ->
       actor_ix = ActorIX,
       target_ix = TargetIX,
       is_opportunistic = true
+   }.
+
+-spec new_attack (non_neg_integer(), non_neg_integer()) -> type().
+new_attack (ActorIX, TargetIX) ->
+   #attack
+   {
+      actor_ix = ActorIX,
+      target_ix = TargetIX,
+      is_opportunistic = false
    }.
 
 -spec get_category (type()) -> category().
