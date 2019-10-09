@@ -3,6 +3,8 @@
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+-include("tacticians/conditions.hrl").
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -613,19 +615,19 @@ apply_luck_decay (Luck) ->
       _ -> 0
    end.
 
--spec apply_battle_frontier_conditions
+-spec apply_mirror_conditions
    (
       shr_condition:trigger(),
       shr_condition:trigger(),
-      btl_action:type(),
+      {btl_action:type(), OtherData},
       btl_character_turn_update:type()
    )
-   -> {btl_action:type(), btl_character_turn_update:type()}.
-apply_battle_frontier_conditions
+   -> {{btl_action:type(), OtherData}, btl_character_turn_update:type()}.
+apply_mirror_conditions
 (
    OwnTriggerName,
    OtherTriggerName,
-   S0Action,
+   {S0Action, S0Data},
    S0Update
 ) ->
    CharacterIX = btl_action:get_actor_index(S0Action),
@@ -635,11 +637,11 @@ apply_battle_frontier_conditions
 
    S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
 
-   {S1Action, S2Update} =
+   {{S1Action, S1Data}, S2Update} =
       apply_conditions
       (
          OwnTriggerName,
-         S0Action,
+         {S0Action, S0Data},
          Character,
          S1Update
       ),
@@ -651,16 +653,111 @@ apply_battle_frontier_conditions
 
    S3Update = btl_character_turn_update:set_battle(S3Battle, S2Update),
 
-   {S2Action, S4Update} =
+   {{S2Action, S2Data}, S4Update} =
       apply_conditions
       (
          OtherTriggerName,
-         S1Action,
+         {S1Action, S1Data},
          TargetCharacter,
          S3Update
       ),
 
-   {S2Action, S4Update}.
+   {{S2Action, S2Data}, S4Update}.
+
+-spec handle_start_of_attack
+   (
+      list(btl_attack:category()),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      list(btl_attack:category()),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   }.
+handle_start_of_attack (S0AttackSequence, S0Action, S0Update) ->
+   S1Update = add_targeting_event(S0Action, S0Update),
+
+   {{S1Action, S1AttackSequence}, S2Update} =
+      apply_mirror_conditions
+      (
+         ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
+         ?CONDITION_TRIGGER_START_OF_OTHER_ATTACK,
+         {S0Action, S0AttackSequence},
+         S1Update
+      ),
+
+   {S1AttackSequence, S1Action, S2Update}.
+
+-spec handle_end_of_attack
+   (
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   -> {btl_action:type(), btl_character_turn_update:type()}.
+handle_end_of_attack (S0Action, S0Update) ->
+   {{S1Action, _PlaceHolder}, S1Update} =
+      apply_mirror_conditions
+      (
+         ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
+         ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
+         {S0Action, ok},
+         S0Update
+      ),
+
+   {S1Action, S1Update}.
+
+-spec handle_first_hit
+   (
+      list(btl_attack:category()),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      list(btl_attack:category()),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   }.
+handle_first_hit (S0Sequence, S0Action, S0Update) ->
+   {BaseActor, BaseTarget, S1Update} = get_actors(S0Action, S0Update),
+   {{_S1Action, {ModdedActor, ModdedTarget}}, S2Update} =
+      apply_mirror_conditions
+      (
+         ?CONDITION_TRIGGER_INITIAL_DATA_FOR_OWN_HIT,
+         ?CONDITION_TRIGGER_INITIAL_DATA_FOR_OTHER_HIT,
+         {S0Action, {BaseActor, BaseTarget}},
+         S1Update
+      ),
+
+   case can_perform(ModdedActor, ModdedTarget) of
+      false -> {S0Sequence, S0Action, S2Update};
+      true ->
+         {HitData, S1Update} = get_hit_data(S0Action, S0Update),
+   end.
+
+-spec handle_attack_sequence
+   (
+      list(btl_attack:category()),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   -> {btl_action:type(), btl_character_turn_update:type()}.
+handle_attack_sequence ([], Action, Update) ->
+   {Action, Update};
+handle_attack_sequence ([first|S0NextElements], S0Action, S0Update) ->
+   {S1NextElements, S1Action, S1Update} =
+      handle_first_hit(S0NextElements, S0Action, S0Update),
+   handle_attack_sequence(S1NextElements, S1Action, S1Update);
+handle_attack_sequence ([second|S0NextElements], S0Action, S0Update) ->
+   {S1NextElements, S1Action, S1Update} =
+      handle_second_hit(S0NextElements, S0Action, S0Update),
+   handle_attack_sequence(S1NextElements, S1Action, S1Update);
+handle_attack_sequence ([counter|S0NextElements], S0Action, S0Update) ->
+   {S1NextElements, S1Action, S1Update} =
+      handle_counter_hit(S0NextElements, S0Action, S0Update),
+   handle_attack_sequence(S1NextElements, S1Action, S1Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -670,32 +767,19 @@ apply_battle_frontier_conditions
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   -> {ok, btl_character_turn_update:type()}.
+   -> btl_character_turn_update:type().
 handle (S0Action, S0Update) ->
-   S1Update = add_targeting_event(S0Action, S0Update),
-   {S1Action, S2Update} =
-      apply_battle_frontier_conditions
-      (
-         ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
-         ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK,
-         S0Action,
-         S1Update
-      ),
+   S0Sequence = [first, counter, second],
 
-   {AttackSequence, S3Update} = plan_attack_sequence(S1Action, S2Update),
-   {S2Action, S4Update} =
-      handle_attack_sequence(AttackSequence, S1Action, S3Update),
+   {S1Sequence, S1Action, S1Update} =
+      handle_start_of_attack(S0Sequence, S0Action, S0Update),
 
-   {S3Action, S2Update} =
-      apply_battle_frontier_conditions
-      (
-         ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
-         ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK,
-         S0Action,
-         S1Update
-      ),
+   {S2Action, S2Update} =
+      handle_attack_sequence(S1Sequence, S1Action, S1Update),
 
-   {ok, S2Update}.
+   {_S3Action, S3Update} = handle_end_of_attack(S2Action, S2Update),
+
+   S3Update.
 
    PlayerIX = btl_character:get_player_index(S0Character),
    S0Player = btl_battle:get_player(PlayerIX, S0Battle),
