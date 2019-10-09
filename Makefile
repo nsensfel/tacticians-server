@@ -11,6 +11,7 @@ INCLUDE_DIR ?= ${CURDIR}/include
 WWW_DIR ?= ${CURDIR}/www
 LOG_DIR ?= ${CURDIR}/log
 DATA_DIR ?= /my/src/tacticians-data/
+ATAXIA_BIN_DIR ?= /my/src/ataxia/ebin
 
 ## Local only?
 #ERL_NAME_VS_SNAME ?= -name
@@ -21,7 +22,8 @@ ERLC ?= erlc
 ERLC_OPTS ?= -I $(INCLUDE_DIR)
 
 ERL ?= erl
-ERL_OPTS ?= -connect_all false -pa `find $(BIN_DIR) -type d`
+ERL_OPTS ?= -connect_all false \
+	-pa `find $(BIN_DIR) -type d` `find $(ATAXIA_BIN_DIR) -type d`
 
 YAWS ?= yaws
 YAWS_OPTS ?= $(ERL_NAME_VS_SNAME) query_node -erlarg '$(ERL_OPTS)'
