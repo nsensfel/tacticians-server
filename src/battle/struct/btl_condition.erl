@@ -132,7 +132,8 @@
 (
    [
       triggers_on/2,
-      apply/3
+      apply/3,
+      recursive_apply/3
    ]
 ).
 
@@ -303,7 +304,7 @@ get_parameters_field () -> #btl_cond.parameters.
    (
       type(),
       trigger(),
-      btl_character_turn_update()
+      btl_character_turn_update:type()
    )
    -> {trigger(), btl_character_turn_update:type()}.
 apply (S0Condition, S0Trigger, S0Update) ->
@@ -323,6 +324,29 @@ apply (S0Condition, S0Trigger, S0Update) ->
          {S1Trigger, S1Update}
 
    end.
+
+-spec recursive_apply
+   (
+      list(type()),
+      trigger(),
+      btl_character_turn_update:type()
+   )
+   -> {trigger(), btl_character_turn_update:type()}.
+recursive_apply (Conditions, S0Trigger, S0Update) ->
+   [LastTrigger, LastUpdate] =
+      lists:foldl
+      (
+         fun (Condition, Parameters) ->
+            {NextTrigger, NextUpdate} =
+               erlang:apply(btl_condition, apply, [Condition|Parameters]),
+
+            [NextTrigger, NextUpdate]
+         end,
+         [S0Trigger, S0Update],
+         Conditions
+      ),
+
+   {LastTrigger, LastUpdate}.
 
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]} % TODO.

@@ -9,13 +9,39 @@
 -export
 (
    [
-      handle/3
+      handle/2
    ]
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec apply_conditions
+   (
+      shr_condition:trigger(),
+      ParameterType,
+      btl_character_turn_update:type()
+   )
+   -> {ParameterType, btl_character_turn_update:type()}.
+apply_conditions
+(
+   TriggerName,
+   S0Parameter,
+   Actor,
+   S0Update
+) ->
+   {
+      {TriggerName, S1Parameter},
+      S1Update
+   } =
+      btl_condition:recursive_apply
+      (
+         btl_character:get_conditions_on(TriggerName, Actor),
+         {TriggerName, S0Parameter},
+         S0Update
+      ),
+   {S1Parameter, S1Update}.
+
 -spec roll_precision_modifier
    (
       shr_attributes:type(),
@@ -587,27 +613,93 @@ apply_luck_decay (Luck) ->
       _ -> 0
    end.
 
+-spec apply_battle_frontier_conditions
+   (
+      shr_condition:trigger(),
+      shr_condition:trigger(),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   -> {btl_action:type(), btl_character_turn_update:type()}.
+apply_battle_frontier_conditions
+(
+   OwnTriggerName,
+   OtherTriggerName,
+   S0Action,
+   S0Update
+) ->
+   CharacterIX = btl_action:get_actor_index(S0Action),
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+   {Character, S1Battle} =
+      btl_battle:get_resolved_character(CharacterIX, S0Battle),
+
+   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+   {S1Action, S2Update} =
+      apply_conditions
+      (
+         OwnTriggerName,
+         S0Action,
+         Character,
+         S1Update
+      ),
+
+   TargetCharacterIX = btl_action:get_target_index(S1Action),
+   S2Battle = btl_character_turn_update:get_battle(S2Update),
+   {TargetCharacter, S3Battle} =
+      btl_battle:get_resolved_character(TargetCharacterIX, S2Battle),
+
+   S3Update = btl_character_turn_update:set_battle(S3Battle, S2Update),
+
+   {S2Action, S4Update} =
+      apply_conditions
+      (
+         OtherTriggerName,
+         S1Action,
+         TargetCharacter,
+         S3Update
+      ),
+
+   {S2Action, S4Update}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle
    (
       btl_action:type(),
-      btl_character:type(),
       btl_character_turn_update:type()
    )
    -> {ok, btl_character_turn_update:type()}.
-handle (Action, S0Character, S0Update) ->
-   S0Battle = btl_character_turn_update:get_battle(S0Update),
-   CharacterIX = btl_action:get_actor_index(Action),
+handle (S0Action, S0Update) ->
+   S1Update = add_targeting_event(S0Action, S0Update),
+   {S1Action, S2Update} =
+      apply_battle_frontier_conditions
+      (
+         ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
+         ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK,
+         S0Action,
+         S1Update
+      ),
+
+   {AttackSequence, S3Update} = plan_attack_sequence(S1Action, S2Update),
+   {S2Action, S4Update} =
+      handle_attack_sequence(AttackSequence, S1Action, S3Update),
+
+   {S3Action, S2Update} =
+      apply_battle_frontier_conditions
+      (
+         ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
+         ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK,
+         S0Action,
+         S1Update
+      ),
+
+   {ok, S2Update}.
 
    PlayerIX = btl_character:get_player_index(S0Character),
    S0Player = btl_battle:get_player(PlayerIX, S0Battle),
    S0PlayerLuck = btl_player:get_luck(S0Player),
-
-   TargetCharacterIX = btl_action:get_target_index(Action),
-   {S0TargetCharacter, S1Battle} =
-      btl_battle:get_resolved_character(TargetCharacterIX, S0Battle),
 
    TargetPlayerIX = btl_character:get_player_index(S0TargetCharacter),
    S0TargetPlayer = btl_battle:get_player(TargetPlayerIX, S1Battle),
