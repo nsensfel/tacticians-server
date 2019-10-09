@@ -1,7 +1,9 @@
 -module(btl_cond_heal).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,14 +26,14 @@
    ->
    {
       btl_condition:type(),
-      btl_condition:update_order(),
+      btl_condition:update_action(),
       [{btl_character:type(), ataxic:basic()}]
    }.
 apply_to_character (Condition, S0Character) ->
-   {_, Amount} = btl_condition:get_parameters(Condition),
+   {_TargetIX, Amount} = btl_condition:get_parameters(Condition),
 
    case btl_character:get_is_alive(S0Character) of
-      false -> {Condition, btl_condition:do_nothing(), []};
+      false -> {Condition, none, []};
       true ->
          RemainingUses = btl_condition:get_remaining_uses(Condition),
          CurrentHealth = btl_character:get_current_health(S0Character),
@@ -39,7 +41,7 @@ apply_to_character (Condition, S0Character) ->
             shr_attributes:get_health
             (
                shr_character:get_attributes
-               j(
+               (
                   btl_character:get_base_character(S0Character)
                )
             ),
@@ -54,7 +56,7 @@ apply_to_character (Condition, S0Character) ->
             (RemainingUses == -1) ->
                {
                   Condition,
-                  btl_condition:do_nothing(),
+                  do_nothing,
                   [{S1Character, CharacterUpdate}]
                };
 
@@ -65,14 +67,14 @@ apply_to_character (Condition, S0Character) ->
                      UpdatedRemainingUses,
                      Condition
                   ),
-                  btl_condition:remove(),
+                  remove,
                   [{S1Character, CharacterUpdate}]
                };
 
             (RemainingUses == 0) ->
                {
                   Condition,
-                  btl_condition:remove(),
+                  remove,
                   [{S1Character, CharacterUpdate}]
                };
 
@@ -85,9 +87,74 @@ apply_to_character (Condition, S0Character) ->
                   ),
                {
                   UpdatedCondition,
-                  btl_condition:update(ConditionUpdate),
+                  {update, ConditionUpdate},
                   [{S1Character, CharacterUpdate}]
                }
+         end
+   end.
+
+-spec handle_trigger
+   (
+      btl_condition:trigger(),
+      btl_condition:type()
+   )
+   -> btl_condition:trigger().
+handle_trigger ({TriggerType, S0TriggerData}, Condition) ->
+   {TargetIX, _Amount} = btl_condition:get_parameters(Condition),
+
+   case
+      (
+         (TriggerType == ?CONDITION_TRIGGER_START_OF_OWN_ATTACK)
+         or (TriggerType == ?CONDITION_TRIGGER_END_OF_OWN_ATTACK)
+         or (TriggerType == ?CONDITION_TRIGGER_START_OF_OWN_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_END_OF_OWN_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_OWN_DODGE)
+         or (TriggerType == ?CONDITION_TRIGGER_OWN_CRITICAL)
+         or (TriggerType == ?CONDITION_TRIGGER_OWN_DOUBLE_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_OWN_DAMAGE)
+         or (TriggerType == ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK)
+         or (TriggerType == ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK)
+         or (TriggerType == ?CONDITION_TRIGGER_START_OF_TARGET_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_END_OF_TARGET_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DODGE)
+         or (TriggerType == ?CONDITION_TRIGGER_TARGET_CRITICAL)
+         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DOUBLE_HIT)
+         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DAMAGE)
+      )
+   of
+      false -> {TriggerType, S0TriggerData};
+      true ->
+         {Char0IX, Char0, Char1IX, Char1} = TriggerData,
+         if
+            (Char0IX == TargetIX) ->
+               {_UpdatedCondition, _UpdateOrder, UpdatedChar} =
+                  apply_to_character(Condition, Char0),
+
+               {
+                  TriggerType,
+                  {
+                     Char0IX
+                     UpdatedChar,
+                     Char1IX,
+                     Char1
+                  }
+               };
+
+            (Char1IX == TargetIX) ->
+               {_UpdatedCondition, _UpdateOrder, UpdatedChar} =
+                  apply_to_character(Condition, Char0),
+
+               {
+                  TriggerType,
+                  {
+                     Char0IX
+                     Char0,
+                     Char1IX,
+                     UpdatedChar
+                  }
+               };
+
+            true -> {TriggerType, S0TriggerData}
          end
    end.
 
@@ -97,40 +164,18 @@ apply_to_character (Condition, S0Character) ->
 -spec apply
    (
       btl_condition:trigger(),
-      tuple(),
       btl_condition:type(),
       btl_character_turn_update:type()
    ) ->
    {
-      [{btl_condition:type(), ataxic:basic()}],
-      tuple(),
+      btl_condition:type(),
+      btl_condition:update_action(),
+      btl_condition:trigger(),
       btl_character_turn_update:type()
    }.
-apply(?CONDITION_TRIGGER_START_OF_PLAYER_TURN, {PlayerIX}, Condition, Update) ->
-apply(?CONDITION_TRIGGER_END_OF_PLAYER_TURN, {PlayerIX}, Condition, Update) ->
-apply
-(
-   ?CONDITION_TRIGGER_START_OF_CHARACTER_TURN,
-   {CharacterIX},
-   Condition,
-   Update
-) ->
-apply
-(
-   ?CONDITION_TRIGGER_END_OF_CHARACTER_TURN,
-   {CharacterIX},
-   Condition,
-   Update
-) ->
-apply
-(
-   ?CONDITION_TRIGGER_END_OF_CHARACTER_TURN,
-   {CharacterIX},
-   Condition,
-   Update
-) ->
+apply (S0Trigger, Condition, Update) ->
+   S1Trigger = handle_trigger(S0Trigger, Condition),
 
-   Trigger,
    Parameters,
    Condition,
    Update) ->
@@ -139,6 +184,4 @@ apply
          {StoredTargetIX, StoredAmount} -> {StoredTargetIX, StoredAmount};
          Other -> error({condition, parameter, Other})
       end,
-
-   % TODO
    {[{Condition, []}], Update}.

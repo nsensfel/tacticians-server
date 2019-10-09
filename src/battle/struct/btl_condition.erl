@@ -51,7 +51,7 @@
                non_neg_integer(),
                btl_character:type(),
                non_neg_integer(),
-               btl_character:type(),
+               btl_character:type()
             }
          }
 
@@ -77,6 +77,8 @@
          }
    ).
 
+-type update_action() :: (none, remove, {update, ataxic:basic()}).
+
 -record
 (
    btl_cond,
@@ -91,7 +93,7 @@
 
 -opaque type() :: #btl_cond{}.
 
--export_type([type/0, trigger/0]).
+-export_type([type/0, trigger/0, update_action/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -129,7 +131,8 @@
 -export
 (
    [
-      triggers_on/2
+      triggers_on/2,
+      apply/3
    ]
 ).
 
@@ -295,6 +298,31 @@ get_duration_field () -> #btl_cond.duration.
 
 -spec get_parameters_field () -> non_neg_integer().
 get_parameters_field () -> #btl_cond.parameters.
+
+-spec apply
+   (
+      type(),
+      trigger(),
+      btl_character_turn_update()
+   )
+   -> {trigger(), btl_character_turn_update:type()}.
+apply (S0Condition, S0Trigger, S0Update) ->
+   Module = shr_condition_selector:get_module(get_category(S0Condition)),
+
+   {S1Condition, UpdateAction, S1Trigger, S1Update} =
+      erlang:apply(Module, apply, [S0Trigger, S0Condition, S0Update]),
+
+   case UpdateAction of
+      none -> {S1Trigger, S1Update};
+      remove ->
+         % TODO
+         {S1Trigger, S1Update};
+
+      {update, ConditionUpdate} ->
+         % TODO
+         {S1Trigger, S1Update}
+
+   end.
 
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]} % TODO.
