@@ -5,78 +5,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("tacticians/conditions.hrl").
 
--type trigger() ::
-   (
-      {
-         (
-            ?CONDITION_TRIGGER_START_OF_PLAYER_TURN
-            | ?CONDITION_TRIGGER_END_OF_PLAYER_TURN
-         ),
-         non_neg_integer()
-      }
-
-      |
-         {
-            (
-               ?CONDITION_TRIGGER_START_OF_CHARACTER_TURN
-               | ?CONDITION_TRIGGER_END_OF_CHARACTER_TURN
-               | ?CONDITION_WEAPON_SWITCH
-               | ?CONDITION_TRIGGER_SKILL_USE
-               | ?CONDITION_TRIGGER_DEATH
-            ),
-            non_neg_integer()
-         }
-
-      |
-         {
-            (
-               ?CONDITION_TRIGGER_START_OF_OWN_ATTACK
-               | ?CONDITION_TRIGGER_END_OF_OWN_ATTACK
-               | ?CONDITION_TRIGGER_START_OF_OWN_HIT
-               | ?CONDITION_TRIGGER_END_OF_OWN_HIT
-               | ?CONDITION_TRIGGER_OWN_DODGE
-               | ?CONDITION_TRIGGER_OWN_CRITICAL
-               | ?CONDITION_TRIGGER_OWN_DOUBLE_HIT
-               | ?CONDITION_TRIGGER_OWN_DAMAGE
-               | ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK
-               | ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK
-               | ?CONDITION_TRIGGER_START_OF_TARGET_HIT
-               | ?CONDITION_TRIGGER_END_OF_TARGET_HIT
-               | ?CONDITION_TRIGGER_TARGET_DODGE
-               | ?CONDITION_TRIGGER_TARGET_CRITICAL
-               | ?CONDITION_TRIGGER_TARGET_DOUBLE_HIT
-               | ?CONDITION_TRIGGER_TARGET_DAMAGE
-            ),
-            {
-               non_neg_integer(),
-               btl_character:type(),
-               non_neg_integer(),
-               btl_character:type()
-            }
-         }
-
-      |
-         {
-            (
-               ?CONDITION_TRIGGER_START_OF_MOVEMENT
-               | ?CONDITION_TRIGGER_END_OF_MOVEMENT
-            ),
-            {
-               non_neg_integer(),
-               list(shr_direction:type())
-            }
-         }
-
-      |
-         {
-            (
-               ?CONDITION_TRIGGER_START_OF_BATTLE
-               | ?CONDITION_TRIGGER_END_OF_BATTLE
-            ),
-            none
-         }
-   ).
-
 -type update_action() :: (none, remove, {update, ataxic:basic()}).
 
 -record
@@ -93,7 +21,7 @@
 
 -opaque type() :: #btl_cond{}.
 
--export_type([type/0, trigger/0, update_action/0]).
+-export_type([type/0, update_action/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,50 +231,50 @@ get_parameters_field () -> #btl_cond.parameters.
 -spec apply
    (
       type(),
-      trigger(),
+      shr_condition:context(),
       btl_character_turn_update:type()
    )
-   -> {trigger(), btl_character_turn_update:type()}.
-apply (S0Condition, S0Trigger, S0Update) ->
+   -> {shr_condition:context(), btl_character_turn_update:type()}.
+apply (S0Condition, S0Context, S0Update) ->
    Module = shr_condition_selector:get_module(get_category(S0Condition)),
 
-   {S1Condition, UpdateAction, S1Trigger, S1Update} =
-      erlang:apply(Module, apply, [S0Trigger, S0Condition, S0Update]),
+   {S1Condition, UpdateAction, S1Context, S1Update} =
+      erlang:apply(Module, apply, [S0Context, S0Condition, S0Update]),
 
    case UpdateAction of
-      none -> {S1Trigger, S1Update};
+      none -> {S1Context, S1Update};
       remove ->
          % TODO
-         {S1Trigger, S1Update};
+         {S1Context, S1Update};
 
       {update, ConditionUpdate} ->
          % TODO
-         {S1Trigger, S1Update}
+         {S1Context, S1Update}
 
    end.
 
 -spec recursive_apply
    (
       list(type()),
-      trigger(),
+      shr_condition:context(),
       btl_character_turn_update:type()
    )
-   -> {trigger(), btl_character_turn_update:type()}.
-recursive_apply (Conditions, S0Trigger, S0Update) ->
-   [LastTrigger, LastUpdate] =
+   -> {shr_condition:context(), btl_character_turn_update:type()}.
+recursive_apply (Conditions, S0Context, S0Update) ->
+   [LastContext, LastUpdate] =
       lists:foldl
       (
          fun (Condition, Parameters) ->
-            {NextTrigger, NextUpdate} =
+            {NextContext, NextUpdate} =
                erlang:apply(btl_condition, apply, [Condition|Parameters]),
 
-            [NextTrigger, NextUpdate]
+            [NextContext, NextUpdate]
          end,
-         [S0Trigger, S0Update],
+         [S0Context, S0Update],
          Conditions
       ),
 
-   {LastTrigger, LastUpdate}.
+   {LastContext, LastUpdate}.
 
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]} % TODO.

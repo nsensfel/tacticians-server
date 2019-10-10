@@ -5,6 +5,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -type id() :: ataxia_id:type().
 -type trigger() :: atom().
+-type context(ReadOnly, Volatile) :: {trigger(), ReadOnly, Volatile}.
 
 -record
 (
@@ -20,7 +21,7 @@
 
 -opaque type() :: #condition{}.
 
--export_type([id/0, type/0, trigger/0]).
+-export_type([id/0, type/0, trigger/0, context/2]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

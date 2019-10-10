@@ -20,87 +20,123 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec apply_conditions
    (
-      shr_condition:trigger(),
-      ParameterType,
+      shr_condition:context(A, B),
+      btl_character:type(),
       btl_character_turn_update:type()
    )
-   -> {ParameterType, btl_character_turn_update:type()}.
+   -> {shr_condition:context(A, B), btl_character_turn_update:type()}.
 apply_conditions
 (
-   TriggerName,
-   S0Parameter,
+   Context = {Trigger, _ReadOnlyContext, _VolatileContext},
    Actor,
    S0Update
 ) ->
-   {
-      {TriggerName, S1Parameter},
-      S1Update
-   } =
+   {LastContext, S1Update} =
       btl_condition:recursive_apply
       (
-         btl_character:get_conditions_on(TriggerName, Actor),
-         {TriggerName, S0Parameter},
+         btl_character:get_conditions_on(Trigger, Actor),
+         Context,
          S0Update
       ),
-   {S1Parameter, S1Update}.
 
--spec roll_precision_modifier
+   {LastContext, S1Update}.
+
+-spec roll_for_precision
    (
-      shr_attributes:type(),
-      shr_attributes:type(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
       integer()
    )
-   -> {float(), integer(), integer()}.
-roll_precision_modifier (Attributes, TargetAttributes, TargetLuck) ->
-   TargetDodges = shr_attributes:get_dodge_chance(TargetAttributes),
-   Accuracy = shr_attributes:get_accuracy(Attributes),
-   MissChance = max(0, (TargetDodges - Accuracy)),
+   -> {btl_attack:precision(), integer(), integer()}.
+roll_for_precision (Actor, ActorLuck, Target, TargetLuck) ->
+   TargetDodgeChance =
+      shr_attributes:get_dodge_chance
+      (
+         shr_character:get_attributes
+         (
+            btl_character:get_base_character(Target)
+         )
+      ),
+   ActorAccuracy =
+      shr_attributes:get_accuracy
+      (
+         shr_character:get_attributes
+         (
+            btl_character:get_base_character(Actor)
+         )
+      ),
+
+   MissChance = max(0, (TargetDodgeChance - ActorAccuracy)),
 
    {Roll, _IsSuccess, PositiveModifier, NegativeModifier} =
       shr_roll:percentage_with_luck(MissChance, TargetLuck),
 
    {
-      case Roll of
-         X when (X =< MissChance) -> 0.0;
-         X when (X =< (MissChance * 2)) -> 0.5;
-         _ -> 1.0
-      end,
-      PositiveModifier,
-      NegativeModifier
+      (
+         if
+            (Roll =< MissChance) -> misses;
+            (Roll =< (MissChance * 2)) -> grazes;
+            true -> hits
+         end
+      ),
+      (ActorLuck + NegativeModifier), % Negative effects are for Actor.
+      (TargetLuck + PositiveModifier) % Positive effects are for Target.
    }.
 
--spec roll_critical_modifier
+-spec roll_for_critical_hit
    (
-      shr_attributes:type(),
-      integer()
-   )
-   -> {float(), integer(), integer()}.
-roll_critical_modifier (Attributes, Luck) ->
-   CriticalHitChance = shr_attributes:get_critical_hit_chance(Attributes),
-   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
-      shr_roll:percentage_with_luck(CriticalHitChance, Luck),
-
-   {
-      case IsSuccess of
-         true -> 2.0; % [TODO][FUTURE]: variable critical multiplier?
-         false -> 1.0
-      end,
-      PositiveModifier,
-      NegativeModifier
-   }.
-
--spec roll_parry
-   (
-      shr_attributes:type(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
       integer()
    )
    -> {boolean(), integer(), integer()}.
-roll_parry (DefenderAttributes, DefenderLuck) ->
-   DefenderParryChance = shr_attributes:get_parry_chance(DefenderAttributes),
-   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
-      shr_roll:percentage_with_luck(DefenderParryChance, DefenderLuck),
+roll_for_critical_hit (Actor, ActorLuck, _Target, TargetLuck) ->
+   ActorCriticalHitChance =
+      shr_attributes:get_critical_hit_chance
+      (
+         shr_character:get_attributes
+         (
+            btl_character:get_base_character(Actor)
+         )
+      ),
 
-   {IsSuccess, PositiveModifier, NegativeModifier}.
+   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
+      shr_roll:percentage_with_luck(ActorCriticalHitChance, ActorLuck),
+
+   {
+      IsSuccess,
+      (ActorLuck + PositiveModifier), % Positive effects are for Actor
+      (TargetLuck + NegativeModifier) % Negative effects are for Target
+   }.
+
+-spec roll_for_parry
+   (
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer()
+   )
+   -> {boolean(), integer(), integer()}.
+roll_for_parry (_Actor, ActorLuck, Target, TargetLuck) ->
+   TargetParryChance =
+      shr_attributes:get_critical_hit_chance
+      (
+         shr_character:get_attributes
+         (
+            btl_character:get_base_character(Target)
+         )
+      ),
+
+   {_Roll, IsSuccess, PositiveModifier, NegativeModifier} =
+      shr_roll:percentage_with_luck(TargetParryChance, TargetLuck),
+
+   {
+      IsSuccess,
+      (ActorLuck + NegativeModifier), % Negative effects are for Actor
+      (TargetLuck + PositiveModifier) % Positive effects are for Target
+   }.
 
 -spec get_character_abilities
    (
@@ -619,50 +655,51 @@ apply_luck_decay (Luck) ->
    (
       shr_condition:trigger(),
       shr_condition:trigger(),
-      {btl_action:type(), OtherData},
+      btl_action:type(),
+      {any(), VolatileContext},
       btl_character_turn_update:type()
    )
-   -> {{btl_action:type(), OtherData}, btl_character_turn_update:type()}.
+   -> {VolatileContext, btl_character_turn_update:type()}.
 apply_mirror_conditions
 (
    OwnTriggerName,
    OtherTriggerName,
-   {S0Action, S0Data},
+   Action,
+   {ReadOnlyContext, S0VolatileContext},
    S0Update
 ) ->
-   CharacterIX = btl_action:get_actor_index(S0Action),
+   CharacterIX = btl_action:get_actor_index(Action),
    S0Battle = btl_character_turn_update:get_battle(S0Update),
    {Character, S1Battle} =
       btl_battle:get_resolved_character(CharacterIX, S0Battle),
 
    S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
 
-   {{S1Action, S1Data}, S2Update} =
+   {{_TriggerName, _ReadOnlyContext, S1VolatileContext}, S2Update} =
       apply_conditions
       (
-         OwnTriggerName,
-         {S0Action, S0Data},
+         {OwnTriggerName, ReadOnlyContext, S0VolatileContext},
          Character,
          S1Update
       ),
 
-   TargetCharacterIX = btl_action:get_target_index(S1Action),
+   TargetCharacterIX = btl_action:get_target_index(Action),
    S2Battle = btl_character_turn_update:get_battle(S2Update),
+
    {TargetCharacter, S3Battle} =
       btl_battle:get_resolved_character(TargetCharacterIX, S2Battle),
 
    S3Update = btl_character_turn_update:set_battle(S3Battle, S2Update),
 
-   {{S2Action, S2Data}, S4Update} =
+   {{_TriggerName, _ReadOnlyContext, S2VolatileContext}, S4Update} =
       apply_conditions
       (
-         OtherTriggerName,
-         {S1Action, S1Data},
+         {OtherTriggerName, ReadOnlyContext, S1VolatileContext},
          TargetCharacter,
          S3Update
       ),
 
-   {{S2Action, S2Data}, S4Update}.
+   {S2VolatileContext, S4Update}.
 
 -spec handle_start_of_attack
    (
@@ -671,70 +708,92 @@ apply_mirror_conditions
       btl_character_turn_update:type()
    )
    ->
-   {
-      list(btl_attack:category()),
-      btl_action:type(),
-      btl_character_turn_update:type()
-   }.
-handle_start_of_attack (S0AttackSequence, S0Action, S0Update) ->
-   S1Update = add_targeting_event(S0Action, S0Update),
+   {list(btl_attack:category()), btl_character_turn_update:type() }.
+handle_start_of_attack (S0AttackSequence, Action, S0Update) ->
+   S1Update = add_targeting_event(Action, S0Update),
 
-   {{S1Action, S1AttackSequence}, S2Update} =
+   {S1AttackSequence, S2Update} =
       apply_mirror_conditions
       (
          ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_START_OF_OTHER_ATTACK,
-         {S0Action, S0AttackSequence},
+         Action,
+         {Action, S0AttackSequence},
          S1Update
       ),
 
-   {S1AttackSequence, S1Action, S2Update}.
+   {S1AttackSequence, S2Update}.
 
 -spec handle_end_of_attack
    (
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   -> {btl_action:type(), btl_character_turn_update:type()}.
-handle_end_of_attack (S0Action, S0Update) ->
-   {{S1Action, _PlaceHolder}, S1Update} =
+   -> btl_character_turn_update:type().
+handle_end_of_attack (Action, S0Update) ->
+   {_None, S1Update} =
       apply_mirror_conditions
       (
          ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
-         {S0Action, ok},
+         Action,
+         {Action, none},
          S0Update
       ),
 
-   {S1Action, S1Update}.
+   S1Update.
 
--spec handle_first_hit
+-spec handle_hit
    (
+      btl_attack:category(),
       list(btl_attack:category()),
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   ->
-   {
-      list(btl_attack:category()),
-      btl_action:type(),
-      btl_character_turn_update:type()
-   }.
-handle_first_hit (S0Sequence, S0Action, S0Update) ->
-   {BaseActor, BaseTarget, S1Update} = get_actors(S0Action, S0Update),
-   {{_S1Action, {ModdedActor, ModdedTarget}}, S2Update} =
+   -> {list(btl_attack:category()), btl_character_turn_update:type()}.
+handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
+   {BaseActor, S0ActorLuck, BaseTarget, S0TargetLuck, S1Update} =
+      get_actors_and_lucks(AttackCategory, S0Action, S0Update),
+
+   {{S0ModdedActor, S0ModdedTarget, S1Sequence}, S2Update} =
       apply_mirror_conditions
       (
-         ?CONDITION_TRIGGER_INITIAL_DATA_FOR_OWN_HIT,
-         ?CONDITION_TRIGGER_INITIAL_DATA_FOR_OTHER_HIT,
-         {S0Action, {BaseActor, BaseTarget}},
+         ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OWN_HIT,
+         ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OTHER_HIT,
+         Action,
+         {{Action, AttackCategory}, {BaseActor, BaseTarget, S0Sequence}},
          S1Update
       ),
 
-   case can_perform(ModdedActor, ModdedTarget) of
-      false -> {S0Sequence, S0Action, S2Update};
+   case can_perform_attack(S0ModdedActor, S0ModdedTarget) of
+      false -> {S1Sequence, S2Update};
       true ->
-         {HitData, S1Update} = get_hit_data(S0Action, S0Update),
+         {S0IsParry, S1ActorLuck, S1TargetLuck} =
+            roll_for_parry
+            (
+               S0ModdedActor,
+               S0ActorLuck,
+               S0ModdedTarget,
+               S0TargetLuck
+            ),
+         {
+            {S1IsParry, S1ModdedActor, S1ModdedTarget, S2Sequence},
+            S3Update
+         } =
+            apply_mirror_conditions
+            (
+               ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OTHER_PARRY,
+               ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OWN_PARRY,
+               Action,
+               {
+                  {Action, AttackCategory},
+                  {S0IsParry, S0ModdedActor, S0ModdedTarget, S1Sequence}
+               },
+               S2Update
+            ),
+
+         % TODO
+         {S2Sequence, S3Update}
    end.
 
 -spec handle_attack_sequence
@@ -743,21 +802,13 @@ handle_first_hit (S0Sequence, S0Action, S0Update) ->
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   -> {btl_action:type(), btl_character_turn_update:type()}.
+   -> btl_character_turn_update:type().
 handle_attack_sequence ([], Action, Update) ->
    {Action, Update};
-handle_attack_sequence ([first|S0NextElements], S0Action, S0Update) ->
-   {S1NextElements, S1Action, S1Update} =
-      handle_first_hit(S0NextElements, S0Action, S0Update),
-   handle_attack_sequence(S1NextElements, S1Action, S1Update);
-handle_attack_sequence ([second|S0NextElements], S0Action, S0Update) ->
-   {S1NextElements, S1Action, S1Update} =
-      handle_second_hit(S0NextElements, S0Action, S0Update),
-   handle_attack_sequence(S1NextElements, S1Action, S1Update);
-handle_attack_sequence ([counter|S0NextElements], S0Action, S0Update) ->
-   {S1NextElements, S1Action, S1Update} =
-      handle_counter_hit(S0NextElements, S0Action, S0Update),
-   handle_attack_sequence(S1NextElements, S1Action, S1Update).
+handle_attack_sequence ([AttackCategory|S0NextElements], Action, S0Update) ->
+   {S1NextElements, S1Update} =
+      handle_hit(AttackCategory, S0NextElements, Action, S0Update),
+   handle_attack_sequence(S1NextElements, Action, S1Update).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -768,16 +819,14 @@ handle_attack_sequence ([counter|S0NextElements], S0Action, S0Update) ->
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-handle (S0Action, S0Update) ->
+handle (Action, S0Update) ->
    S0Sequence = [first, counter, second],
 
-   {S1Sequence, S1Action, S1Update} =
-      handle_start_of_attack(S0Sequence, S0Action, S0Update),
+   {S1Sequence, S1Update} =
+      handle_start_of_attack(S0Sequence, Action, S0Update),
 
-   {S2Action, S2Update} =
-      handle_attack_sequence(S1Sequence, S1Action, S1Update),
-
-   {_S3Action, S3Update} = handle_end_of_attack(S2Action, S2Update),
+   S2Update = handle_attack_sequence(S1Sequence, Action, S1Update),
+   S3Update = handle_end_of_attack(S2Action, S2Update),
 
    S3Update.
 
