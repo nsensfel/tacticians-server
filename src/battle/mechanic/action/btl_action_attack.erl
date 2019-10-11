@@ -2,7 +2,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+% FIXME: Luck should be modifiable by conditions, because they may be chance
+% related (e.g. 25% chance of healing after a hit).
 -include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,518 +139,36 @@ roll_for_parry (_Actor, ActorLuck, Target, TargetLuck) ->
       (TargetLuck + PositiveModifier) % Positive effects are for Target
    }.
 
--spec get_character_abilities
+-spec can_perform_hit
    (
-      btl_action:type(),
       btl_character:type(),
       btl_character:type()
    )
-   -> {boolean(), boolean(), boolean()}.
-get_character_abilities (Action, Character, TargetCharacter) ->
-   CharacterWeapon =
+   -> {boolean(), boolean()}.
+can_perform_hit (Actor, Target) ->
+   ActorWeapon =
       shr_character:get_active_weapon
       (
-         btl_character:get_base_character(Character)
+         btl_character:get_base_character(Actor)
       ),
 
-   TargetCharacterWeapon =
-      shr_character:get_active_weapon
-      (
-         btl_character:get_base_character(TargetCharacter)
-      ),
-
-   DefenseRange = shr_weapon:get_minimum_range(CharacterWeapon),
-   AttackRange = shr_weapon:get_maximum_range(CharacterWeapon),
-   TargetDefenseRange = shr_weapon:get_minimum_range(TargetCharacterWeapon),
-   TargetAttackRange =  shr_weapon:get_maximum_range(TargetCharacterWeapon),
-
-   IsNotOpportunistic = (not btl_action:get_is_opportunistic(Action)),
+   ActorMinimumRange = shr_weapon:get_minimum_range(ActorWeapon),
+   ActorMaximumRange = shr_weapon:get_maximum_range(ActorWeapon),
 
    RequiredRange =
       shr_location:dist
       (
-         btl_character:get_location(Character),
-         btl_character:get_location(TargetCharacter)
+         btl_character:get_location(Actor),
+         btl_character:get_location(Target)
       ),
-
-   case (AttackRange >= RequiredRange) of
-      true -> ok;
-      _ -> error({attack, range, AttackRange, RequiredRange})
-   end,
 
    {
-      (DefenseRange == 0),
       (
-         IsNotOpportunistic
-         and (TargetDefenseRange == 0)
-         and (TargetAttackRange >= RequiredRange)
+         (RequiredRange =< ActorMaximumRange)
+         and (RequiredRange >= ActorMinimumRange)
       ),
-      (
-         IsNotOpportunistic
-         and (TargetAttackRange >= RequiredRange)
-      )
+      (btl_character:get_is_alive(Actor) and btl_character:get_is_alive(Target))
    }.
-
--spec compute_luck_changes
-   (
-      integer(),
-      integer(),
-      boolean(),
-      boolean(),
-      integer(),
-      integer(),
-      integer(),
-      integer(),
-      integer(),
-      integer()
-   )
-   -> {integer(), integer()}.
-compute_luck_changes
-(
-   AttackerLuck,
-   DefenderLuck,
-   ParryIsSuccessful,
-   HitSomething,
-   ParryPositiveLuckMod,
-   ParryNegativeLuckMod,
-   PrecisionPositiveLuckMod,
-   PrecisionNegativeLuckMod,
-   CriticalPositiveLuckMod,
-   CriticalNegativeLuckMod
-) ->
-   case {ParryIsSuccessful, HitSomething} of
-      {true, true} ->
-         {
-            (
-               AttackerLuck
-               % Attacker wasn't the one parrying
-               + ParryNegativeLuckMod
-               % Attacker was the one evading
-               + PrecisionPositiveLuckMod
-               % miss -> no critical hit luck modifier
-            ),
-            (
-               DefenderLuck
-               % Defender was the one parrying
-               + ParryPositiveLuckMod
-               % Defender wasn't the one evading
-               + PrecisionNegativeLuckMod
-               % miss -> no critical hit luck modifier
-            )
-         };
-
-      {true, false} ->
-         {
-            (
-               AttackerLuck
-               % Attacker wasn't the one parrying
-               + ParryNegativeLuckMod
-               % Attacker was the one evading
-               + PrecisionPositiveLuckMod
-               % Attacker wasn't the one doing a critical
-               + CriticalNegativeLuckMod
-            ),
-            (
-               DefenderLuck
-               % Defender was the one parrying
-               + ParryPositiveLuckMod
-               % Defender wasn't the one evading
-               + PrecisionNegativeLuckMod
-               % Defender was the one doing a critical
-               + CriticalPositiveLuckMod
-            )
-         };
-
-      {false, true} ->
-         {
-            (
-               AttackerLuck
-               % Attacker wasn't the one parrying
-               + ParryNegativeLuckMod
-               % Defender was the one evading
-               + PrecisionNegativeLuckMod
-               % miss -> no critical hit luck modifier
-            ),
-            (
-               DefenderLuck
-               % Defender was the one parrying
-               + ParryPositiveLuckMod
-               % Defender was the one evading
-               + PrecisionPositiveLuckMod
-               % miss -> no critical hit luck modifier
-            )
-         };
-
-      {false, false} ->
-         {
-            (
-               AttackerLuck
-               % Attacker wasn't the one parrying
-               + ParryNegativeLuckMod
-               % Attacker wasn't the one evading
-               + PrecisionNegativeLuckMod
-               % Attacker was the one doing a critical
-               + CriticalPositiveLuckMod
-            ),
-            (
-               DefenderLuck
-               % Defender was the one parrying
-               + ParryPositiveLuckMod
-               % Defender was the one evading
-               + PrecisionPositiveLuckMod
-               % Defender wasn't the one doing a critical
-               + CriticalNegativeLuckMod
-            )
-         }
-   end.
-
--spec effect_of_attack
-   (
-      btl_attack:category(),
-      btl_character:type(),
-      btl_character:type(),
-      integer(),
-      integer(),
-      boolean()
-   )
-   ->
-   {
-      btl_character:type(),
-      btl_character:type(),
-      integer(),
-      integer(),
-      btl_attack:type()
-   }.
-effect_of_attack
-(
-   Category,
-   Character,
-   TargetCharacter,
-   Luck,
-   TargetLuck,
-   TargetCanParry
-) ->
-   {ParryIsSuccessful, ParryPositiveLuckMod, ParryNegativeLuckMod} =
-      case TargetCanParry of
-         true ->
-            TargetAttributes =
-               shr_character:get_attributes
-               (
-                  btl_character:get_base_character(TargetCharacter)
-               ),
-            roll_parry(TargetAttributes, TargetLuck);
-
-         false -> {false, 0, 0}
-      end,
-
-   {Attacker, S0Defender, S0AttackerLuck, S0DefenderLuck} =
-      case ParryIsSuccessful of
-         false -> {Character, TargetCharacter, Luck, TargetLuck};
-         true -> {TargetCharacter, Character, TargetLuck, Luck}
-      end,
-
-   AttackerBaseCharacter = btl_character:get_base_character(Attacker),
-   AttackerAttributes = shr_character:get_attributes(AttackerBaseCharacter),
-   DefenderBaseCharacter = btl_character:get_base_character(S0Defender),
-   DefenderAttributes = shr_character:get_attributes(DefenderBaseCharacter),
-
-   {PrecisionModifier, PrecisionPositiveLuckMod, PrecisionNegativeLuckMod} =
-      roll_precision_modifier
-      (
-         AttackerAttributes,
-         DefenderAttributes,
-         S0DefenderLuck
-      ),
-
-   {CriticalModifier, CriticalPositiveLuckMod, CriticalNegativeLuckMod} =
-      roll_critical_modifier(AttackerAttributes, S0AttackerLuck),
-
-   Damage =
-      shr_omnimods:get_attack_damage
-      (
-         (
-            PrecisionModifier
-            * CriticalModifier
-            * shr_attributes:get_damage_multiplier(AttackerAttributes)
-         ),
-         shr_character:get_omnimods(AttackerBaseCharacter),
-         shr_character:get_omnimods(DefenderBaseCharacter)
-      ),
-
-   {S1AttackerLuck, S1DefenderLuck} =
-      compute_luck_changes
-      (
-         S0AttackerLuck,
-         S0DefenderLuck,
-         ParryIsSuccessful,
-         (PrecisionModifier > 0.0),
-         ParryPositiveLuckMod,
-         ParryNegativeLuckMod,
-         PrecisionPositiveLuckMod,
-         PrecisionNegativeLuckMod,
-         CriticalPositiveLuckMod,
-         CriticalNegativeLuckMod
-      ),
-
-   AttackReport =
-      btl_attack:new
-      (
-         Category,
-         PrecisionModifier,
-         CriticalModifier,
-         ParryIsSuccessful,
-         Damage
-      ),
-
-   % If we "ataxia update" here, we'll get redundant ataxia updates, since
-   % both luck and health are likely to change again soon.
-   % If we don't "ataxia update" here, we'll have a bit of an ugly hack at the
-   % end that looks like: ataxia_set_current_health(get_current_health, char).
-   % I'm choosing to go with the hack. The function should not return a
-   % character_turn_update struct though, to make it clear the ataxia updates
-   % are still required.
-   S1Defender =
-      btl_character:set_current_health
-      (
-         (btl_character:get_current_health(S0Defender) - Damage),
-         S0Defender
-      ),
-
-   case ParryIsSuccessful of
-      false ->
-         {Attacker, S1Defender, S1AttackerLuck, S1DefenderLuck, AttackReport};
-
-      true ->
-         {S1Defender, Attacker, S1DefenderLuck, S1AttackerLuck, AttackReport}
-   end.
-
--spec handle_attack_sequence
-   (
-      list({btl_attack:category(), boolean()}),
-      btl_character:type(),
-      btl_character:type(),
-      integer(),
-      integer(),
-      list(btl_attack:type())
-   )
-   ->
-   {
-      btl_character:type(),
-      btl_character:type(),
-      integer(),
-      integer(),
-      list(btl_attack:type())
-   }.
-handle_attack_sequence
-(
-   [],
-   Character,
-   TargetCharacter,
-   PlayerLuck,
-   TargetPlayerLuck,
-   Results
-)
-->
-   {
-      Character,
-      TargetCharacter,
-      PlayerLuck,
-      TargetPlayerLuck,
-      lists:reverse(Results)
-   };
-handle_attack_sequence
-(
-   [{first, TargetCanParry}|NextAttacks],
-   S0Character,
-   S0TargetCharacter,
-   S0PlayerLuck,
-   S0TargetPlayerLuck,
-   Results
-)
-->
-   case
-      (
-         (btl_character:get_current_health(S0Character) > 0)
-         and (btl_character:get_current_health(S0TargetCharacter) > 0)
-      )
-   of
-      true ->
-         {
-            S1Character,
-            S1TargetCharacter,
-            S1PlayerLuck,
-            S1TargetPlayerLuck,
-            Result
-         } =
-            effect_of_attack
-            (
-               first,
-               S0Character,
-               S0TargetCharacter,
-               S0PlayerLuck,
-               S0TargetPlayerLuck,
-               TargetCanParry
-            ),
-
-         handle_attack_sequence
-         (
-            NextAttacks,
-            S1Character,
-            S1TargetCharacter,
-            S1PlayerLuck,
-            S1TargetPlayerLuck,
-            [Result|Results]
-         );
-
-      false ->
-         {
-            S0Character,
-            S0TargetCharacter,
-            S0PlayerLuck,
-            S0TargetPlayerLuck,
-            lists:reverse(Results)
-         }
-   end;
-handle_attack_sequence
-(
-   [{counter, CanParry}|NextAttacks],
-   S0Character,
-   S0TargetCharacter,
-   S0PlayerLuck,
-   S0TargetPlayerLuck,
-   Results
-)
-->
-   case
-      (
-         (btl_character:get_current_health(S0Character) > 0)
-         and (btl_character:get_current_health(S0Character) > 0)
-      )
-   of
-      true ->
-         {
-            S1TargetCharacter,
-            S1Character,
-            S1TargetPlayerLuck,
-            S1PlayerLuck,
-            Result
-         } =
-            effect_of_attack
-            (
-               counter,
-               S0TargetCharacter,
-               S0Character,
-               S0TargetPlayerLuck,
-               S0PlayerLuck,
-               CanParry
-            ),
-
-         handle_attack_sequence
-         (
-            NextAttacks,
-            S1Character,
-            S1TargetCharacter,
-            S1PlayerLuck,
-            S1TargetPlayerLuck,
-            [Result|Results]
-         );
-
-      false ->
-         {
-            S0Character,
-            S0TargetCharacter,
-            S0PlayerLuck,
-            S0TargetPlayerLuck,
-            lists:reverse(Results)
-         }
-   end;
-handle_attack_sequence
-(
-   [{second, TargetCanParry}|NextAttacks],
-   S0Character,
-   S0TargetCharacter,
-   S0PlayerLuck,
-   S0TargetPlayerLuck,
-   Results
-)
-->
-   case
-      (
-         (btl_character:get_current_health(S0Character) > 0)
-         and (btl_character:get_current_health(S0TargetCharacter) > 0)
-      )
-   of
-      true ->
-         Attributes =
-            shr_character:get_attributes
-            (
-               btl_character:get_base_character(S0Character)
-            ),
-         DoubleAttackChance = shr_attributes:get_double_hit_chance(Attributes),
-         {_Roll, IsSuccessful, PositiveModifier, NegativeModifier} =
-            shr_roll:percentage_with_luck(DoubleAttackChance, S0PlayerLuck),
-
-         S1PlayerLuck = (S0PlayerLuck + PositiveModifier),
-         S1TargetPlayerLuck = (S0TargetPlayerLuck + NegativeModifier),
-
-         case IsSuccessful of
-            false ->
-               handle_attack_sequence
-               (
-                  NextAttacks,
-                  S0Character,
-                  S0TargetCharacter,
-                  S1PlayerLuck,
-                  S1TargetPlayerLuck,
-                  Results
-               );
-
-            true ->
-               {
-                  S1Character,
-                  S1TargetCharacter,
-                  S2PlayerLuck,
-                  S2TargetPlayerLuck,
-                  Result
-               } =
-                  effect_of_attack
-                  (
-                     second,
-                     S0Character,
-                     S0TargetCharacter,
-                     S1PlayerLuck,
-                     S1TargetPlayerLuck,
-                     TargetCanParry
-                  ),
-
-               handle_attack_sequence
-               (
-                  NextAttacks,
-                  S1Character,
-                  S1TargetCharacter,
-                  S2PlayerLuck,
-                  S2TargetPlayerLuck,
-                  [Result|Results]
-               )
-         end;
-
-      false ->
-         {
-            S0Character,
-            S0TargetCharacter,
-            S0PlayerLuck,
-            S0TargetPlayerLuck,
-            lists:reverse(Results)
-         }
-   end.
-
--spec apply_luck_decay (integer()) -> integer().
-apply_luck_decay (Luck) ->
-   case {(Luck =< -2), (Luck >= 2)}  of
-      {true, _} -> (Luck + 2);
-      {_, true} -> (Luck - 2);
-      _ -> 0
-   end.
 
 -spec apply_mirror_conditions
    (
@@ -791,7 +310,9 @@ handle_end_of_attack (Action, S0Update) ->
 -spec commit_hit
    (
       btl_character:type(),
+      integer(),
       btl_character:type(),
+      integer(),
       list(btl_attack:category()),
       btl_attack:category(),
       btl_action:type(),
@@ -806,8 +327,10 @@ commit_hit
    IsParry,
    Precision,
    IsCritical,
-   S0ModdedActor,
-   S0ModdedTarget,
+   ModdedActor,
+   ActorLuck,
+   ModdedTarget,
+   TargetLuck,
    S0Sequence,
    AttackCategory,
    Action,
@@ -832,6 +355,146 @@ commit_hit
                btl_action:get_target_index(Action)
             }
       end,
+
+   S0DamageMultiplier =
+      case Precision of
+         misses -> 0.0;
+         grazes -> 0.5;
+         hits -> 1.0
+      end,
+
+   S1DamageMultiplier =
+      case IsCritical of
+         true -> (S0DamageMultiplier) * 2.0;
+         false -> 0.0
+      end,
+
+   S0AttackDamage =
+      shr_omnimods:get_attack_damage
+      (
+         S1DamageMultiplier,
+         shr_character:get_omnimods
+         (
+            btl_character:get_base_character(ModdedActor)
+         ),
+         shr_character:get_omnimods
+         (
+            btl_character:get_base_character(ModdedTarget)
+         )
+      ),
+
+   {
+      {S1AttackDamage, S1Sequence},
+      S1Update
+   } =
+      apply_mirror_conditions
+      (
+         IsParry,
+         ?CONDITION_TRIGGER_COMPUTED_OWN_ATTACK_DAMAGE,
+         ?CONDITION_TRIGGER_COMPUTER_OTHER_ATTACK_DAMAGE,
+         Action,
+         {
+            {
+               Action,
+               AttackCategory,
+               IsParry,
+               Precision,
+               IsCritical,
+               ModdedActor,
+               ModdedTarget
+            },
+            {S0AttackDamage, S0Sequence}
+         },
+         S0Update
+      ),
+
+   S0Battle = btl_character_turn_update:get_battle(S1Update),
+   {S0Target, S1Battle} = btl_battle:get_resolved_character(TargetIX, S0Battle),
+   {S1Target, TargetAtaxiaUpdate} =
+      btl_character:ataxia_set_current_health
+      (
+         (btl_character:get_current_health(S0Target) - S1AttackDamage),
+         S0Target
+      ),
+
+   {S1Battle, BattleAtaxiaUpdate} =
+      btl_battle:set_character
+      (
+         TargetIX,
+         S1Target,
+         TargetAtaxiaUpdate,
+         S0Battle
+      ),
+
+   S2Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S1Battle,
+         BattleAtaxiaUpdate,
+         S1Update
+      ),
+
+   S3Update =
+      commit_luck_change
+      (
+         btl_character:get_player_index(Actor),
+         ActorLuck,
+         S2Update
+      ),
+
+   S4Update =
+      commit_luck_change
+      (
+         btl_character:get_player_index(Target),
+         TargetLuck,
+         S3Update
+      ),
+
+   S5Update =
+      btl_character_turn_update:add_to_timeline
+      (
+         btl_turn_result:new_character_hit
+         (
+            ActorIX,
+            TargetIX,
+            AttackCategory,
+            Precision,
+            IsCritical,
+            IsParry,
+            S1AttackDamage,
+            ActorLuck,
+            TargetLuck
+         ),
+         S4Update
+      ),
+
+   {
+      S2Sequence,
+      S6Update
+   } =
+      apply_mirror_conditions
+      (
+         IsParry,
+         ?CONDITION_TRIGGER_END_OF_OWN_HIT,
+         ?CONDITION_TRIGGER_END_OF_OTHER_HIT,
+         Action,
+         {
+            {
+               Action,
+               AttackCategory,
+               IsParry,
+               Precision,
+               IsCritical,
+               S1AttackDamage,
+               ModdedActor,
+               ModdedTarget
+            },
+            S1Sequence
+         },
+         S5Update
+      ),
+
+   {S2Sequence, S6Update}.
 
 -spec handle_critical_hits
    (
@@ -915,6 +578,7 @@ handle_critical_hits
       btl_attack:category(),
       btl_action:type(),
       boolean(),
+      boolean(),
       btl_character_turn_update:type()
    )
    ->
@@ -929,6 +593,28 @@ handle_critical_hits
    }.
 handle_precision
 (
+   ModdedActor,
+   ActorLuck,
+   ModdedTarget,
+   TargetLuck,
+   Sequence,
+   _AttackCategory,
+   _Action,
+   _IsParry,
+   false,
+   Update
+) ->
+   {
+      misses,
+      ModdedActor,
+      ActorLuck,
+      ModdedTarget,
+      TargetLuck,
+      Sequence,
+      Update
+   };
+handle_precision
+(
    S0ModdedActor,
    S0ActorLuck,
    S0ModdedTarget,
@@ -937,6 +623,7 @@ handle_precision
    AttackCategory,
    Action,
    IsParry,
+   true,
    S0Update
 ) ->
    {S0Precision, S1ActorLuck, S1TargetLuck} =
@@ -984,6 +671,7 @@ handle_precision
       list(btl_attack:category()),
       btl_attack:category(),
       btl_action:type(),
+      boolean(),
       btl_character_turn_update:type()
    )
    ->
@@ -998,6 +686,27 @@ handle_precision
    }.
 handle_parry
 (
+   ModdedActor,
+   ActorLuck,
+   ModdedTarget,
+   TargetLuck,
+   Sequence,
+   _AttackCategory,
+   _Action,
+   true,
+   Update
+) ->
+   {
+      false,
+      ModdedActor,
+      ActorLuck,
+      ModdedTarget,
+      TargetLuck,
+      Sequence,
+      Update
+   };
+handle_parry
+(
    S0ModdedActor,
    S0ActorLuck,
    S0ModdedTarget,
@@ -1005,6 +714,7 @@ handle_parry
    S0Sequence,
    AttackCategory,
    Action,
+   false,
    S0Update
 ) ->
    {S0IsParry, S1ActorLuck, S1TargetLuck} =
@@ -1167,9 +877,8 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
          S1Update
       ),
 
-   case can_perform_attack(S0ModdedActor, S0ModdedTarget) of
-      false -> {S1Sequence, S2Update};
-      true ->
+   case can_perform_hit(S0ModdedActor, S0ModdedTarget) of
+      {true, true} ->
          {
             CanPerform,
             S1ModdedActor,
@@ -1230,10 +939,13 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                      S2Sequence,
                      AttackCategory,
                      Action,
+                     btl_action:get_is_opportunistic(Action),
                      S3Update
                   ),
 
                % If 'IsParry' is true, then Actor and Target have been swapped.
+               {ActorHasRange, _} =
+                  can_perform_hit(S2ModdedActor, S2ModdedTarget),
 
                {
                   Precision,
@@ -1254,6 +966,7 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                      AttackCategory,
                      Action,
                      IsParry,
+                     ActorHasRange,
                      S3Update
                   ),
 
@@ -1286,31 +999,18 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                      Precision,
                      IsCritical,
                      S3ModdedActor,
+                     S3ActorLuck,
                      S3ModdedTarget,
+                     S3TargetLuck,
                      S4Sequence,
                      AttackCategory,
                      Action,
                      S5Update
                   ),
 
-               S7Update =
-                  commit_luck_change
-                  (
-                     btl_character:get_player_index(S1ModdedActor),
-                     S1ActorLuck,
-                     S6Update
-                  ),
-
-               S8Update =
-                  commit_luck_change
-                  (
-                     btl_character:get_player_index(S1ModdedTarget),
-                     S1TargetLuck,
-                     S7Update
-                  ),
-
-               {S5Sequence, S8Update}
+               {S5Sequence, S6Update}
          end
+      {_, _} -> {S1Sequence, S2Update};
    end.
 
 -spec handle_attack_sequence
@@ -1346,158 +1046,3 @@ handle (Action, S0Update) ->
    S3Update = handle_end_of_attack(S2Action, S2Update),
 
    S3Update.
-
-   PlayerIX = btl_character:get_player_index(S0Character),
-   S0Player = btl_battle:get_player(PlayerIX, S0Battle),
-   S0PlayerLuck = btl_player:get_luck(S0Player),
-
-   TargetPlayerIX = btl_character:get_player_index(S0TargetCharacter),
-   S0TargetPlayer = btl_battle:get_player(TargetPlayerIX, S1Battle),
-   S0TargetPlayerLuck = btl_player:get_luck(S0TargetPlayer),
-
-   {CanParry, TargetCanParry, TargetCanCounter} =
-      get_character_abilities(Action, S0Character, S0TargetCharacter),
-
-   {
-      S1Character,
-      S1TargetCharacter,
-      S1PlayerLuck,
-      S1TargetPlayerLuck,
-      AttackReports
-   } =
-      handle_attack_sequence
-      (
-         case TargetCanCounter of
-            true ->
-               [
-                  {first, TargetCanParry},
-                  {counter, CanParry},
-                  {second, TargetCanParry}
-               ];
-
-            false ->
-               [
-                  {first, TargetCanParry},
-                  {second, TargetCanParry}
-               ]
-         end,
-         S0Character,
-         S0TargetCharacter,
-         S0PlayerLuck,
-         S0TargetPlayerLuck,
-         []
-      ),
-
-   S2PlayerLuck = apply_luck_decay(S1PlayerLuck),
-   S2TargetPlayerLuck = apply_luck_decay(S1TargetPlayerLuck),
-
-   CharacterAtaxiaUpdate =
-      ataxic:update_field
-      (
-         btl_character:get_current_health_field(),
-         ataxic:constant(btl_character:get_current_health(S1Character))
-      ),
-
-   {S2Battle, BattleAtaxiaUpdate0} =
-      btl_battle:ataxia_set_character
-      (
-         CharacterIX,
-         S1Character,
-         CharacterAtaxiaUpdate,
-         S1Battle
-      ),
-
-   TargetCharacterAtaxiaUpdate =
-      ataxic:update_field
-      (
-         btl_character:get_current_health_field(),
-         ataxic:constant(btl_character:get_current_health(S1TargetCharacter))
-      ),
-
-   {S3Battle, BattleAtaxiaUpdate1} =
-      btl_battle:ataxia_set_character
-      (
-         TargetCharacterIX,
-         S1TargetCharacter,
-         TargetCharacterAtaxiaUpdate,
-         S2Battle
-      ),
-
-   {S1Player, PlayerAtaxiaUpdate} =
-      btl_player:ataxia_set_luck(S2PlayerLuck, S0Player),
-
-   {S4Battle, BattleAtaxiaUpdate2} =
-      btl_battle:ataxia_set_player
-      (
-         PlayerIX,
-         S1Player,
-         PlayerAtaxiaUpdate,
-         S3Battle
-      ),
-
-   {S1TargetPlayer, TargetPlayerAtaxiaUpdate} =
-      btl_player:ataxia_set_luck(S2TargetPlayerLuck, S0TargetPlayer),
-
-   {S5Battle, BattleAtaxiaUpdate3} =
-      btl_battle:ataxia_set_player
-      (
-         TargetPlayerIX,
-         S1TargetPlayer,
-         TargetPlayerAtaxiaUpdate,
-         S4Battle
-      ),
-
-   S1Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         S5Battle,
-         ataxic:optimize
-         (
-            ataxic:sequence
-            (
-               [
-                  BattleAtaxiaUpdate0,
-                  BattleAtaxiaUpdate1,
-                  BattleAtaxiaUpdate2,
-                  BattleAtaxiaUpdate3
-               ]
-            )
-         ),
-         S0Update
-      ),
-
-   S2Update =
-      btl_character_turn_update:add_to_timeline
-      (
-         btl_turn_result:new_character_attacked
-         (
-            CharacterIX,
-            TargetCharacterIX,
-            AttackReports,
-            S2PlayerLuck,
-            S2TargetPlayerLuck
-         ),
-         S1Update
-      ),
-
-   S3Update =
-      case (btl_character:get_current_health(S1Character) > 0) of
-         true -> S2Update;
-         false ->
-            % Remove melee opportunistic zone for S1Character.
-            btl_victory_progression:handle_character_loss(S1Character, S2Update)
-      end,
-
-   S4Update =
-      case (btl_character:get_current_health(S1TargetCharacter) > 0) of
-         true -> S3Update;
-         false ->
-            % Remove melee opportunistic zone for S1TargetCharacter.
-            btl_victory_progression:handle_character_loss
-            (
-               S1TargetCharacter,
-               S3Update
-            )
-      end,
-
-   {ok, S4Update}.

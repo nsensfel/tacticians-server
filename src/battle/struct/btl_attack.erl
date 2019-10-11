@@ -57,23 +57,18 @@ encode_precision (misses) -> <<"m">>.
 -spec new
    (
       category(),
-      float(),
-      float(),
+      precision(),
+      boolean(),
       boolean(),
       non_neg_integer()
    )
    -> type().
-new (Category, PrecisionModifier, CriticalModifier, IsParry, Damage) ->
+new (Category, Precision, IsCritical, IsParry, Damage) ->
    #attack
    {
       category = Category,
-      precision =
-         case PrecisionModifier of
-            1.0 -> hits;
-            0.5 -> grazes;
-            0.0 -> misses
-         end,
-      is_critical = (CriticalModifier > 1.0),
+      precision = Precision,
+      is_critical = IsCritical,
       is_parry = IsParry,
       damage = Damage
    }.
