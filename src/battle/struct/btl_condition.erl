@@ -5,7 +5,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("tacticians/conditions.hrl").
 
--type update_action() :: (none, remove, {update, ataxic:basic()}).
+-type update_action() ::
+   (
+      none
+      | remove
+      | {update, type(), ataxic:basic()}
+   ).
 
 -record
 (
@@ -61,7 +66,9 @@
    [
       triggers_on/2,
       apply/3,
-      recursive_apply/3
+      recursive_apply/3,
+      apply_updates/2,
+      ataxia_apply_updates/2
    ]
 ).
 
@@ -234,47 +241,117 @@ get_parameters_field () -> #btl_cond.parameters.
       shr_condition:context(),
       btl_character_turn_update:type()
    )
-   -> {shr_condition:context(), btl_character_turn_update:type()}.
-apply (S0Condition, S0Context, S0Update) ->
-   Module = shr_condition_selector:get_module(get_category(S0Condition)),
+   ->
+   {
+      shr_condition:context(),
+      btl_character_turn_update:type(),
+      update_action()
+   }.
+apply (Condition, S0Context, S0Update) ->
+   Module = shr_condition_selector:get_module(get_category(Condition)),
 
-   {S1Condition, UpdateAction, S1Context, S1Update} =
-      erlang:apply(Module, apply, [S0Context, S0Condition, S0Update]),
+   {S1Context, S1Update, UpdateAction} =
+      erlang:apply(Module, apply, [S0Context, Condition, S0Update]),
 
-   case UpdateAction of
-      none -> {S1Context, S1Update};
-      remove ->
-         % TODO
-         {S1Context, S1Update};
+   {S1Context, S1Update, UpdateAction}.
 
-      {update, ConditionUpdate} ->
-         % TODO
-         {S1Context, S1Update}
-
-   end.
 
 -spec recursive_apply
    (
-      list(type()),
+      orddict:orddict(IndexType, type()),
       shr_condition:context(),
       btl_character_turn_update:type()
    )
-   -> {shr_condition:context(), btl_character_turn_update:type()}.
+   ->
+   {
+      shr_condition:context(),
+      btl_character_turn_update:type(),
+      list({IndexType, update_action()})
+   }.
 recursive_apply (Conditions, S0Context, S0Update) ->
-   [LastContext, LastUpdate] =
-      lists:foldl
+   {[LastContext, LastUpdate], AllUpdateActions} =
+      orddict:fold
       (
-         fun (Condition, Parameters) ->
-            {NextContext, NextUpdate} =
+         fun (IX, Condition, {Parameters, UpdateActions}) ->
+            {NextContext, NextUpdate, UpdateAction} =
                erlang:apply(btl_condition, apply, [Condition|Parameters]),
 
-            [NextContext, NextUpdate]
+            {
+               [NextContext, NextUpdate],
+               case UpdateAction of
+                  none -> UpdateActions;
+                  _ -> [{IX, UpdateAction}|UpdateActions]
+               end
+            }
          end,
-         [S0Context, S0Update],
+         [S0Context, S0Update, []],
          Conditions
       ),
 
-   {LastContext, LastUpdate}.
+   {LastContext, LastUpdate, AllUpdateActions}.
+
+-spec apply_updates
+   (
+      list({IndexType, update_action()}),
+      orddict:orddict(IndexType, type())
+   )
+   -> orddict:orddict(IndexType, type()).
+apply_updates (Updates, Conditions) ->
+   lists:foldl
+   (
+      fun ({IX, Update}, CurrentConditions) ->
+         case Update of
+            none -> CurrentConditions;
+            remove -> orddict:erase(IX, CurrentConditions);
+            {update, Val, _Ataxic} -> orddict:store(IX, Val, CurrentConditions)
+         end
+      end,
+      Conditions,
+      Updates
+   ).
+
+-spec ataxia_apply_updates
+   (
+      list({IndexType, update_action()}),
+      orddict:orddict(IndexType, type())
+   )
+   -> {orddict:orddict(IndexType, type()), ataxic:basic()}.
+ataxia_apply_updates (Updates, Conditions) ->
+   {FinalConditions, AtaxicSequence} =
+      lists:foldl
+      (
+         fun ({IX, Update}, {CurrentConditions, AtaxicUpdates}) ->
+            case Update of
+               none -> {CurrentConditions, AtaxicUpdates};
+               remove ->
+                  {
+                     orddict:erase(IX, CurrentConditions),
+                     [
+                        ataxic:apply_function
+                        (
+                           orddict,
+                           erase,
+                           [ataxic:constant(IX), ataxic:current_value()]
+                        )
+                        |AtaxicUpdates
+                     ]
+                  };
+
+               {update, Val, Ataxic} ->
+                  {
+                     orddict:store(IX, Val, CurrentConditions),
+                     [
+                        ataxic_sugar:update_orddict_element(IX, Ataxic)
+                        |AtaxicUpdates
+                     ]
+                  }
+            end
+         end,
+         Conditions,
+         Updates
+      ),
+
+   {FinalConditions, ataxic:sequence(AtaxicSequence)}.
 
 -spec encode (type()) -> {list({binary(), any()})}.
-encode (Condition) -> {[]} % TODO.
+encode (Condition) -> {[]}. % TODO

@@ -56,7 +56,7 @@ apply_to_character (Condition, S0Character) ->
             (RemainingUses == -1) ->
                {
                   Condition,
-                  do_nothing,
+                  none,
                   [{S1Character, CharacterUpdate}]
                };
 
@@ -93,95 +93,33 @@ apply_to_character (Condition, S0Character) ->
          end
    end.
 
--spec handle_trigger
+-spec handle_context
    (
-      btl_condition:trigger(),
+      shr_condition:context(),
       btl_condition:type()
    )
-   -> btl_condition:trigger().
-handle_trigger ({TriggerType, S0TriggerData}, Condition) ->
-   {TargetIX, _Amount} = btl_condition:get_parameters(Condition),
-
-   case
-      (
-         (TriggerType == ?CONDITION_TRIGGER_START_OF_OWN_ATTACK)
-         or (TriggerType == ?CONDITION_TRIGGER_END_OF_OWN_ATTACK)
-         or (TriggerType == ?CONDITION_TRIGGER_START_OF_OWN_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_END_OF_OWN_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_OWN_DODGE)
-         or (TriggerType == ?CONDITION_TRIGGER_OWN_CRITICAL)
-         or (TriggerType == ?CONDITION_TRIGGER_OWN_DOUBLE_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_OWN_DAMAGE)
-         or (TriggerType == ?CONDITION_TRIGGER_START_OF_TARGET_ATTACK)
-         or (TriggerType == ?CONDITION_TRIGGER_END_OF_TARGET_ATTACK)
-         or (TriggerType == ?CONDITION_TRIGGER_START_OF_TARGET_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_END_OF_TARGET_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DODGE)
-         or (TriggerType == ?CONDITION_TRIGGER_TARGET_CRITICAL)
-         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DOUBLE_HIT)
-         or (TriggerType == ?CONDITION_TRIGGER_TARGET_DAMAGE)
-      )
-   of
-      false -> {TriggerType, S0TriggerData};
-      true ->
-         {Char0IX, Char0, Char1IX, Char1} = TriggerData,
-         if
-            (Char0IX == TargetIX) ->
-               {_UpdatedCondition, _UpdateOrder, UpdatedChar} =
-                  apply_to_character(Condition, Char0),
-
-               {
-                  TriggerType,
-                  {
-                     Char0IX
-                     UpdatedChar,
-                     Char1IX,
-                     Char1
-                  }
-               };
-
-            (Char1IX == TargetIX) ->
-               {_UpdatedCondition, _UpdateOrder, UpdatedChar} =
-                  apply_to_character(Condition, Char0),
-
-               {
-                  TriggerType,
-                  {
-                     Char0IX
-                     Char0,
-                     Char1IX,
-                     UpdatedChar
-                  }
-               };
-
-            true -> {TriggerType, S0TriggerData}
-         end
-   end.
+   -> shr_condition:context().
+handle_context ({Trigger, ReadOnly, VolatileData}, Condition) ->
+   {_TargetIX, _Amount} = btl_condition:get_parameters(Condition),
+   {Trigger, ReadOnly, VolatileData}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec apply
    (
-      btl_condition:trigger(),
+      shr_condition:context(),
       btl_condition:type(),
       btl_character_turn_update:type()
    ) ->
    {
-      btl_condition:type(),
-      btl_condition:update_action(),
-      btl_condition:trigger(),
-      btl_character_turn_update:type()
+      shr_condition:context(),
+      btl_character_turn_update:type(),
+      btl_condition:update_action()
    }.
-apply (S0Trigger, Condition, Update) ->
-   S1Trigger = handle_trigger(S0Trigger, Condition),
+apply (S0Context, S0Condition, S0Update) ->
+   S1Context = handle_context(S0Context, S0Condition),
 
-   Parameters,
-   Condition,
-   Update) ->
-   {TargetIX, Amount} =
-      case btl_condition:get_parameters(Condition) of
-         {StoredTargetIX, StoredAmount} -> {StoredTargetIX, StoredAmount};
-         Other -> error({condition, parameter, Other})
-      end,
-   {[{Condition, []}], Update}.
+   {TargetIX, Amount} = btl_condition:get_parameters(S0Condition),
+
+   {S1Context, S0Update, none}.

@@ -7,7 +7,7 @@
 -define(IS_ACTIVE_FIELD, <<"ena">>).
 -define(IS_DEFEATED_FIELD, <<"dea">>).
 -define(BASE_CHAR_FIELD, <<"bas">>).
--define(CONDITION_FIELD, <<"con">>).
+-define(CONDITIONS_FIELD, <<"con">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,7 +25,7 @@
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:unresolved(),
-      conditions :: list(btl_condition:type())
+      conditions :: orddict:orddict(non_neg_integer(), btl_condition:type())
    }
 ).
 
@@ -40,7 +40,7 @@
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:type(),
-      conditions :: list(btl_condition:type())
+      conditions :: orddict:orddict(non_neg_integer(), btl_condition:type())
    }
 ).
 
@@ -105,7 +105,7 @@
 -export
 (
    [
-      new/4,
+      new/5,
       resolve/2,
       is_unresolved/1,
       to_unresolved/1,
@@ -194,8 +194,8 @@ get_base_character (#btl_char{ base = R }) -> R;
 get_base_character (#btl_char_ref{ base = R }) -> R.
 
 -spec get_conditions
-   (type()) -> list(btl_condition:type());
-   (unresolved()) -> list(btl_conditions:type()).
+   (type()) -> orddict:orddict(non_neg_integer(), btl_condition:type());
+   (unresolved()) -> orddict:orddict(non_neg_integer(), btl_conditions:type()).
 get_conditions (#btl_char{ conditions = R }) -> R;
 get_conditions (#btl_char_ref{ conditions = R }) -> R.
 
@@ -204,11 +204,11 @@ get_conditions (#btl_char_ref{ conditions = R }) -> R.
       shr_condition:trigger(),
       either()
    )
-   -> list(btl_condition:type()).
+   -> orddict:orddict(non_neg_integer(), btl_condition:type()).
 get_conditions_on (Trigger, Char) ->
-   lists:filter
+   orddict:filter
    (
-      fun (Condition) ->
+      fun (_IX, Condition) ->
          btl_condition:triggers_on(Trigger, Condition)
       end,
       get_conditions(Char)
@@ -448,8 +448,16 @@ ataxia_set_base_character (NewBaseCharacter, Char) ->
    ).
 
 -spec set_conditions
-   (list(btl_condition:type()), type()) -> type();
-   (list(btl_condition:type()), unresolved()) -> unresolved().
+   (
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
+      type()
+   )
+   -> type();
+   (
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
+      unresolved()
+   )
+   -> unresolved().
 set_conditions (Conditions, Char) when is_record(Char, btl_char) ->
    Char#btl_char{ conditions = Conditions };
 set_conditions (Conditions, Char) when is_record(Char, btl_char_ref) ->
@@ -458,13 +466,13 @@ set_conditions (Conditions, Char) when is_record(Char, btl_char_ref) ->
 
 -spec ataxia_set_conditions
    (
-      list(btl_condition:type()),
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
       ataxic:basic(),
       type()
    )
    -> {type(), ataxic:basic()};
    (
-      list(btl_condition:type()),
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
       ataxic:basic(),
       unresolved()
    ) -> {unresolved(), ataxic:basic()}.
@@ -479,8 +487,16 @@ ataxia_set_conditions (Conditions, Update, Char) ->
    }.
 
 -spec ataxia_set_conditions
-   (list(btl_condition:type()), type()) -> {type(), ataxic:basic()};
-   (list(btl_condition:type()), unresolved()) -> {unresolved(), ataxic:basic()}.
+   (
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
+      type()
+   )
+   -> {type(), ataxic:basic()};
+   (
+      orddict:orddict(non_neg_integer(), btl_condition:type()),
+      unresolved()
+   )
+   -> {unresolved(), ataxic:basic()}.
 ataxia_set_conditions (Conditions, Char) ->
    ataxia_set_conditions
    (
