@@ -653,6 +653,7 @@ apply_luck_decay (Luck) ->
 
 -spec apply_mirror_conditions
    (
+      boolean(),
       shr_condition:trigger(),
       shr_condition:trigger(),
       btl_action:type(),
@@ -662,6 +663,7 @@ apply_luck_decay (Luck) ->
    -> {VolatileContext, btl_character_turn_update:type()}.
 apply_mirror_conditions
 (
+   false,
    OwnTriggerName,
    OtherTriggerName,
    Action,
@@ -699,6 +701,47 @@ apply_mirror_conditions
          S3Update
       ),
 
+   {S2VolatileContext, S4Update};
+apply_mirror_conditions
+(
+   true,
+   OwnTriggerName,
+   OtherTriggerName,
+   Action,
+   {ReadOnlyContext, S0VolatileContext},
+   S0Update
+) ->
+   TargetCharacterIX = btl_action:get_target_index(Action),
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+
+   {TargetCharacter, S1Battle} =
+      btl_battle:get_resolved_character(TargetCharacterIX, S0Battle),
+
+   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+   {{_TriggerName, _ReadOnlyContext, S1VolatileContext}, S2Update} =
+      apply_conditions
+      (
+         {OwnTriggerName, ReadOnlyContext, S0VolatileContext},
+         TargetCharacter,
+         S1Update
+      ),
+
+   CharacterIX = btl_action:get_actor_index(Action),
+   S2Battle = btl_character_turn_update:get_battle(S2Update),
+   {Character, S3Battle} =
+      btl_battle:get_resolved_character(CharacterIX, S2Battle),
+
+   S3Update = btl_character_turn_update:set_battle(S3Battle, S2Update),
+
+   {{_TriggerName, _ReadOnlyContext, S2VolatileContext}, S4Update} =
+      apply_conditions
+      (
+         {OtherTriggerName, ReadOnlyContext, S1VolatileContext},
+         Character,
+         S3Update
+      ),
+
    {S2VolatileContext, S4Update}.
 
 -spec handle_start_of_attack
@@ -715,6 +758,7 @@ handle_start_of_attack (S0AttackSequence, Action, S0Update) ->
    {S1AttackSequence, S2Update} =
       apply_mirror_conditions
       (
+         false,
          ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_START_OF_OTHER_ATTACK,
          Action,
@@ -734,6 +778,7 @@ handle_end_of_attack (Action, S0Update) ->
    {_None, S1Update} =
       apply_mirror_conditions
       (
+         false,
          ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
          Action,
@@ -742,6 +787,362 @@ handle_end_of_attack (Action, S0Update) ->
       ),
 
    S1Update.
+
+-spec commit_hit
+   (
+      btl_character:type(),
+      btl_character:type(),
+      list(btl_attack:category()),
+      btl_attack:category(),
+      btl_action:type(),
+      boolean(),
+      btl_battle:precision(),
+      boolean(),
+      btl_character_turn_update:type()
+   )
+   -> {list(btl_attack:category()), btl_character_turn_update:type()}.
+commit_hit
+(
+   IsParry,
+   Precision,
+   IsCritical,
+   S0ModdedActor,
+   S0ModdedTarget,
+   S0Sequence,
+   AttackCategory,
+   Action,
+   S0Update
+) ->
+   {ActorIX, TargetIX} =
+      case
+         (
+            ((AttackCategory == counter) and (IsParry == false))
+            or ((AttackCategory =/= counter) and (IsParry == true))
+         )
+      of
+         true ->
+            {
+               btl_action:get_target_index(Action),
+               btl_action:get_actor_index(Action)
+            };
+
+         false ->
+            {
+               btl_action:get_actor_index(Action),
+               btl_action:get_target_index(Action)
+            }
+      end,
+
+-spec handle_critical_hits
+   (
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_attack:category(),
+      btl_action:type(),
+      boolean(),
+      btl_battle:precision(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      boolean(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_character_turn_update:type()
+   }.
+handle_critical_hits
+(
+   S0ModdedActor,
+   S0ActorLuck,
+   S0ModdedTarget,
+   S0TargetLuck,
+   S0Sequence,
+   AttackCategory,
+   Action,
+   IsParry,
+   Precision,
+   S0Update
+) ->
+   {S0IsCritical, S1ActorLuck, S1TargetLuck} =
+      roll_for_critical_hits
+      (
+         S0ModdedActor,
+         S0ActorLuck,
+         S0ModdedTarget,
+         S0TargetLuck
+      ),
+
+   {
+      {S1IsCritical, S1ModdedActor, S1ModdedTarget, S1Sequence},
+      S1Update
+   } =
+      apply_mirror_conditions
+      (
+         IsParry,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OWN_PRECISION,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_PRECISION,
+         Action,
+         {
+            {Action, AttackCategory, IsParry, Precision},
+            {S0IsCritical, S0ModdedActor, S0ModdedTarget, S0Sequence}
+         },
+         S0Update
+      ),
+
+   {
+      S1IsCritical,
+      S1ModdedActor,
+      S1ActorLuck,
+      S1ModdedTarget,
+      S1TargetLuck,
+      S1Sequence,
+      S1Update
+   }.
+
+-spec handle_precision
+   (
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_attack:category(),
+      btl_action:type(),
+      boolean(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      btl_attack:precision(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_character_turn_update:type()
+   }.
+handle_precision
+(
+   S0ModdedActor,
+   S0ActorLuck,
+   S0ModdedTarget,
+   S0TargetLuck,
+   S0Sequence,
+   AttackCategory,
+   Action,
+   IsParry,
+   S0Update
+) ->
+   {S0Precision, S1ActorLuck, S1TargetLuck} =
+      roll_for_precision
+      (
+         S0ModdedActor,
+         S0ActorLuck,
+         S0ModdedTarget,
+         S0TargetLuck
+      ),
+
+   {
+      {S1Precision, S1ModdedActor, S1ModdedTarget, S1Sequence},
+      S1Update
+   } =
+      apply_mirror_conditions
+      (
+         IsParry,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OWN_PRECISION,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_PRECISION,
+         Action,
+         {
+            {Action, AttackCategory, IsParry},
+            {S0Precision, S0ModdedActor, S0ModdedTarget, S0Sequence}
+         },
+         S0Update
+      ),
+
+   {
+      S1Precision,
+      S1ModdedActor,
+      S1ActorLuck,
+      S1ModdedTarget,
+      S1TargetLuck,
+      S1Sequence,
+      S1Update
+   }.
+
+-spec handle_parry
+   (
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_attack:category(),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      boolean(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_character_turn_update:type()
+   }.
+handle_parry
+(
+   S0ModdedActor,
+   S0ActorLuck,
+   S0ModdedTarget,
+   S0TargetLuck,
+   S0Sequence,
+   AttackCategory,
+   Action,
+   S0Update
+) ->
+   {S0IsParry, S1ActorLuck, S1TargetLuck} =
+      roll_for_parry
+      (
+         S0ModdedActor,
+         S0ActorLuck,
+         S0ModdedTarget,
+         S0TargetLuck
+      ),
+   {
+      {S1IsParry, S1ModdedActor, S1ModdedTarget, S1Sequence},
+      S1Update
+   } =
+      apply_mirror_conditions
+      (
+         false,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_PARRY,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OWN_PARRY,
+         Action,
+         {
+            {Action, AttackCategory},
+            {S0IsParry, S0ModdedActor, S0ModdedTarget, S0Sequence}
+         },
+         S0Update
+      ),
+
+   case S1IsParry of
+      true ->
+         {
+            S1IsParry,
+            S1ModdedTarget,
+            S1TargetLuck,
+            S1ModdedActor,
+            S1ActorLuck,
+            S1Sequence,
+            S1Update
+         };
+
+      false ->
+         {
+            S1IsParry,
+            S1ModdedActor,
+            S1ActorLuck,
+            S1ModdedTarget,
+            S1TargetLuck,
+            S1Sequence,
+            S1Update
+         }
+   end.
+
+-spec handle_double_hits
+   (
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_attack:category(),
+      btl_action:type(),
+      btl_character_turn_update:type()
+   )
+   ->
+   {
+      boolean(),
+      btl_character:type(),
+      integer(),
+      btl_character:type(),
+      integer(),
+      list(btl_attack:category()),
+      btl_character_turn_update:type()
+   }.
+handle_double_hits
+(
+   S0ModdedActor,
+   S0ActorLuck,
+   S0ModdedTarget,
+   S0TargetLuck,
+   S0Sequence,
+   second,
+   Action,
+   S0Update
+) ->
+   {S0CanPerform, S1ActorLuck, S1TargetLuck} =
+      roll_for_double_hits
+      (
+         S0ModdedActor,
+         S0ActorLuck,
+         S0ModdedTarget,
+         S0TargetLuck
+      ),
+
+   {
+      {S1CanPerform, S1ModdedActor, S1ModdedTarget, S1Sequence},
+      S1Update
+   } =
+      apply_mirror_conditions
+      (
+         false,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OWN_DOUBLE_HITS,
+         ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_DOUBLE_HITS,
+         Action,
+         {
+            Action,
+            {S0CanPerform, S0ModdedActor, S0ModdedTarget, S0Sequence}
+         },
+         S0Update
+      ),
+
+   {
+      S1CanPerform,
+      S1ModdedActor,
+      S1ActorLuck,
+      S1ModdedTarget,
+      S1TargetLuck,
+      S1Sequence,
+      S1Update
+   };
+handle_double_hits
+(
+   S0ModdedActor,
+   S0ActorLuck,
+   S0ModdedTarget,
+   S0TargetLuck,
+   S0Sequence,
+   _,
+   Action,
+   S0Update
+) ->
+   {
+      true,
+      S0ModdedActor,
+      S0ActorLuck,
+      S0ModdedTarget,
+      S0TargetLuck,
+      S0Sequence,
+      S0Update
+   }.
 
 -spec handle_hit
    (
@@ -758,8 +1159,9 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
    {{S0ModdedActor, S0ModdedTarget, S1Sequence}, S2Update} =
       apply_mirror_conditions
       (
-         ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OWN_HIT,
-         ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OTHER_HIT,
+         false,
+         ?CONDITION_TRIGGER_DEFINED_ACTORS_FOR_OWN_HIT,
+         ?CONDITION_TRIGGER_DEFINED_ACTORS_FOR_OTHER_HIT,
          Action,
          {{Action, AttackCategory}, {BaseActor, BaseTarget, S0Sequence}},
          S1Update
@@ -768,32 +1170,147 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
    case can_perform_attack(S0ModdedActor, S0ModdedTarget) of
       false -> {S1Sequence, S2Update};
       true ->
-         {S0IsParry, S1ActorLuck, S1TargetLuck} =
-            roll_for_parry
+         {
+            CanPerform,
+            S1ModdedActor,
+            S1ActorLuck,
+            S1ModdedTarget,
+            S1TargetLuck,
+            S2Sequence,
+            S3Update
+         } =
+            handle_double_hits
             (
                S0ModdedActor,
                S0ActorLuck,
                S0ModdedTarget,
-               S0TargetLuck
-            ),
-         {
-            {S1IsParry, S1ModdedActor, S1ModdedTarget, S2Sequence},
-            S3Update
-         } =
-            apply_mirror_conditions
-            (
-               ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OTHER_PARRY,
-               ?CONDITION_TRIGGER_ACTORS_DEFINITION_FOR_OWN_PARRY,
+               S0TargetLuck,
+               S1Sequence,
+               AttackCategory,
                Action,
-               {
-                  {Action, AttackCategory},
-                  {S0IsParry, S0ModdedActor, S0ModdedTarget, S1Sequence}
-               },
                S2Update
             ),
 
-         % TODO
-         {S2Sequence, S3Update}
+         case CanPerform of
+            false ->
+               S4Update =
+                  commit_luck_change
+                  (
+                     btl_character:get_player_index(S1ModdedActor),
+                     S1ActorLuck,
+                     S3Update
+                  ),
+
+               S5Update =
+                  commit_luck_change
+                  (
+                     btl_character:get_player_index(S1ModdedTarget),
+                     S1TargetLuck,
+                     S4Update
+                  ),
+
+               {S1Sequence, S5Update};
+
+            true ->
+               {
+                  IsParry,
+                  S2ModdedActor,
+                  S2ActorLuck,
+                  S2ModdedTarget,
+                  S2TargetLuck,
+                  S3Sequence,
+                  S4Update
+               } =
+                  handle_parry
+                  (
+                     S1ModdedActor,
+                     S1ActorLuck,
+                     S1ModdedTarget,
+                     S1TargetLuck,
+                     S2Sequence,
+                     AttackCategory,
+                     Action,
+                     S3Update
+                  ),
+
+               % If 'IsParry' is true, then Actor and Target have been swapped.
+
+               {
+                  Precision,
+                  S2ModdedActor,
+                  S2ActorLuck,
+                  S2ModdedTarget,
+                  S2TargetLuck,
+                  S3Sequence,
+                  S4Update
+               } =
+                  handle_precision
+                  (
+                     S1ModdedActor,
+                     S1ActorLuck,
+                     S1ModdedTarget,
+                     S1TargetLuck,
+                     S2Sequence,
+                     AttackCategory,
+                     Action,
+                     IsParry,
+                     S3Update
+                  ),
+
+               {
+                  IsCritical,
+                  S3ModdedActor,
+                  S3ActorLuck,
+                  S3ModdedTarget,
+                  S3TargetLuck,
+                  S4Sequence,
+                  S5Update
+               } =
+                  handle_critical_hit
+                  (
+                     S2ModdedActor,
+                     S2ActorLuck,
+                     S2ModdedTarget,
+                     S2TargetLuck,
+                     S3Sequence,
+                     AttackCategory,
+                     Action,
+                     IsParry,
+                     S4Update
+                  ),
+
+               {S5Sequence, S6Update} =
+                  commit_hit
+                  (
+                     IsParry,
+                     Precision,
+                     IsCritical,
+                     S3ModdedActor,
+                     S3ModdedTarget,
+                     S4Sequence,
+                     AttackCategory,
+                     Action,
+                     S5Update
+                  ),
+
+               S7Update =
+                  commit_luck_change
+                  (
+                     btl_character:get_player_index(S1ModdedActor),
+                     S1ActorLuck,
+                     S6Update
+                  ),
+
+               S8Update =
+                  commit_luck_change
+                  (
+                     btl_character:get_player_index(S1ModdedTarget),
+                     S1TargetLuck,
+                     S7Update
+                  ),
+
+               {S5Sequence, S8Update}
+         end
    end.
 
 -spec handle_attack_sequence
