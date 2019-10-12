@@ -18,46 +18,172 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec apply_conditions
+-spec should_reverse_roles (boolean(), btl_attack:category()) -> boolean().
+should_reverse_roles (IsParry, AttackCategory) ->
    (
-      shr_condition:context(A, B),
-      btl_character:type(),
+      ((AttackCategory == counter) and (IsParry == false))
+      or ((AttackCategory =/= counter) and (IsParry == true))
+   ).
+
+-spec apply_condition_to_character
+   (
+      non_neg_integer(),
+      shr_condition:trigger(),
+      any(),
+      VolatileDataType,
       btl_character_turn_update:type()
    )
-   ->
-   {
-      shr_condition:context(A, B),
-      btl_character:type(),
-      ataxic:basic(),
-      btl_character_turn_update:type()
-   }.
-apply_conditions
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply_condition_to_character
 (
-   Context = {Trigger, _ReadOnlyContext, _VolatileContext},
-   S0Actor,
+   ActorIX,
+   Trigger,
+   ReadOnlyData,
+   S0VolatileData,
    S0Update
 ) ->
-   {LastContext, S1Update, ConditionUpdates} =
-      btl_condition:recursive_apply
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+   {
+      S1VolatileContext,
+      ActorConditionsAtaxicUpdate,
+      S2Update
+   } =
+      btl_condition:ataxia_apply_trigger
       (
-         btl_character:get_conditions_on(Trigger, S0Actor),
-         Context,
+         {Trigger, ReadOnlyData, S0VolatileData},
+         S1Update,
+         btl_character:get_conditions(S0Actor)
+      ),
+
+   %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   S1Battle = btl_character_turn_update:get_battle(S2Update),
+   {S1Actor, S2Battle} = btl_battle:get_resolved_character(ActorIX, S1Battle),
+   S0Conditions = btl_character:get_conditions(S1Actor),
+
+   S1Conditions =
+      ataxic:basic_apply_to(ActorConditionsAtaxicUpdate, S0Conditions),
+
+   {S2Actor, ActorAtaxicUpdate} =
+      btl_character:ataxia_set_conditions
+      (
+         S1Conditions,
+         ActorConditionsAtaxicUpdate,
+         S1Actor
+      ),
+
+   {S3Battle, BattleAtaxicUpdate} =
+      btl_battle:ataxia_set_character
+      (
+         ActorIX,
+         S2Actor,
+         ActorAtaxicUpdate,
+         S2Battle
+      ),
+
+   S2Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S3Battle,
+         BattleAtaxicUpdate,
+         S1Update
+      ),
+
+   {S1VolatileContext, S2Update}.
+
+-spec apply_mirror_conditions
+   (
+      boolean(),
+      shr_condition:trigger(),
+      shr_condition:trigger(),
+      shr_condition:trigger(),
+      btl_action:type(),
+      {any(), VolatileDataType},
+      btl_character_turn_update:type()
+   )
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply_mirror_conditions
+(
+   ReverseRoles,
+   OwnTriggerName,
+   OtherTriggerName,
+   GlobalTriggerName,
+   Action,
+   {ReadOnlyContext, S0VolatileContext},
+   S0Update
+) ->
+   {ActorIX, TargetIX} =
+      case ReverseRoles of
+         false ->
+            {
+               btl_action:get_actor_index(Action),
+               btl_action:get_target_index(Action)
+            };
+         true ->
+            {
+               btl_action:get_target_index(Action),
+               btl_action:get_actor_index(Action)
+            }
+      end,
+
+   {S1VolatileContext, S1Update} =
+      apply_condition_to_character
+      (
+         ActorIX,
+         OwnTriggerName,
+         ReadOnlyContext,
+         S0VolatileContext,
          S0Update
       ),
 
-   S0AllConditions = btl_character:get_conditions(S0Actor),
-   {S1AllConditions, AllConditionsAtaxiaUpdate} =
-      btl_condition:ataxia_apply_updates(ConditionUpdates, S0AllConditions),
-
-   {S1Actor, ActorAtaxiaUpdate} =
-      btl_character:ataxia_set_conditions
+   {S2VolatileContext, S2Update} =
+      apply_condition_to_character
       (
-         S1AllConditions,
-         AllConditionsAtaxiaUpdate,
-         S0Actor
+         TargetIX,
+         OtherTriggerName,
+         ReadOnlyContext,
+         S1VolatileContext,
+         S1Update
       ),
 
-   {LastContext, S1Actor, ActorAtaxiaUpdate, S1Update}.
+   S0Battle = btl_character_turn_update:get_battle(S2Update),
+
+   {
+      S3VolatileContext,
+      BattleConditionsAtaxicUpdate,
+      S5Update
+   } =
+      btl_condition:ataxia_apply_trigger
+      (
+         {GlobalTriggerName, ReadOnlyContext, S2VolatileContext},
+         S2Update,
+         btl_battle:get_conditions(S0Battle)
+      ),
+
+   %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%%%%%%%
+   S1Battle = btl_character_turn_update:get_battle(S2Update),
+   UpdatedBattleConditions =
+      ataxic:basic_apply_to
+      (
+         btl_battle:get_conditions(S1Battle),
+         BattleConditionsAtaxicUpdate
+      ),
+
+   {S2Battle, BattleAtaxicUpdate} =
+      btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
+
+   S5Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S2Battle,
+         BattleAtaxicUpdate,
+         S2Update
+      ),
+
+   {S3VolatileContext, S2Update}.
 
 -spec roll_for_precision
    (
@@ -214,154 +340,6 @@ can_perform_hit (Actor, Target) ->
       (btl_character:get_is_alive(Actor) and btl_character:get_is_alive(Target))
    }.
 
--spec apply_mirror_conditions
-   (
-      boolean(),
-      shr_condition:trigger(),
-      shr_condition:trigger(),
-      btl_action:type(),
-      {any(), VolatileContext},
-      btl_character_turn_update:type()
-   )
-   -> {VolatileContext, btl_character_turn_update:type()}.
-apply_mirror_conditions
-(
-   false,
-   OwnTriggerName,
-   OtherTriggerName,
-   Action,
-   {ReadOnlyContext, S0VolatileContext},
-   S0Update
-) ->
-   ActorIX = btl_action:get_actor_index(Action),
-   S0Battle = btl_character_turn_update:get_battle(S0Update),
-   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
-   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
-
-   {
-      {_TriggerName, _ReadOnlyContext, S1VolatileContext},
-      S1Actor,
-      ActorAtaxiaUpdate,
-      S2Update
-   } =
-      apply_conditions
-      (
-         {OwnTriggerName, ReadOnlyContext, S0VolatileContext},
-         S0Actor,
-         S1Update
-      ),
-
-   TargetIX = btl_action:get_target_index(Action),
-   S2Battle = btl_character_turn_update:get_battle(S2Update),
-   S3Battle =
-      btl_battle:ataxia_set_character
-      (
-         ActorIX,
-         S1Actor,
-         ActorAtaxiaUpdate,
-         S2Battle
-      ),
-
-   {Target, S4Battle} = btl_battle:get_resolved_character(TargetIX, S3Battle),
-   S3Update = btl_character_turn_update:set_battle(S4Battle, S2Update),
-
-   {
-      {_TriggerName, _ReadOnlyContext, S2VolatileContext},
-      S1Target,
-      TargetAtaxiaUpdate,
-      S4Update
-   } =
-      apply_conditions
-      (
-         {OtherTriggerName, ReadOnlyContext, S1VolatileContext},
-         Target,
-         S3Update
-      ),
-
-   S5Battle = btl_character_turn_update:get_battle(S4Update),
-   S6Battle =
-      btl_battle:ataxia_set_character
-      (
-         TargetIX,
-         S1Target,
-         TargetAtaxiaUpdate,
-         S5Battle
-      ),
-
-   S5Update = btl_character_turn_update:set_battle(S6Battle, S4Update),
-
-   {S2VolatileContext, S5Update};
-apply_mirror_conditions
-(
-   true,
-   OwnTriggerName,
-   OtherTriggerName,
-   Action,
-   {ReadOnlyContext, S0VolatileContext},
-   S0Update
-) ->
-   TargetIX = btl_action:get_target_index(Action),
-   S0Battle = btl_character_turn_update:get_battle(S0Update),
-
-   {S0Target, S1Battle} =
-      btl_battle:get_resolved_character(TargetIX, S0Battle),
-
-   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
-
-   {
-      {_TriggerName, _ReadOnlyContext, S1VolatileContext},
-      S1Target,
-      TargetAtaxiaUpdate,
-      S2Update
-   } =
-      apply_conditions
-      (
-         {OwnTriggerName, ReadOnlyContext, S0VolatileContext},
-         S0Target,
-         S1Update
-      ),
-
-   ActorIX = btl_action:get_actor_index(Action),
-   S2Battle = btl_character_turn_update:get_battle(S2Update),
-   {S0Actor, S3Battle} = btl_battle:get_resolved_character(ActorIX, S2Battle),
-
-   S4Battle =
-      btl_battle:ataxia_set_character
-      (
-         TargetIX,
-         S1Target,
-         TargetAtaxiaUpdate,
-         S3Battle
-      ),
-
-   S3Update = btl_character_turn_update:set_battle(S4Battle, S2Update),
-
-   {
-      {_TriggerName, _ReadOnlyContext, S2VolatileContext},
-      S1Actor,
-      ActorAtaxiaUpdate,
-      S4Update
-   } =
-      apply_conditions
-      (
-         {OtherTriggerName, ReadOnlyContext, S1VolatileContext},
-         S0Actor,
-         S3Update
-      ),
-
-   S5Battle = btl_character_turn_update:get_battle(S4Update),
-   S6Battle =
-      btl_battle:ataxia_set_character
-      (
-         ActorIX,
-         S1Actor,
-         ActorAtaxiaUpdate,
-         S5Battle
-      ),
-
-   S5Update = btl_character_turn_update:set_battle(S6Battle, S4Update),
-
-   {S2VolatileContext, S5Update}.
 
 -spec handle_start_of_attack
    (
@@ -389,6 +367,7 @@ handle_start_of_attack (S0AttackSequence, Action, S0Update) ->
          false,
          ?CONDITION_TRIGGER_START_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_START_OF_OTHER_ATTACK,
+         ?CONDITION_TRIGGER_START_OF_ANY_ATTACK,
          Action,
          {Action, S0AttackSequence},
          S1Update
@@ -409,6 +388,7 @@ handle_end_of_attack (Action, S0Update) ->
          false,
          ?CONDITION_TRIGGER_END_OF_OWN_ATTACK,
          ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
+         ?CONDITION_TRIGGER_END_OF_ANY_ATTACK,
          Action,
          {Action, none},
          S0Update
@@ -428,15 +408,15 @@ commit_luck_change (Character, NewLuck, S0Update) ->
 
    S0Battle = btl_character_turn_update:get_battle(S0Update),
    S0Player = btl_battle:get_player(PlayerIX, S0Battle),
-   {S1Player, PlayerAtaxiaUpdate} =
+   {S1Player, PlayerAtaxicUpdate} =
       btl_player:ataxia_set_luck(NewLuck, S0Player),
 
-   {S1Battle, BattleAtaxiaUpdate} =
+   {S1Battle, BattleAtaxicUpdate} =
       btl_battle:set_player
       (
          PlayerIX,
          S1Player,
-         PlayerAtaxiaUpdate,
+         PlayerAtaxicUpdate,
          S0Battle
       ),
 
@@ -444,7 +424,7 @@ commit_luck_change (Character, NewLuck, S0Update) ->
       btl_character_turn_update:set_battle
       (
          S1Battle,
-         BattleAtaxiaUpdate,
+         BattleAtaxicUpdate,
          S0Update
       ),
 
@@ -515,14 +495,14 @@ get_actors (_Category, Action, Update) ->
 
 -spec commit_hit
    (
+      boolean(),
+      btl_battle:precision(),
+      boolean(),
       btl_character:type(),
       btl_character:type(),
       list(btl_attack:category()),
       btl_attack:category(),
       btl_action:type(),
-      boolean(),
-      btl_battle:precision(),
-      boolean(),
       btl_character_turn_update:type()
    )
    -> {list(btl_attack:category()), btl_character_turn_update:type()}.
@@ -539,12 +519,7 @@ commit_hit
    S0Update
 ) ->
    {ActorIX, TargetIX} =
-      case
-         (
-            ((AttackCategory == counter) and (IsParry == false))
-            or ((AttackCategory =/= counter) and (IsParry == true))
-         )
-      of
+      case should_reverse_roles(IsParry, AttackCategory) of
          true ->
             {
                btl_action:get_target_index(Action),
@@ -591,9 +566,10 @@ commit_hit
    } =
       apply_mirror_conditions
       (
-         IsParry,
+         should_reverse_roles(IsParry, AttackCategory),
          ?CONDITION_TRIGGER_COMPUTED_OWN_ATTACK_DAMAGE,
-         ?CONDITION_TRIGGER_COMPUTER_OTHER_ATTACK_DAMAGE,
+         ?CONDITION_TRIGGER_COMPUTED_OTHER_ATTACK_DAMAGE,
+         ?CONDITION_TRIGGER_COMPUTED_ANY_ATTACK_DAMAGE,
          Action,
          {
             {
@@ -612,19 +588,19 @@ commit_hit
 
    S0Battle = btl_character_turn_update:get_battle(S1Update),
    {S0Target, S1Battle} = btl_battle:get_resolved_character(TargetIX, S0Battle),
-   {S1Target, TargetAtaxiaUpdate} =
+   {S1Target, TargetAtaxicUpdate} =
       btl_character:ataxia_set_current_health
       (
          (btl_character:get_current_health(S0Target) - S1AttackDamage),
          S0Target
       ),
 
-   {S1Battle, BattleAtaxiaUpdate} =
+   {S1Battle, BattleAtaxicUpdate1} =
       btl_battle:set_character
       (
          TargetIX,
          S1Target,
-         TargetAtaxiaUpdate,
+         TargetAtaxicUpdate,
          S0Battle
       ),
 
@@ -632,7 +608,7 @@ commit_hit
       btl_character_turn_update:ataxia_set_battle
       (
          S1Battle,
-         BattleAtaxiaUpdate,
+         BattleAtaxicUpdate1,
          S1Update
       ),
 
@@ -660,9 +636,10 @@ commit_hit
    } =
       apply_mirror_conditions
       (
-         IsParry,
+         should_reverse_roles(IsParry, AttackCategory),
          ?CONDITION_TRIGGER_END_OF_OWN_HIT,
          ?CONDITION_TRIGGER_END_OF_OTHER_HIT,
+         ?CONDITION_TRIGGER_END_OF_ANY_HIT,
          Action,
          {
             {
@@ -733,9 +710,10 @@ handle_critical_hit
    } =
       apply_mirror_conditions
       (
-         IsParry,
+         should_reverse_roles(IsParry, AttackCategory),
          ?CONDITION_TRIGGER_ROLLED_FOR_OWN_CRITICAL_HITS,
          ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_CRITICAL_HITS,
+         ?CONDITION_TRIGGER_ROLLED_FOR_ANY_CRITICAL_HITS,
          Action,
          {
             {Action, AttackCategory, IsParry, Precision},
@@ -821,9 +799,10 @@ handle_precision
    } =
       apply_mirror_conditions
       (
-         IsParry,
+         should_reverse_roles(IsParry, AttackCategory),
          ?CONDITION_TRIGGER_ROLLED_FOR_OWN_PRECISION,
          ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_PRECISION,
+         ?CONDITION_TRIGGER_ROLLED_FOR_ANY_PRECISION,
          Action,
          {
             {Action, AttackCategory, IsParry},
@@ -906,9 +885,10 @@ handle_parry
    } =
       apply_mirror_conditions
       (
-         false,
+         should_reverse_roles(false, AttackCategory),
          ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_PARRY,
          ?CONDITION_TRIGGER_ROLLED_FOR_OWN_PARRY,
+         ?CONDITION_TRIGGER_ROLLED_FOR_ANY_PARRY,
          Action,
          {
             {Action, AttackCategory},
@@ -987,6 +967,7 @@ handle_double_hits
          false,
          ?CONDITION_TRIGGER_ROLLED_FOR_OWN_DOUBLE_HITS,
          ?CONDITION_TRIGGER_ROLLED_FOR_OTHER_DOUBLE_HITS,
+         ?CONDITION_TRIGGER_ROLLED_FOR_ANY_DOUBLE_HITS,
          Action,
          {
             Action,
@@ -1034,9 +1015,10 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
    {{S0ModdedActor, S0ModdedTarget, S1Sequence}, S2Update} =
       apply_mirror_conditions
       (
-         false,
+         should_reverse_roles(false, AttackCategory),
          ?CONDITION_TRIGGER_DEFINED_ACTORS_FOR_OWN_HIT,
          ?CONDITION_TRIGGER_DEFINED_ACTORS_FOR_OTHER_HIT,
+         ?CONDITION_TRIGGER_DEFINED_ACTORS_FOR_ANY_HIT,
          Action,
          {{Action, AttackCategory}, {BaseActor, BaseTarget, S0Sequence}},
          S1Update
