@@ -30,30 +30,26 @@
 -export
 (
    [
-      get_related_inventory/1,
       get_related_tile_ids/1,
-      get_map/1,
-      get_characters/1,
-      get_character/2,
-      get_resolved_character/2,
-      get_players/1,
-      get_player/2,
-      get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
-      get_conditions/1,
 
+      get_map/1,
       set_map/2,
       ataxia_set_map/2,
       ataxia_set_map/3,
 
+      get_related_inventory/1,
       set_related_inventory/2,
       ataxia_set_related_inventory/2,
       ataxia_set_related_inventory/3,
 
+      get_characters/1,
       set_characters/2,
       ataxia_set_characters/2,
       ataxia_set_characters/3,
 
+      get_character/2,
+      get_resolved_character/2,
       set_character/3,
       ataxia_set_character/3,
       ataxia_set_character/4,
@@ -61,10 +57,12 @@
       add_character/2,
       ataxia_add_character/2,
 
+      get_players/1,
       set_players/2,
       ataxia_set_players/2,
       ataxia_set_players/3,
 
+      get_player/2,
       set_player/3,
       ataxia_set_player/3,
       ataxia_set_player/4,
@@ -72,10 +70,12 @@
       add_player/2,
       ataxia_add_player/2,
 
+      get_current_player_turn/1,
       set_current_player_turn/2,
       ataxia_set_current_player_turn/2,
       ataxia_set_current_player_turn/3,
 
+      get_conditions/1,
       set_conditions/2,
       ataxia_set_conditions/2,
       ataxia_set_conditions/3,
@@ -96,13 +96,6 @@
    ]
 ).
 
--export
-(
-   [
-     resolve_character/2
-   ]
-).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,70 +112,46 @@ get_all_timelines (Result, CurrentIndex, EndPoint, ArraySize, Players) ->
          get_all_timelines(NextResult, NextIndex, EndPoint, ArraySize, Players)
    end.
 
+-spec resolve_character
+   (
+      btl_character:either(),
+      type()
+   )
+   -> btl_character:type().
+resolve_character (Character, Battle) ->
+   case btl_character:is_unresolved(Character) of
+      true ->
+         btl_character:resolve
+         (
+            shr_tile:get_omnimods
+            (
+               shr_tile:from_id
+               (
+                  shr_tile_instance:get_tile_id
+                  (
+                     shr_map:get_tile_instance
+                     (
+                        btl_character:get_location(Character),
+                        Battle#battle.map
+                     )
+                  )
+               )
+            ),
+            Character
+         );
+
+      false -> Character
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Accessors
--spec get_related_inventory (type()) -> shr_inventory:type().
-get_related_inventory (Battle) -> Battle#battle.related_inventory.
 
--spec get_related_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
-get_related_tile_ids (Battle) -> Battle#battle.related_tile_ids.
+%%%% Accessors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
--spec get_map (type()) -> shr_map:type().
-get_map (Battle) -> Battle#battle.map.
-
--spec get_characters
-   (
-      type()
-   )
-   -> orddict:orddict(non_neg_integer(), btl_character:either()).
-get_characters (Battle) -> Battle#battle.characters.
-
--spec get_character (non_neg_integer(), type()) -> btl_character:either().
-get_character (IX, Battle) -> orddict:fetch(IX, Battle#battle.characters).
-
--spec get_resolved_character
-   (
-      non_neg_integer(),
-      type()
-   )
-   -> {btl_character:type(), type()}.
-get_resolved_character (IX, Battle) ->
-   Character = orddict:fetch(IX, Battle#battle.characters),
-
-   case btl_character:is_unresolved(Character) of
-      true ->
-         ResolvedCharacter = resolve_character(Character, Battle),
-         {
-            ResolvedCharacter,
-            Battle#battle
-            {
-               characters =
-                  orddict:store(IX, ResolvedCharacter, Battle#battle.characters)
-            }
-         };
-
-      false -> {Character, Battle}
-   end.
-
--spec get_players
-   (
-      type()
-   )
-   -> orddict:orddict(non_neg_integer(), btl_player:type()).
-get_players (Battle) ->
-   Battle#battle.players.
-
--spec get_player (non_neg_integer(), type()) -> btl_player:type().
-get_player (IX, Battle) ->
-   orddict:fetch(IX, Battle#battle.players).
-
--spec get_current_player_turn (type()) -> btl_player_turn:type().
-get_current_player_turn (Battle) ->
-   Battle#battle.current_player_turn.
-
+%%%%%%%%%%%%%%%%%
+%%%% Various %%%%
+%%%%%%%%%%%%%%%%%
 -spec get_encoded_last_turns_effects (type()) -> list(any()).
 get_encoded_last_turns_effects (Battle) ->
    CurrentPlayerTurn = Battle#battle.current_player_turn,
@@ -192,6 +161,62 @@ get_encoded_last_turns_effects (Battle) ->
    PlayersCount = orddict:size(Players),
    StartingPoint = ((CurrentPlayerIX + 1) rem PlayersCount),
    get_all_timelines([], StartingPoint, CurrentPlayerIX, PlayersCount, Players).
+
+%%%%%%%%%%%%%%%%%%
+%%%% Tile IDs %%%%
+%%%%%%%%%%%%%%%%%%
+-spec get_related_tile_ids_field () -> non_neg_integer().
+get_related_tile_ids_field () -> #battle.related_tile_ids.
+
+-spec get_related_tile_ids (type()) -> ordsets:ordset(shr_tile:id()).
+get_related_tile_ids (Battle) -> Battle#battle.related_tile_ids.
+
+%%%%%%%%%%%%%%%%%%%
+%%%% Inventory %%%%
+%%%%%%%%%%%%%%%%%%%
+-spec get_related_inventory_field () -> non_neg_integer().
+get_related_inventory_field () -> #battle.related_inventory.
+
+-spec get_related_inventory (type()) -> shr_inventory:type().
+get_related_inventory (Battle) -> Battle#battle.related_inventory.
+
+-spec set_related_inventory (shr_inventory:type(), type()) -> type().
+set_related_inventory (Inv, Battle) ->
+   Battle#battle
+   {
+      related_inventory = Inv
+   }.
+
+-spec ataxia_set_related_inventory
+   (
+      shr_inventory:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_related_inventory (Inv, Battle) ->
+   ataxia_set_related_inventory(Inv, ataxic:constant(Inv), Battle).
+
+-spec ataxia_set_related_inventory
+   (
+      shr_inventory:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_related_inventory (Inv, InvUpdate, Battle) ->
+   {
+      set_related_inventory(Inv, Battle),
+      ataxic:update_field(get_related_inventory_field(), InvUpdate)
+   }.
+
+%%%%%%%%%%%%%
+%%%% Map %%%%
+%%%%%%%%%%%%%
+-spec get_map_field () -> non_neg_integer().
+get_map_field () -> #battle.map.
+
+-spec get_map (type()) -> shr_map:type().
+get_map (Battle) -> Battle#battle.map.
 
 -spec set_map (shr_map:type(), type()) -> type().
 set_map (Map, Battle) ->
@@ -234,6 +259,18 @@ ataxia_set_map (Map, MapUpdate, Battle) ->
       )
    }.
 
+%%%%%%%%%%%%%%%%%%%%
+%%%% Characters %%%%
+%%%%%%%%%%%%%%%%%%%%
+-spec get_characters_field () -> non_neg_integer().
+get_characters_field () -> #battle.characters.
+
+-spec get_characters
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), btl_character:either()).
+get_characters (Battle) -> Battle#battle.characters.
 
 -spec set_characters
    (
@@ -287,18 +324,35 @@ ataxia_set_characters (Characters, CharactersUpdate, Battle) ->
       )
    }.
 
--spec set_character
+%%%%%%%%%%%%%%%%%%%
+%%%% Character %%%%
+%%%%%%%%%%%%%%%%%%%
+-spec get_character (non_neg_integer(), type()) -> btl_character:either().
+get_character (IX, Battle) -> orddict:fetch(IX, Battle#battle.characters).
+
+-spec get_resolved_character
    (
       non_neg_integer(),
-      btl_character:either(),
       type()
    )
-   -> type().
-set_character (IX, Character, Battle) ->
-   Battle#battle
-   {
-      characters = orddict:store(IX, Character, Battle#battle.characters)
-   }.
+   -> {btl_character:type(), type()}.
+get_resolved_character (IX, Battle) ->
+   Character = orddict:fetch(IX, Battle#battle.characters),
+
+   case btl_character:is_unresolved(Character) of
+      true ->
+         ResolvedCharacter = resolve_character(Character, Battle),
+         {
+            ResolvedCharacter,
+            Battle#battle
+            {
+               characters =
+                  orddict:store(IX, ResolvedCharacter, Battle#battle.characters)
+            }
+         };
+
+      false -> {Character, Battle}
+   end.
 
 -spec add_character
    (
@@ -320,6 +374,19 @@ ataxia_add_character (Character, Battle) ->
    IX = orddict:size(Battle#battle.characters),
    {S0Battle, AtaxicUpdate} = ataxia_set_character(IX, Character, Battle),
    {IX, S0Battle, AtaxicUpdate}.
+
+-spec set_character
+   (
+      non_neg_integer(),
+      btl_character:either(),
+      type()
+   )
+   -> type().
+set_character (IX, Character, Battle) ->
+   Battle#battle
+   {
+      characters = orddict:store(IX, Character, Battle#battle.characters)
+   }.
 
 -spec ataxia_set_character
    (
@@ -354,6 +421,20 @@ ataxia_set_character (IX, Character, CharacterUpdate, Battle) ->
          ataxic_sugar:update_orddict_element(IX, CharacterUpdate)
       )
    }.
+
+%%%%%%%%%%%%%%%%%
+%%%% Players %%%%
+%%%%%%%%%%%%%%%%%
+-spec get_players_field () -> non_neg_integer().
+get_players_field () -> #battle.players.
+
+-spec get_players
+   (
+      type()
+   )
+   -> orddict:orddict(non_neg_integer(), btl_player:type()).
+get_players (Battle) ->
+   Battle#battle.players.
 
 -spec set_players
    (
@@ -393,34 +474,28 @@ ataxia_set_players (Players, PlayersUpdate, Battle) ->
       )
    }.
 
--spec set_related_inventory (shr_inventory:type(), type()) -> type().
-set_related_inventory (Inv, Battle) ->
-   Battle#battle
-   {
-      related_inventory = Inv
-   }.
+%%%%%%%%%%%%%%%%
+%%%% Player %%%%
+%%%%%%%%%%%%%%%%
+-spec get_player (non_neg_integer(), type()) -> btl_player:type().
+get_player (IX, Battle) ->
+   orddict:fetch(IX, Battle#battle.players).
 
--spec ataxia_set_related_inventory
+-spec add_player (btl_player:type(), type()) -> {non_neg_integer(), type()}.
+add_player (Player, Battle) ->
+   IX = orddict:size(Battle#battle.players),
+   {IX, set_player(IX, Player, Battle)}.
+
+-spec ataxia_add_player
    (
-      shr_inventory:type(),
+      btl_player:type(),
       type()
    )
-   -> {type(), ataxic:basic()}.
-ataxia_set_related_inventory (Inv, Battle) ->
-   ataxia_set_related_inventory(Inv, ataxic:constant(Inv), Battle).
-
--spec ataxia_set_related_inventory
-   (
-      shr_inventory:type(),
-      ataxic:basic(),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_related_inventory (Inv, InvUpdate, Battle) ->
-   {
-      set_related_inventory(Inv, Battle),
-      ataxic:update_field(get_related_inventory_field(), InvUpdate)
-   }.
+   -> {non_neg_integer(), type(), ataxic:basic()}.
+ataxia_add_player (Player, Battle) ->
+   IX = orddict:size(Battle#battle.players),
+   {S0Battle, AtaxicUpdate} = ataxia_set_player(IX, Player, Battle),
+   {IX, S0Battle, AtaxicUpdate}.
 
 -spec set_player (non_neg_integer(), btl_player:type(), type()) -> type().
 set_player (IX, Player, Battle) ->
@@ -457,21 +532,15 @@ ataxia_set_player (IX, Player, PlayerUpdate, Battle) ->
       )
    }.
 
--spec add_player (btl_player:type(), type()) -> {non_neg_integer(), type()}.
-add_player (Player, Battle) ->
-   IX = orddict:size(Battle#battle.players),
-   {IX, set_player(IX, Player, Battle)}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Current Player Turn %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_current_player_turn_field () -> non_neg_integer().
+get_current_player_turn_field () -> #battle.current_player_turn.
 
--spec ataxia_add_player
-   (
-      btl_player:type(),
-      type()
-   )
-   -> {non_neg_integer(), type(), ataxic:basic()}.
-ataxia_add_player (Player, Battle) ->
-   IX = orddict:size(Battle#battle.players),
-   {S0Battle, AtaxicUpdate} = ataxia_set_player(IX, Player, Battle),
-   {IX, S0Battle, AtaxicUpdate}.
+-spec get_current_player_turn (type()) -> btl_player_turn:type().
+get_current_player_turn (Battle) ->
+   Battle#battle.current_player_turn.
 
 -spec set_current_player_turn (btl_player_turn:type(), type()) -> type().
 set_current_player_turn (PlayerTurn, Battle) ->
@@ -511,50 +580,11 @@ ataxia_set_current_player_turn (PlayerTurn, PlayerTurnUpdate, Battle) ->
       )
    }.
 
--spec new (shr_map:type()) -> type().
-new (Map) ->
-   EmptyDict = orddict:new(),
-
-   #battle
-   {
-      related_inventory = shr_inventory:default(),
-      related_tile_ids = shr_map:get_related_tile_ids(Map),
-      map = Map,
-      characters = EmptyDict,
-      players = EmptyDict,
-      current_player_turn = btl_player_turn:new(0, 0)
-   }.
-
--spec resolve_character
-   (
-      btl_character:either(),
-      type()
-   )
-   -> btl_character:type().
-resolve_character (Character, Battle) ->
-   case btl_character:is_unresolved(Character) of
-      true ->
-         btl_character:resolve
-         (
-            shr_tile:get_omnimods
-            (
-               shr_tile:from_id
-               (
-                  shr_tile_instance:get_tile_id
-                  (
-                     shr_map:get_tile_instance
-                     (
-                        btl_character:get_location(Character),
-                        Battle#battle.map
-                     )
-                  )
-               )
-            ),
-            Character
-         );
-
-      false -> Character
-   end.
+%%%%%%%%%%%%%%%%%%%%
+%%%% Conditions %%%%
+%%%%%%%%%%%%%%%%%%%%
+-spec get_conditions_field() -> non_neg_integer().
+get_conditions_field () -> #battle.conditions.
 
 -spec get_conditions (type()) -> btl_condition:collection().
 get_conditions (#battle{ conditions = R }) -> R.
@@ -594,23 +624,17 @@ ataxia_set_conditions (Conditions, Battle) ->
       Battle
    ).
 
--spec get_characters_field () -> non_neg_integer().
-get_characters_field () -> #battle.characters.
+%%%% Constructor %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec new (shr_map:type()) -> type().
+new (Map) ->
+   EmptyDict = orddict:new(),
 
--spec get_map_field () -> non_neg_integer().
-get_map_field () -> #battle.map.
-
--spec get_related_inventory_field () -> non_neg_integer().
-get_related_inventory_field () -> #battle.related_inventory.
-
--spec get_related_tile_ids_field () -> non_neg_integer().
-get_related_tile_ids_field () -> #battle.related_tile_ids.
-
--spec get_players_field () -> non_neg_integer().
-get_players_field () -> #battle.players.
-
--spec get_current_player_turn_field () -> non_neg_integer().
-get_current_player_turn_field () -> #battle.current_player_turn.
-
--spec get_conditions_field() -> non_neg_integer().
-get_conditions_field () -> #battle.conditions.
+   #battle
+   {
+      related_inventory = shr_inventory:default(),
+      related_tile_ids = shr_map:get_related_tile_ids(Map),
+      map = Map,
+      characters = EmptyDict,
+      players = EmptyDict,
+      current_player_turn = btl_player_turn:new(0, 0)
+   }.
