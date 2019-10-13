@@ -188,7 +188,7 @@ get_base_character (#btl_char_ref{ base = R }) -> R.
 
 -spec get_conditions
    (type()) -> btl_condition:collection();
-   (unresolved()) -> orddict:orddict(non_neg_integer(), btl_conditions:type()).
+   (unresolved()) -> btl_condition:collection().
 get_conditions (#btl_char{ conditions = R }) -> R;
 get_conditions (#btl_char_ref{ conditions = R }) -> R.
 

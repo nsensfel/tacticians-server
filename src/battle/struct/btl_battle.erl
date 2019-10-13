@@ -14,7 +14,8 @@
       map :: shr_map:type(),
       characters :: orddict:orddict(non_neg_integer(), btl_character:either()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
-      current_player_turn :: btl_player_turn:type()
+      current_player_turn :: btl_player_turn:type(),
+      conditions :: btl_condition:collection()
    }
 ).
 
@@ -39,6 +40,7 @@
       get_player/2,
       get_current_player_turn/1,
       get_encoded_last_turns_effects/1,
+      get_conditions/1,
 
       set_map/2,
       ataxia_set_map/2,
@@ -74,11 +76,16 @@
       ataxia_set_current_player_turn/2,
       ataxia_set_current_player_turn/3,
 
+      set_conditions/2,
+      ataxia_set_conditions/2,
+      ataxia_set_conditions/3,
+
       get_characters_field/0,
       get_players_field/0,
       get_related_inventory_field/0,
       get_related_tile_ids_field/0,
-      get_current_player_turn_field/0
+      get_current_player_turn_field/0,
+      get_conditions_field/0
    ]
 ).
 
@@ -549,6 +556,44 @@ resolve_character (Character, Battle) ->
       false -> Character
    end.
 
+-spec get_conditions (type()) -> btl_condition:collection().
+get_conditions (#battle{ conditions = R }) -> R.
+
+-spec set_conditions (btl_condition:collection(), type()) -> type().
+set_conditions (Conditions, Battle) ->
+   Battle#battle{ conditions = Conditions }.
+
+-spec ataxia_set_conditions
+   (
+      btl_condition:collection(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_conditions (Conditions, Update, Battle) ->
+   {
+      set_conditions(Conditions, Battle),
+      ataxic:update_field
+      (
+         get_conditions_field(),
+         Update
+      )
+   }.
+
+-spec ataxia_set_conditions
+   (
+      btl_condition:collection(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_conditions (Conditions, Battle) ->
+   ataxia_set_conditions
+   (
+      Conditions,
+      ataxic:constant(Conditions),
+      Battle
+   ).
+
 -spec get_characters_field () -> non_neg_integer().
 get_characters_field () -> #battle.characters.
 
@@ -566,3 +611,6 @@ get_players_field () -> #battle.players.
 
 -spec get_current_player_turn_field () -> non_neg_integer().
 get_current_player_turn_field () -> #battle.current_player_turn.
+
+-spec get_conditions_field() -> non_neg_integer().
+get_conditions_field () -> #battle.conditions.
