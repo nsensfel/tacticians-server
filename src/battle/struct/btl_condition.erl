@@ -65,7 +65,9 @@
 -export
 (
    [
-      ataxia_apply_trigger/3
+      ataxia_apply_trigger/3,
+      apply_to_character/5,
+      apply_to_battle/4
    ]
 ).
 
@@ -332,6 +334,126 @@ ataxia_apply_trigger (Context, S0Update, Conditions) ->
    ConditionsAtaxiaUpdate = update_actions_to_ataxic_update(AllUpdateActions),
 
    {LastVolatileData, ConditionsAtaxiaUpdate, LastUpdate}.
+
+-spec apply_to_character
+   (
+      non_neg_integer(),
+      shr_condition:trigger(),
+      any(),
+      VolatileDataType,
+      btl_character_turn_update:type()
+   )
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply_to_character
+(
+   ActorIX,
+   Trigger,
+   ReadOnlyData,
+   S0VolatileData,
+   S0Update
+) ->
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+   {
+      S1VolatileContext,
+      ActorConditionsAtaxicUpdate,
+      S2Update
+   } =
+      ataxia_apply_trigger
+      (
+         {Trigger, ReadOnlyData, S0VolatileData},
+         S1Update,
+         btl_character:get_conditions(S0Actor)
+      ),
+
+   %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   S1Battle = btl_character_turn_update:get_battle(S2Update),
+   {S1Actor, S2Battle} = btl_battle:get_resolved_character(ActorIX, S1Battle),
+   S0Conditions = btl_character:get_conditions(S1Actor),
+
+   S1Conditions =
+      ataxic:basic_apply_to(ActorConditionsAtaxicUpdate, S0Conditions),
+
+   {S2Actor, ActorAtaxicUpdate} =
+      btl_character:ataxia_set_conditions
+      (
+         S1Conditions,
+         ActorConditionsAtaxicUpdate,
+         S1Actor
+      ),
+
+   {S3Battle, BattleAtaxicUpdate} =
+      btl_battle:ataxia_set_character
+      (
+         ActorIX,
+         S2Actor,
+         ActorAtaxicUpdate,
+         S2Battle
+      ),
+
+   S2Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S3Battle,
+         BattleAtaxicUpdate,
+         S1Update
+      ),
+
+   {S1VolatileContext, S2Update}.
+
+-spec apply_to_battle
+   (
+      shr_condition:trigger(),
+      any(),
+      VolatileDataType,
+      btl_character_turn_update:type()
+   )
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply_to_battle
+(
+   Trigger,
+   ReadOnlyData,
+   S0VolatileData,
+   S0Update
+) ->
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+
+   {
+      S1VolatileContext,
+      BattleConditionsAtaxicUpdate,
+      S1Update
+   } =
+      ataxia_apply_trigger
+      (
+         {Trigger, ReadOnlyData, S0VolatileData},
+         S0Update,
+         btl_battle:get_conditions(S0Battle)
+      ),
+
+   %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%%%%%%%
+   S1Battle = btl_character_turn_update:get_battle(S1Update),
+   UpdatedBattleConditions =
+      ataxic:basic_apply_to
+      (
+         btl_battle:get_conditions(S1Battle),
+         BattleConditionsAtaxicUpdate
+      ),
+
+   {S2Battle, BattleAtaxicUpdate} =
+      btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
+
+   S1Update =
+      btl_character_turn_update:ataxia_set_battle
+      (
+         S2Battle,
+         BattleAtaxicUpdate,
+         S1Update
+      ),
+
+   {S1VolatileContext, S1Update}.
 
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]}. % TODO

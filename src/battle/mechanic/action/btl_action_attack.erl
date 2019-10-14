@@ -25,75 +25,6 @@ should_reverse_roles (IsParry, AttackCategory) ->
       or ((AttackCategory =/= counter) and (IsParry == true))
    ).
 
--spec apply_condition_to_character
-   (
-      non_neg_integer(),
-      shr_condition:trigger(),
-      any(),
-      VolatileDataType,
-      btl_character_turn_update:type()
-   )
-   -> {VolatileDataType, btl_character_turn_update:type()}.
-apply_condition_to_character
-(
-   ActorIX,
-   Trigger,
-   ReadOnlyData,
-   S0VolatileData,
-   S0Update
-) ->
-   S0Battle = btl_character_turn_update:get_battle(S0Update),
-   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
-   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
-
-   {
-      S1VolatileContext,
-      ActorConditionsAtaxicUpdate,
-      S2Update
-   } =
-      btl_condition:ataxia_apply_trigger
-      (
-         {Trigger, ReadOnlyData, S0VolatileData},
-         S1Update,
-         btl_character:get_conditions(S0Actor)
-      ),
-
-   %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-   S1Battle = btl_character_turn_update:get_battle(S2Update),
-   {S1Actor, S2Battle} = btl_battle:get_resolved_character(ActorIX, S1Battle),
-   S0Conditions = btl_character:get_conditions(S1Actor),
-
-   S1Conditions =
-      ataxic:basic_apply_to(ActorConditionsAtaxicUpdate, S0Conditions),
-
-   {S2Actor, ActorAtaxicUpdate} =
-      btl_character:ataxia_set_conditions
-      (
-         S1Conditions,
-         ActorConditionsAtaxicUpdate,
-         S1Actor
-      ),
-
-   {S3Battle, BattleAtaxicUpdate} =
-      btl_battle:ataxia_set_character
-      (
-         ActorIX,
-         S2Actor,
-         ActorAtaxicUpdate,
-         S2Battle
-      ),
-
-   S2Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         S3Battle,
-         BattleAtaxicUpdate,
-         S1Update
-      ),
-
-   {S1VolatileContext, S2Update}.
-
 -spec apply_mirror_conditions
    (
       boolean(),
@@ -130,7 +61,7 @@ apply_mirror_conditions
       end,
 
    {S1VolatileContext, S1Update} =
-      apply_condition_to_character
+      blt_condition:apply_to_character
       (
          ActorIX,
          OwnTriggerName,
@@ -140,7 +71,7 @@ apply_mirror_conditions
       ),
 
    {S2VolatileContext, S2Update} =
-      apply_condition_to_character
+      blt_condition:apply_to_character
       (
          TargetIX,
          OtherTriggerName,
@@ -149,41 +80,16 @@ apply_mirror_conditions
          S1Update
       ),
 
-   S0Battle = btl_character_turn_update:get_battle(S2Update),
-
-   {
-      S3VolatileContext,
-      BattleConditionsAtaxicUpdate,
-      S5Update
-   } =
-      btl_condition:ataxia_apply_trigger
+   {S3VolatileContext, S3Update} =
+      blt_condition:apply_to_battle
       (
-         {GlobalTriggerName, ReadOnlyContext, S2VolatileContext},
-         S2Update,
-         btl_battle:get_conditions(S0Battle)
-      ),
-
-   %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%%%%%%%
-   S1Battle = btl_character_turn_update:get_battle(S2Update),
-   UpdatedBattleConditions =
-      ataxic:basic_apply_to
-      (
-         btl_battle:get_conditions(S1Battle),
-         BattleConditionsAtaxicUpdate
-      ),
-
-   {S2Battle, BattleAtaxicUpdate} =
-      btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
-
-   S5Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         S2Battle,
-         BattleAtaxicUpdate,
+         GlobalTriggerName,
+         ReadOnlyContext,
+         S2VolatileContext,
          S2Update
       ),
 
-   {S3VolatileContext, S2Update}.
+   {S3VolatileContext, S3Update}.
 
 -spec roll_for_precision
    (
@@ -402,68 +308,68 @@ handle_end_of_attack (Action, S0Update) ->
 
    S2Update = btl_character_turn_update:set_battle(S2Battle, S1Update),
 
-   S0ActorIsDead = (not btl_character:get_is_alive(Actor)),
-   S0TargetIsDead = (not btl_character:get_is_alive(Actor)),
+   S0ActorIsDead = (not btl_character:get_is_alive(S0Actor)),
+   S0TargetIsDead = (not btl_character:get_is_alive(S0Target)),
 
    S3Update =
       case S0ActorIsDead of
          false -> S2Update;
          true ->
-            {_None, NextUpdate} =
+            {_None, V0NextUpdate} =
                apply_mirror_conditions
                (
                   false,
-                  ?CONDITION_TRIGGER_COMPUTED_WAS_KILLED,
-                  ?CONDITION_TRIGGER_COMPUTED_HAS_KILLED,
-                  ?CONDITION_TRIGGER_COMPUTED_ANY_KILL,
+                  ?CONDITION_TRIGGER_MAY_HAVE_BEEN_KILLED,
+                  ?CONDITION_TRIGGER_MAY_HAVE_KILLED,
+                  ?CONDITION_TRIGGER_ANY_POSSIBLE_KILL,
                   Action,
                   none,
                   S2Update
                ),
 
-            NextUpdate
+            V0NextUpdate
       end,
 
    S4Update =
       case S0TargetIsDead of
          false -> S3Update;
          true ->
-            {_None, NextUpdate} =
+            {_None, V1NextUpdate} =
                apply_mirror_conditions
                (
                   true,
-                  ?CONDITION_TRIGGER_COMPUTED_WAS_KILLED,
-                  ?CONDITION_TRIGGER_COMPUTED_HAS_KILLED,
-                  ?CONDITION_TRIGGER_COMPUTED_ANY_KILL,
+                  ?CONDITION_TRIGGER_MAY_HAVE_BEEN_KILLED,
+                  ?CONDITION_TRIGGER_MAY_HAVE_KILLED,
+                  ?CONDITION_TRIGGER_ANY_POSSIBLE_KILL,
                   Action,
                   none,
                   S3Update
                ),
 
-            NextUpdate
+            V1NextUpdate
       end,
 
    S3Battle = btl_character_turn_update:get_battle(S4Update),
-   {S1Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
-   {S1Target, S2Battle} = btl_battle:get_resolved_character(TargetIX, S1Battle),
+   {S1Actor, S4Battle} = btl_battle:get_resolved_character(ActorIX, S3Battle),
+   {S1Target, S5Battle} = btl_battle:get_resolved_character(TargetIX, S4Battle),
 
-   S5Update = btl_character_turn_update:set_battle(S2Battle, S4Update),
+   S5Update = btl_character_turn_update:set_battle(S5Battle, S4Update),
 
-   S1ActorIsDead = (not btl_character:get_is_alive(Actor)),
-   S1TargetIsDead = (not btl_character:get_is_alive(Actor)),
+   S1ActorIsDead = (not btl_character:get_is_alive(S1Actor)),
+   S1TargetIsDead = (not btl_character:get_is_alive(S1Target)),
 
    S6Update =
       case S1ActorIsDead of
          false -> S5Update;
          true ->
-            btl_victory_progression:handle_character_loss(S1Actor, S5Update)
+            btl_victory_progression:handle_character_loss(ActorIX, S5Update)
       end,
 
    S7Update =
       case S1TargetIsDead of
          false -> S6Update;
          true ->
-            btl_victory_progression:handle_character_loss(S1Target, S6Update)
+            btl_victory_progression:handle_character_loss(TargetIX, S6Update)
       end,
 
    S7Update.

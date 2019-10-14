@@ -2,6 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,22 +113,51 @@ handle_player_defeat (PlayerIX, S0Update) ->
          S1Update
       ),
 
-   S2Update.
+   {_Nothing, S3Update} =
+      btl_condition:apply_to_battle
+      (
+         ?CONDITION_TRIGGER_PLAYER_DEFEAT,
+         PlayerIX,
+         none,
+         S2Update
+      ),
 
+   S3Update.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec handle_character_loss
    (
-      btl_character:either(),
+      non_neg_integer(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-handle_character_loss (Character, Update) ->
-   Battle = btl_character_turn_update:get_battle(Update),
-   Characters = btl_battle:get_characters(Battle),
-   CharacterPlayerIX = btl_character:get_player_index(Character),
+handle_character_loss (ActorIX, S0Update) ->
+   {_Nothing, S1Update} =
+      btl_condition:apply_to_character
+      (
+         ActorIX,
+         ?CONDITION_TRIGGER_HAS_DIED,
+         none,
+         none,
+         S0Update
+      ),
+
+   {_Nothing, S2Update} =
+      btl_condition:apply_to_battle
+      (
+         ?CONDITION_TRIGGER_A_CHARACTER_HAS_DIED,
+         ActorIX,
+         none,
+         S1Update
+      ),
+
+   S0Battle = btl_character_turn_update:get_battle(S2Update),
+   {Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   S3Update = btl_character_turn_update:set_battle(S1Battle, S2Update),
+   Characters = btl_battle:get_characters(S1Battle),
+   CharacterPlayerIX = btl_character:get_player_index(Actor),
 
    StillHasAliveChar =
       lists:any
@@ -142,8 +172,8 @@ handle_character_loss (Character, Update) ->
       ),
 
    case StillHasAliveChar of
-      true -> Update;
-      _ -> handle_player_defeat(CharacterPlayerIX, Update)
+      true -> S3Update;
+      _ -> handle_player_defeat(CharacterPlayerIX, S3Update)
    end.
 
    %% TODO: Trigger condition: actually dead.
