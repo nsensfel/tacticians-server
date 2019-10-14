@@ -129,47 +129,50 @@ handle_character_loss (Character, Update) ->
    Characters = btl_battle:get_characters(Battle),
    CharacterPlayerIX = btl_character:get_player_index(Character),
 
-   case btl_character:get_rank(Character) of
-      optional ->
-         %% Let's not assume there is a commander, meaning that we still have
-         %% to check if at least one character is alive, despite the fact that
-         %% if there is a commander, it being killed would have triggered
-         %% the defeat.
-         StillHasAliveChar =
-            lists:any
+   StillHasAliveChar =
+      lists:any
+      (
+         fun ({_IX, Char}) ->
             (
-               fun ({_IX, Char}) ->
-                  (
-                     (CharacterPlayerIX == btl_character:get_player_index(Char))
-                     and btl_character:get_is_alive(Char)
-                  )
-               end,
-               orddict:to_list(Characters)
-            ),
+               (CharacterPlayerIX == btl_character:get_player_index(Char))
+               and btl_character:get_is_alive(Char)
+            )
+         end,
+         orddict:to_list(Characters)
+      ),
 
-         case StillHasAliveChar of
-            true -> Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, Update)
-         end;
-
-      commander -> handle_player_defeat(CharacterPlayerIX, Update);
-
-      target ->
-         StillHasAliveTargetChar =
-            lists:any
-            (
-               fun ({_IX, Char}) ->
-                  (
-                     (CharacterPlayerIX == btl_character:get_player_index(Char))
-                     and btl_character:get_is_alive(Char)
-                     and (btl_character:get_rank(Char) == target)
-                  )
-               end,
-               orddict:to_list(Characters)
-            ),
-
-         case StillHasAliveTargetChar of
-            true -> Update;
-            _ -> handle_player_defeat(CharacterPlayerIX, Update)
-         end
+   case StillHasAliveChar of
+      true -> Update;
+      _ -> handle_player_defeat(CharacterPlayerIX, Update)
    end.
+
+   %% TODO: Trigger condition: actually dead.
+
+%   TODO: set rank as a condition.
+%   case btl_character:get_rank(Character) of
+%      optional ->
+%         %% Let's not assume there is a commander, meaning that we still have
+%         %% to check if at least one character is alive, despite the fact that
+%         %% if there is a commander, it being killed would have triggered
+%         %% the defeat.
+%
+%      commander -> handle_player_defeat(CharacterPlayerIX, Update);
+%
+%      target ->
+%         StillHasAliveTargetChar =
+%            lists:any
+%            (
+%               fun ({_IX, Char}) ->
+%                  (
+%                     (CharacterPlayerIX == btl_character:get_player_index(Char))
+%                     and btl_character:get_is_alive(Char)
+%                     and (btl_character:get_rank(Char) == target)
+%                  )
+%               end,
+%               orddict:to_list(Characters)
+%            ),
+%
+%         case StillHasAliveTargetChar of
+%            true -> Update;
+%            _ -> handle_player_defeat(CharacterPlayerIX, Update)
+%         end

@@ -390,11 +390,83 @@ handle_end_of_attack (Action, S0Update) ->
          ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
          ?CONDITION_TRIGGER_END_OF_ANY_ATTACK,
          Action,
-         {Action, none},
+         none,
          S0Update
       ),
 
-   S1Update.
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+   ActorIX =  btl_action:get_actor_index(Action),
+   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   TargetIX =  btl_action:get_actor_index(Action),
+   {S0Target, S2Battle} = btl_battle:get_resolved_character(TargetIX, S1Battle),
+
+   S2Update = btl_character_turn_update:set_battle(S2Battle, S1Update),
+
+   S0ActorIsDead = (not btl_character:get_is_alive(Actor)),
+   S0TargetIsDead = (not btl_character:get_is_alive(Actor)),
+
+   S3Update =
+      case S0ActorIsDead of
+         false -> S2Update;
+         true ->
+            {_None, NextUpdate} =
+               apply_mirror_conditions
+               (
+                  false,
+                  ?CONDITION_TRIGGER_COMPUTED_WAS_KILLED,
+                  ?CONDITION_TRIGGER_COMPUTED_HAS_KILLED,
+                  ?CONDITION_TRIGGER_COMPUTED_ANY_KILL,
+                  Action,
+                  none,
+                  S2Update
+               ),
+
+            NextUpdate
+      end,
+
+   S4Update =
+      case S0TargetIsDead of
+         false -> S3Update;
+         true ->
+            {_None, NextUpdate} =
+               apply_mirror_conditions
+               (
+                  true,
+                  ?CONDITION_TRIGGER_COMPUTED_WAS_KILLED,
+                  ?CONDITION_TRIGGER_COMPUTED_HAS_KILLED,
+                  ?CONDITION_TRIGGER_COMPUTED_ANY_KILL,
+                  Action,
+                  none,
+                  S3Update
+               ),
+
+            NextUpdate
+      end,
+
+   S3Battle = btl_character_turn_update:get_battle(S4Update),
+   {S1Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   {S1Target, S2Battle} = btl_battle:get_resolved_character(TargetIX, S1Battle),
+
+   S5Update = btl_character_turn_update:set_battle(S2Battle, S4Update),
+
+   S1ActorIsDead = (not btl_character:get_is_alive(Actor)),
+   S1TargetIsDead = (not btl_character:get_is_alive(Actor)),
+
+   S6Update =
+      case S1ActorIsDead of
+         false -> S5Update;
+         true ->
+            btl_victory_progression:handle_character_loss(S1Actor, S5Update)
+      end,
+
+   S7Update =
+      case S1TargetIsDead of
+         false -> S6Update;
+         true ->
+            btl_victory_progression:handle_character_loss(S1Target, S6Update)
+      end,
+
+   S7Update.
 
 -spec commit_luck_change
    (
