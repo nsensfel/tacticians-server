@@ -444,7 +444,6 @@ commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
 -spec handle
    (
       btl_action:type(),
-      btl_character:type(),
       btl_character_turn_update:type()
    )
    ->
@@ -452,9 +451,22 @@ commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
       {'ok', btl_character_turn_update:type()}
       | {'events', list(btl_action:type()), btl_character_turn_update:type()}
    ).
-handle (Action, Character, S0Update) ->
-   Path = btl_action:get_path(Action),
-   CharacterIX = btl_action:get_actor_index(Action),
+handle (Action, S0Update) ->
+   ActorIX = btl_action:get_actor_index(Action),
+
+   S0MovementPoints = ...,
+
+   S0Path = btl_action:get_path(Action),
+
+   {{S1MovementPoints, S1Path}, S2Update} =
+      btl_condition:apply_to_character
+      (
+         ActorIX,
+         ?CONDITION_TRIGGER_ABOUT_TO_MOVE,
+         {S0MovementPoints, S0Path},
+         S1Update
+      ),
+
 
    {
       NewLocation,
