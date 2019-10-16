@@ -2,6 +2,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
+
 -type attack_candidate_ref() ::
    {
       non_neg_integer(), % Character IX
@@ -14,7 +16,7 @@
 -export
 (
    [
-      handle/3
+      handle/2
    ]
 ).
 
@@ -454,7 +456,11 @@ commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
 handle (Action, S0Update) ->
    ActorIX = btl_action:get_actor_index(Action),
 
-   S0MovementPoints = ...,
+   S0Battle = btl_character_turn_update:get_battle(S0Update),
+   {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
+   S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
+
+   S0MovementPoints = get_movement_points(Action, S0Actor),
 
    S0Path = btl_action:get_path(Action),
 
@@ -463,10 +469,23 @@ handle (Action, S0Update) ->
       (
          ActorIX,
          ?CONDITION_TRIGGER_ABOUT_TO_MOVE,
+         Action,
          {S0MovementPoints, S0Path},
          S1Update
       ),
 
+   {{S2MovementPoints, S2Path}, S3Update} =
+      btl_condition:apply_to_battle
+      (
+         ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_MOVE,
+         Action,
+         {S1MovementPoints, S1Path},
+         S2Update
+      ),
+
+   S2Battle = btl_character_turn_update:get_battle(S3Update),
+   {S1Actor, S3Battle} = btl_battle:get_resolved_character(ActorIX, S2Battle),
+   S4Update = btl_character_turn_update:set_battle(S3Battle, S3Update),
 
    {
       NewLocation,
@@ -475,21 +494,39 @@ handle (Action, S0Update) ->
       Interruptions,
       HandledPath
    } =
-      get_path_cost_and_destination(CharacterIX, Character, S0Update, Path),
+      get_path_cost_and_destination(ActorIX, S1Actor, S4Update, S2Path),
 
-   MovementPoints = get_movement_points(Action, Character),
-
-   case (MovementPoints >= PathCost) of
+   case (S2MovementPoints >= PathCost) of
       true -> ok;
-      _ -> error({movement, MovementPoints, PathCost})
+      _ -> error({movement, S2MovementPoints, PathCost})
    end,
 
    % [FIXME][IMPORTANT]: 'Path' will not be correct if there is an interruption.
-   S1Update =
-      commit_move(CharacterIX, Character, S0Update, HandledPath, NewLocation),
+   S4Update =
+      commit_move(ActorIX, S1Actor, S4Update, HandledPath, NewLocation),
+
+   {_Nothing, S5Update} =
+      btl_condition:apply_to_character
+      (
+         ActorIX,
+         ?CONDITION_TRIGGER_HAS_MOVED,
+         {Action, HandledPath, PathCost, NewLocation},
+         none,
+         S4Update
+      ),
+
+   {_Nothing, S6Update} =
+      btl_condition:apply_to_character
+      (
+         ActorIX,
+         ?CONDITION_TRIGGER_A_CHARACTER_HAS_MOVED,
+         {Action, HandledPath, PathCost, NewLocation},
+         none,
+         S5Update
+      ),
 
    case RemainingPath of
-      [] -> {ok, S1Update};
+      [] -> {ok, S6Update};
       _ ->
          {events,
             (
@@ -498,12 +535,12 @@ handle (Action, S0Update) ->
                [
                   btl_action:new_move
                   (
-                     CharacterIX,
+                     ActorIX,
                      RemainingPath,
-                     (MovementPoints - PathCost)
+                     (S2MovementPoints - PathCost)
                   )
                ]
             ),
-            S1Update
+            S6Update
          }
    end.
