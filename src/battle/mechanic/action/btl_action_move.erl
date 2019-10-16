@@ -501,7 +501,7 @@ handle (Action, S0Update) ->
    S4Update =
       commit_move(ActorIX, S1Actor, S4Update, HandledPath, NewLocation),
 
-   {_Nothing, S5Update} =
+   {_V0Nothing, S5Update} =
       btl_condition:apply_to_character
       (
          ActorIX,
@@ -511,7 +511,7 @@ handle (Action, S0Update) ->
          S4Update
       ),
 
-   {_Nothing, S6Update} =
+   {_V1Nothing, S6Update} =
       btl_condition:apply_to_character
       (
          ActorIX,
