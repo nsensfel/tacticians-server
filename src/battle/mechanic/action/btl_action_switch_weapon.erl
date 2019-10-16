@@ -2,6 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -9,7 +10,7 @@
 -export
 (
    [
-      handle/3
+      handle/2
    ]
 ).
 
@@ -23,44 +24,94 @@
 -spec handle
    (
       btl_action:type(),
-      btl_character:type(),
       btl_character_turn_update:type()
    )
-   -> {'ok', btl_character_turn_update:type()}.
-handle (Action, Character, S0Update) ->
-   CharacterIX = btl_action:get_actor_index(Action),
+   -> btl_character_turn_update:type().
+handle (Action, S0Update) ->
+   ActorIX = btl_action:get_actor_index(Action),
 
-   BaseCharacter = btl_character:get_base_character(Character),
+   S0PerformSwitch = true,
 
-   {UpdatedBaseCharacter, BaseCharacterAtaxiaUpdate} =
-      shr_character:ataxia_switch_weapons(BaseCharacter),
-
-   {UpdatedCharacter, CharacterAtaxiaUpdate} =
-      btl_character:ataxia_set_base_character
+   {S1PerformSwitch, S1Update} =
+      btl_condition:apply_to_character
       (
-         UpdatedBaseCharacter,
-         BaseCharacterAtaxiaUpdate,
-         Character
+         ActorIX,
+         ?CONDITION_TRIGGER_ABOUT_TO_SWITCH_WEAPONS,
+         Action,
+         S0PerformSwitch,
+         S0Update
       ),
 
-   {UpdatedBattle, BattleAtaxiaUpdate} =
-      btl_battle:ataxia_set_character
+   {S2PerformSwitch, S2Update} =
+      btl_condition:apply_to_battle
       (
-         CharacterIX,
-         UpdatedCharacter,
-         CharacterAtaxiaUpdate,
-         btl_character_turn_update:get_battle(S0Update)
-      ),
-
-   TimelineItem = btl_turn_result:new_character_switched_weapons(CharacterIX),
-
-   S1Update = btl_character_turn_update:add_to_timeline(TimelineItem, S0Update),
-   S2Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         UpdatedBattle,
-         BattleAtaxiaUpdate,
+         ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_SWITCH_WEAPONS,
+         Action,
+         S1PerformSwitch,
          S1Update
       ),
 
-   {ok, S2Update}.
+   case S2PerformSwitch of
+      false -> S2Update;
+      true ->
+         S0Battle = btl_character_turn_update:get_battle(S2Update),
+         {S0Actor, S1Battle} =
+            btl_battle:get_resolved_character(ActorIX, S0Battle),
+
+         S0BaseActor = btl_character:get_base_character(S0Actor),
+
+         {S1BaseActor, BaseActorAtaxicUpdate} =
+            shr_character:ataxia_switch_weapons(S0BaseActor),
+
+         {S1Actor, ActorAtaxicUpdate} =
+            btl_character:ataxia_set_base_character
+            (
+               S1BaseActor,
+               BaseActorAtaxicUpdate,
+               S0Actor
+            ),
+
+         {S1Battle, BattleAtaxicUpdate} =
+            btl_battle:ataxia_set_character
+            (
+               ActorIX,
+               S1Actor,
+               ActorAtaxicUpdate,
+               S0Battle
+            ),
+
+         TimelineItem =
+            btl_turn_result:new_character_switched_weapons(ActorIX),
+
+         S3Update =
+            btl_character_turn_update:add_to_timeline(TimelineItem, S2Update),
+
+         S4Update =
+            btl_character_turn_update:ataxia_set_battle
+            (
+               S1Battle,
+               BattleAtaxicUpdate,
+               S3Update
+            ),
+
+         {_V0Nothing, S5Update} =
+            btl_condition:apply_to_character
+            (
+               ActorIX,
+               ?CONDITION_TRIGGER_HAS_SWITCHED_WEAPONS,
+               Action,
+               none,
+               S4Update
+            ),
+
+         {_V1Nothing, S6Update} =
+            btl_condition:apply_to_battle
+            (
+               ?CONDITION_TRIGGER_A_CHARACTER_HAS_SWITCHED_WEAPONS,
+               Action,
+               none,
+               S5Update
+            ),
+
+         S6Update
+   end.

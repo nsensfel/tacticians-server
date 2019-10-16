@@ -448,11 +448,7 @@ commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
       btl_action:type(),
       btl_character_turn_update:type()
    )
-   ->
-   (
-      {'ok', btl_character_turn_update:type()}
-      | {'events', list(btl_action:type()), btl_character_turn_update:type()}
-   ).
+   -> btl_character_turn_update:type().
 handle (Action, S0Update) ->
    ActorIX = btl_action:get_actor_index(Action),
 
@@ -526,9 +522,11 @@ handle (Action, S0Update) ->
       ),
 
    case RemainingPath of
-      [] -> {ok, S6Update};
+      [] -> S6Update;
       _ ->
-         {events,
+         btl_character_turn_update:add_actions
+         (
+            false,
             (
                Interruptions
                ++
@@ -542,5 +540,5 @@ handle (Action, S0Update) ->
                ]
             ),
             S6Update
-         }
+         )
    end.
