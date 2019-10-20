@@ -28,6 +28,7 @@
    )
    -> btl_character_turn_update:type().
 handle (Action, S0Update) ->
+   % TODO: assert actor is alive.
    ActorIX = btl_action:get_actor_index(Action),
 
    S0PerformSwitch = true,

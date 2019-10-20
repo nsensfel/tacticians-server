@@ -450,6 +450,7 @@ commit_move (CharacterIX, Character, S0Update, Path, NewLocation) ->
    )
    -> btl_character_turn_update:type().
 handle (Action, S0Update) ->
+   % TODO: assert actor is alive.
    ActorIX = btl_action:get_actor_index(Action),
 
    S0Battle = btl_character_turn_update:get_battle(S0Update),
@@ -526,7 +527,7 @@ handle (Action, S0Update) ->
       _ ->
          btl_character_turn_update:add_actions
          (
-            false,
+            true,
             (
                Interruptions
                ++

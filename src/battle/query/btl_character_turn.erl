@@ -263,20 +263,24 @@ handle (Query) ->
 
          S0Update = fetch_data(Request),
          assert_user_permissions(S0Update, Request),
-         S1Update = btl_actions_management:handle
-         (
-            btl_character_turn_request:get_actions(Request),
-            S0Update
-         ),
-         S2Update = deactivate_character(S1Update),
-         S3Update = update_timeline(S2Update),
-         S4Update = btl_turn_progression:handle(S3Update),
+         S1Update =
+            btl_character_turn_update:add_actions
+            (
+               true,
+               btl_character_turn_request:get_actions(Request),
+               S0Update
+            ),
 
-         commit_update(S4Update, Request),
+         S2Update = btl_actions_management:handle(S1Update),
+         S3Update = deactivate_character(S2Update),
+         S4Update = update_timeline(S3Update),
+         S5Update = btl_turn_progression:handle(S4Update),
+
+         commit_update(S5Update, Request),
 
          shr_security:unlock_queries(PlayerID),
 
-         generate_reply(S4Update);
+         generate_reply(S5Update);
 
       error -> jiffy:encode([shr_disconnected:generate()])
    end.

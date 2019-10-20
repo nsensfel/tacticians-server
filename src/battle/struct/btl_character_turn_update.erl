@@ -10,7 +10,8 @@
       battle :: btl_battle:type(),
       character_ix :: non_neg_integer(),
       reversed_battle_updates :: list(ataxic:basic()),
-      timeline :: list(any())
+      timeline :: list(any()),
+      actions :: list(btl_action:type())
    }
 ).
 
@@ -31,9 +32,12 @@
       get_character_ix/1,
       get_battle_update/1,
       get_timeline/1,
+      pop_next_action/1,
 
       set_battle/2,
       ataxia_set_battle/3,
+
+      add_actions/3,
 
       add_to_timeline/2
    ]
@@ -53,7 +57,8 @@ new (Battle, CharacterIX) ->
       battle = Battle,
       character_ix = CharacterIX,
       reversed_battle_updates = [],
-      timeline = []
+      timeline = [],
+      actions = []
    }.
 
 -spec get_battle (type()) -> btl_battle:type().
@@ -61,6 +66,18 @@ get_battle (Data) -> Data#type.battle.
 
 -spec get_character_ix (type()) -> non_neg_integer().
 get_character_ix (Data) -> Data#type.character_ix.
+
+-spec pop_next_action (type()) -> ({ok, type(), btl_action:type()} | none).
+pop_next_action (Data) ->
+   case Data#type.actions of
+      [] -> none;
+      [Result|NextActions] ->
+         {
+            ok,
+            Data#type { actions = NextActions },
+            Result
+         }
+   end.
 
 -spec set_battle (btl_battle:type(), type()) -> type().
 set_battle (Battle, Data) -> Data#type { battle = Battle }.
@@ -77,6 +94,17 @@ ataxia_set_battle (Battle, BattleUpdate, Data) ->
    {
       battle = Battle,
       reversed_battle_updates = [BattleUpdate|Data#type.reversed_battle_updates]
+   }.
+
+-spec add_actions (boolean(), list(btl_action:type()), type()) -> type().
+add_actions (IsPrefix, Actions, Data) ->
+   Data#type
+   {
+      actions =
+         case IsPrefix of
+            true -> (Actions ++ Data#type.actions);
+            false -> (Data#type.actions ++ Actions)
+         end
    }.
 
 -spec add_to_timeline (btl_turn_result:type(), type()) -> type().

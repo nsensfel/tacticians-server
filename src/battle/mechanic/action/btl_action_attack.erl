@@ -1129,6 +1129,7 @@ handle_attack_sequence ([AttackCategory|S0NextElements], Action, S0Update) ->
    )
    -> btl_character_turn_update:type().
 handle (Action, S0Update) ->
+   % TODO: assert target & actor are alive.
    S0Sequence = [first, counter, second],
 
    {S1Sequence, S1Update} =

@@ -62,18 +62,12 @@ apply_to_character (Condition, S0Character) ->
 
             (RemainingUses == 1) ->
                {
-                  btl_condition:set_remaining_uses
-                  (
-                     UpdatedRemainingUses,
-                     Condition
-                  ),
                   remove,
                   [{S1Character, CharacterUpdate}]
                };
 
             (RemainingUses == 0) ->
                {
-                  Condition,
                   remove,
                   [{S1Character, CharacterUpdate}]
                };
@@ -108,18 +102,16 @@ handle_context ({Trigger, ReadOnly, VolatileData}, Condition) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec apply
    (
-      shr_condition:context(),
-      btl_condition:type(),
-      btl_character_turn_update:type()
+      shr_condition:context(any(), VolatileDataType),
+      btl_character_turn_update:type(),
+      btl_condition:type()
    ) ->
    {
-      shr_condition:context(),
+      VolatileDataType,
       btl_character_turn_update:type(),
       btl_condition:update_action()
    }.
-apply (S0Context, S0Condition, S0Update) ->
-   S1Context = handle_context(S0Context, S0Condition),
+apply (S0Context, S0Update, _S0Condition) ->
+   {_Trigger, _ReadOnlyData, VolatileData} = S0Context,
 
-   {TargetIX, Amount} = btl_condition:get_parameters(S0Condition),
-
-   {S1Context, S0Update, none}.
+   {VolatileData, S0Update, none}.
