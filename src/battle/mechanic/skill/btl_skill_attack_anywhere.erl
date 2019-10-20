@@ -2,6 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,31 +23,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec cast
    (
-      shr_skill:variant(),
+      shr_skill:type(),
       non_neg_integer(),
       list(non_neg_integer()),
       list(shr_location:type()),
       btl_character_turn_update:type()
-   ) -> btl_character_turn_update:type().
-cast (_Variant, UserIX, TargetIXs, _Locations, Update) ->
-   TargetIX =
-      case TargetIXs of
-         [ValTargetIX] -> ValTargetIX;
-         _ -> error({skill, target, TargetIXs})
-      end,
-
-   % TODO: Add condition to Character[UserIX]:
-   % {
-   %     Effect: Attack Range Increase
-   %     Trigger: Start of Own Attack
-   %     Duration: -1 (Infinite)
-   %     Uses: 1
-   %     Parameter: Max Value.
-
-   % TODO: Add cast event to Update.
-
-   btl_actions_management:handle
-   (
-      [btl_action:new_attack(UserIX, TargetIX)],
-      Update
-   ).
+   )
+   -> btl_character_turn_update:type().
+cast (_Skill, _UserIX, _TargetIXs, _Locations, S0Update) ->
+   S0Update.

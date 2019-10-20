@@ -2,7 +2,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("tacticians/skills.hrl")
+-include("tacticians/conditions.hrl").
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,18 +23,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec cast
    (
-      shr_skill:variant(),
+      shr_skill:type(),
       non_neg_integer(),
       list(non_neg_integer()),
       list(shr_location:type()),
       btl_character_turn_update:type()
-   ) -> btl_character_turn_update:type().
-cast (Variant, _UserIX, TargetIXs, _Locations, Update) ->
-   % TODO: Add condition to TargetIXs:
-   % {
-   %     Effect: Defense Percentage Increase
-   %     Trigger: Start of Own Attack, Start of Target Attack
-   %     Duration: {Beta} Turns
-   %     Uses: -1 (Infinite)
-   %     Parameter: {Alpha}.
-   Update.
+   )
+   -> btl_character_turn_update:type().
+cast (_Skill, _UserIX, _TargetIXs, _Locations, S0Update) ->
+   S0Update.
