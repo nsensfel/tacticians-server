@@ -59,7 +59,7 @@ mark_characters_of_player_as_defeated (PlayerIX, Battle) ->
          AllCharacters
       ),
 
-   {ResultingBattle, ataxic:optimize(ataxic:sequence(BattleAtaxiaUpdates))}.
+   {ResultingBattle, ataxic:sequence(BattleAtaxiaUpdates)}.
 
 -spec mark_player_as_inactive
    (

@@ -12,12 +12,18 @@
       | {update, ataxic:basic()}
    ).
 
+-type ref() ::
+   (
+      {char, non_neg_integer(), non_neg_integer()}
+      | {battle, non_neg_integer()}
+   ).
+
 -record
 (
    btl_cond,
    {
       category :: shr_condition:id(),
-      triggers :: ordset:ordset(shr_condition:trigger()),
+      triggers :: ordsets:ordset(shr_condition:trigger()),
       occurrences :: (non_neg_integer() | -1),
       duration :: (non_neg_integer() | -1),
       parameters :: tuple()
@@ -27,7 +33,7 @@
 -opaque type() :: #btl_cond{}.
 -opaque collection() :: orddict:orddict(non_neg_integer(), type()).
 
--export_type([type/0, collection/0, update_action/0]).
+-export_type([type/0, ref/0, collection/0, update_action/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,7 +137,7 @@ update_actions_to_ataxic_update (Updates) ->
 -spec get_category (type()) -> shr_condition:id().
 get_category (Condition) -> Condition#btl_cond.category.
 
--spec get_triggers (type()) -> ordset:ordset(shr_condition:trigger()).
+-spec get_triggers (type()) -> ordsets:ordset(shr_condition:trigger()).
 get_triggers (Condition) -> Condition#btl_cond.triggers.
 
 -spec get_remaining_occurrences (type()) -> (non_neg_integer() | -1).
@@ -143,7 +149,7 @@ get_duration (Condition) -> Condition#btl_cond.duration.
 -spec get_parameters (type()) -> tuple().
 get_parameters (Condition) -> Condition#btl_cond.parameters.
 
--spec set_triggers (ordset:ordset(shr_condition:trigger()), type()) -> type().
+-spec set_triggers (ordsets:ordset(shr_condition:trigger()), type()) -> type().
 set_triggers (Triggers, Condition) -> Condition#btl_cond{ triggers = Triggers }.
 
 -spec set_remaining_occurrences ((non_neg_integer() | -1), type()) -> type().
@@ -159,7 +165,7 @@ set_parameters (Value, Condition) -> Condition#btl_cond{ parameters = Value }.
 
 -spec ataxia_set_triggers
    (
-      ordset:ordset(shr_condition:trigger()),
+      ordsets:ordset(shr_condition:trigger()),
       type()
    )
    -> {type(), ataxic:basic()}.
@@ -219,7 +225,7 @@ ataxia_set_parameters (Value, Condition) ->
 
 -spec ataxia_set_triggers
    (
-      ordset:ordset(shr_condition:trigger()),
+      ordsets:ordset(shr_condition:trigger()),
       ataxic:basic(),
       type()
    )
@@ -253,7 +259,7 @@ ataxia_set_parameters (Value, Update, Condition) ->
 
 -spec triggers_on (shr_condition:trigger(), type()) -> boolean().
 triggers_on (Trigger, Type) ->
-   ordset:is_element(Trigger, Type#btl_cond.triggers).
+   ordsets:is_element(Trigger, Type#btl_cond.triggers).
 
 -spec get_category_field () -> non_neg_integer().
 get_category_field () -> #btl_cond.category.
@@ -375,7 +381,7 @@ apply_to_character
    S0Conditions = btl_character:get_conditions(S1Actor),
 
    S1Conditions =
-      ataxic:basic_apply_to(ActorConditionsAtaxicUpdate, S0Conditions),
+      ataxic:apply_basic_to(ActorConditionsAtaxicUpdate, S0Conditions),
 
    {S2Actor, ActorAtaxicUpdate} =
       btl_character:ataxia_set_conditions
@@ -436,7 +442,7 @@ apply_to_battle
    %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%%%%%%%
    S1Battle = btl_character_turn_update:get_battle(S1Update),
    UpdatedBattleConditions =
-      ataxic:basic_apply_to
+      ataxic:apply_basic_to
       (
          btl_battle:get_conditions(S1Battle),
          BattleConditionsAtaxicUpdate

@@ -61,7 +61,7 @@ apply_mirror_conditions
       end,
 
    {S1VolatileContext, S1Update} =
-      blt_condition:apply_to_character
+      btl_condition:apply_to_character
       (
          ActorIX,
          OwnTriggerName,
@@ -71,7 +71,7 @@ apply_mirror_conditions
       ),
 
    {S2VolatileContext, S2Update} =
-      blt_condition:apply_to_character
+      btl_condition:apply_to_character
       (
          TargetIX,
          OtherTriggerName,
@@ -81,7 +81,7 @@ apply_mirror_conditions
       ),
 
    {S3VolatileContext, S3Update} =
-      blt_condition:apply_to_battle
+      btl_condition:apply_to_battle
       (
          GlobalTriggerName,
          ReadOnlyContext,
@@ -474,7 +474,7 @@ get_actors (_Category, Action, Update) ->
 -spec commit_hit
    (
       boolean(),
-      btl_battle:precision(),
+      btl_attack:precision(),
       boolean(),
       btl_character:type(),
       btl_character:type(),
@@ -645,7 +645,7 @@ commit_hit
       btl_attack:category(),
       btl_action:type(),
       boolean(),
-      btl_battle:precision(),
+      btl_attack:precision(),
       btl_character_turn_update:type()
    )
    ->

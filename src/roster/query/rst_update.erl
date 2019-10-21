@@ -149,7 +149,7 @@ commit_update (QueryState, Input) ->
          ataxia_security:user_from_id(PlayerID),
          ataxic:update_value
          (
-            ataxic:optimize(ataxic:sequence(RosterAtaxiaUpdates))
+            ataxic_optimize:aggressive(ataxic:sequence(RosterAtaxiaUpdates))
          ),
          RosterID
       ),

@@ -101,7 +101,7 @@ activate_next_players_characters (NextPlayerIX, Battle) ->
          AllCharacters
       ),
 
-   {ResultingBattle, ataxic:optimize(ataxic:sequence(BattleAtaxicUpdates))}.
+   {ResultingBattle, ataxic:sequence(BattleAtaxicUpdates)}.
 
 -spec activate_next_player
    (

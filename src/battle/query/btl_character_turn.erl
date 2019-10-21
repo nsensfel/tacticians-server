@@ -137,7 +137,7 @@ send_to_database (Update, Request) ->
       (
          battle_db,
          ataxia_security:user_from_id(PlayerID),
-         ataxic:update_value(ataxic:optimize(BattleAtaxicUpdate)),
+         ataxic:update_value(ataxic_optimize:aggressive(BattleAtaxicUpdate)),
          BattleID
       ),
 

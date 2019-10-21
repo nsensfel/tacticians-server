@@ -152,7 +152,10 @@ add_characters (PlayerIX, RosterCharacters, Battle) ->
          RosterCharacters
       ),
 
-   {FinalBattle, ataxic:optimize(ataxic:sequence(FinalBattleAtaxicUpdates))}.
+   {
+      FinalBattle,
+      ataxic:sequence(FinalBattleAtaxicUpdates)
+   }.
 
 -spec get_roster_characters
    (
@@ -715,7 +718,7 @@ attempt
       (
          pending_battle_db,
          PlayerUser,
-         ataxic:update_value(AtaxicUpdate),
+         ataxic:update_value(ataxic_optimize:aggressive(AtaxicUpdate)),
          PendingBattleID
       ),
 
