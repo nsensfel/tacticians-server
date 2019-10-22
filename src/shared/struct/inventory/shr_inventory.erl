@@ -382,12 +382,9 @@ ataxia_add_equipment (Eq, Inv) ->
 
    {
       S5Inv,
-      ataxic:optimize
+      ataxic:sequence
       (
-         ataxic:sequence
-         (
-            [Ataxic0, Ataxic1, Ataxic2, Ataxic3, Ataxic4 |Ataxic5s]
-         )
+         [Ataxic0, Ataxic1, Ataxic2, Ataxic3, Ataxic4 |Ataxic5s]
       )
    }.
 

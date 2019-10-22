@@ -24,8 +24,6 @@
    {
       category :: shr_condition:id(),
       triggers :: ordsets:ordset(shr_condition:trigger()),
-      occurrences :: (non_neg_integer() | -1),
-      duration :: (non_neg_integer() | -1),
       parameters :: tuple()
    }
 ).
@@ -43,18 +41,12 @@
    [
       get_category/1,
       get_triggers/1,
-      get_remaining_occurrences/1,
-      get_duration/1,
       get_parameters/1,
 
       set_triggers/2,
-      set_remaining_occurrences/2,
-      set_duration/2,
       set_parameters/2,
 
       ataxia_set_triggers/2,
-      ataxia_set_remaining_occurrences/2,
-      ataxia_set_duration/2,
       ataxia_set_parameters/2,
 
       ataxia_set_triggers/3,
@@ -62,9 +54,10 @@
 
       get_category_field/0,
       get_triggers_field/0,
-      get_remaining_occurrences_field/0,
-      get_duration_field/0,
-      get_parameters_field/0
+      get_parameters_field/0,
+
+      new/3,
+      new_collection/0
    ]
 ).
 
@@ -73,7 +66,8 @@
    [
       ataxia_apply_trigger/3,
       apply_to_character/5,
-      apply_to_battle/4
+      apply_to_battle/4,
+      update_from_reference/3
    ]
 ).
 
@@ -133,32 +127,17 @@ update_actions_to_ataxic_update (Updates) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 -spec get_category (type()) -> shr_condition:id().
 get_category (Condition) -> Condition#btl_cond.category.
 
 -spec get_triggers (type()) -> ordsets:ordset(shr_condition:trigger()).
 get_triggers (Condition) -> Condition#btl_cond.triggers.
 
--spec get_remaining_occurrences (type()) -> (non_neg_integer() | -1).
-get_remaining_occurrences (Condition) -> Condition#btl_cond.occurrences.
-
--spec get_duration (type()) -> (non_neg_integer() | -1).
-get_duration (Condition) -> Condition#btl_cond.duration.
-
 -spec get_parameters (type()) -> tuple().
 get_parameters (Condition) -> Condition#btl_cond.parameters.
 
 -spec set_triggers (ordsets:ordset(shr_condition:trigger()), type()) -> type().
 set_triggers (Triggers, Condition) -> Condition#btl_cond{ triggers = Triggers }.
-
--spec set_remaining_occurrences ((non_neg_integer() | -1), type()) -> type().
-set_remaining_occurrences (Value, Condition) ->
-   Condition#btl_cond{ occurrences = Value }.
-
--spec set_duration ((non_neg_integer() | -1), type()) -> type().
-set_duration (Value, Condition) ->
-   Condition#btl_cond{ duration = Value }.
 
 -spec set_parameters (tuple(), type()) -> type().
 set_parameters (Value, Condition) -> Condition#btl_cond{ parameters = Value }.
@@ -176,39 +155,6 @@ ataxia_set_triggers (Triggers, Condition) ->
       (
          get_triggers_field(),
          ataxic:constant(Triggers)
-      )
-   }.
-
--spec ataxia_set_remaining_occurrences
-   (
-      (non_neg_integer() | -1),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_remaining_occurrences (Value, Condition) ->
-   {
-      set_remaining_occurrences(Value, Condition),
-      ataxic:update_field
-      (
-         get_remaining_occurrences_field(),
-         ataxic:constant(Value)
-      )
-   }.
-
-
--spec ataxia_set_duration
-   (
-      (non_neg_integer() | -1),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_duration (Value, Condition) ->
-   {
-      set_duration(Value, Condition),
-      ataxic:update_field
-      (
-         get_duration_field(),
-         ataxic:constant(Value)
       )
    }.
 
@@ -267,12 +213,6 @@ get_category_field () -> #btl_cond.category.
 -spec get_triggers_field () -> non_neg_integer().
 get_triggers_field () -> #btl_cond.triggers.
 
--spec get_remaining_occurrences_field () -> non_neg_integer().
-get_remaining_occurrences_field () -> #btl_cond.occurrences.
-
--spec get_duration_field () -> non_neg_integer().
-get_duration_field () -> #btl_cond.duration.
-
 -spec get_parameters_field () -> non_neg_integer().
 get_parameters_field () -> #btl_cond.parameters.
 
@@ -311,7 +251,12 @@ ataxia_apply_trigger (Context, S0Update, Conditions) ->
                UpdateActions
             }
          ) ->
-            Module = shr_condition_selector:get_module(get_category(Condition)),
+            Module =
+               shr_condition:get_module
+               (
+                  shr_condition:from_id(Condition#btl_cond.category)
+               ),
+
             {NextVolatileData, NextUpdate, UpdateAction} =
                erlang:apply
                (
@@ -444,8 +389,8 @@ apply_to_battle
    UpdatedBattleConditions =
       ataxic:apply_basic_to
       (
-         btl_battle:get_conditions(S1Battle),
-         BattleConditionsAtaxicUpdate
+         BattleConditionsAtaxicUpdate,
+         btl_battle:get_conditions(S1Battle)
       ),
 
    {S2Battle, BattleAtaxicUpdate} =
@@ -460,6 +405,37 @@ apply_to_battle
       ),
 
    {S1VolatileContext, S1Update}.
+
+-spec update_from_reference
+   (
+      ref(),
+      update_action(),
+      btl_character_turn_update:type()
+   )
+   -> btl_character_turn_update:type().
+update_from_reference ({battle, _CondIX}, _UpdateAction, Update) ->
+   Update; % TODO
+update_from_reference ({char, _CharIX, _CondIX}, _UpdateAction, Update) ->
+   Update. % TODO
+
+-spec new
+   (
+      shr_condition:id(),
+      ordsets:ordset(shr_condition:trigger()),
+      tuple()
+   )
+   -> type().
+new (CondID, Triggers, Params) ->
+   #btl_cond
+   {
+      category = CondID,
+      triggers = Triggers,
+      parameters = Params
+   }.
+
+-spec new_collection () -> collection().
+new_collection () -> orddict:new().
+
 
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]}. % TODO

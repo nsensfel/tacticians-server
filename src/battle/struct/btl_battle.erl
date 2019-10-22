@@ -636,5 +636,6 @@ new (Map) ->
       map = Map,
       characters = EmptyDict,
       players = EmptyDict,
-      current_player_turn = btl_player_turn:new(0, 0)
+      current_player_turn = btl_player_turn:new(0, 0),
+      conditions = btl_condition:new_collection()
    }.

@@ -296,7 +296,7 @@ handle_end_of_attack (Action, S0Update) ->
          ?CONDITION_TRIGGER_END_OF_OTHER_ATTACK,
          ?CONDITION_TRIGGER_END_OF_ANY_ATTACK,
          Action,
-         none,
+         {Action, none},
          S0Update
       ),
 
@@ -323,7 +323,7 @@ handle_end_of_attack (Action, S0Update) ->
                   ?CONDITION_TRIGGER_MAY_HAVE_KILLED,
                   ?CONDITION_TRIGGER_ANY_POSSIBLE_KILL,
                   Action,
-                  none,
+                  {Action, none},
                   S2Update
                ),
 
@@ -342,7 +342,7 @@ handle_end_of_attack (Action, S0Update) ->
                   ?CONDITION_TRIGGER_MAY_HAVE_KILLED,
                   ?CONDITION_TRIGGER_ANY_POSSIBLE_KILL,
                   Action,
-                  none,
+                  {Action, none},
                   S3Update
                ),
 
@@ -390,7 +390,7 @@ commit_luck_change (Character, NewLuck, S0Update) ->
       btl_player:ataxia_set_luck(NewLuck, S0Player),
 
    {S1Battle, BattleAtaxicUpdate} =
-      btl_battle:set_player
+      btl_battle:ataxia_set_player
       (
          PlayerIX,
          S1Player,
@@ -399,7 +399,7 @@ commit_luck_change (Character, NewLuck, S0Update) ->
       ),
 
    S1Update =
-      btl_character_turn_update:set_battle
+      btl_character_turn_update:ataxia_set_battle
       (
          S1Battle,
          BattleAtaxicUpdate,
@@ -574,7 +574,7 @@ commit_hit
       ),
 
    {S1Battle, BattleAtaxicUpdate1} =
-      btl_battle:set_character
+      btl_battle:ataxia_set_character
       (
          TargetIX,
          S1Target,
@@ -1112,8 +1112,8 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-handle_attack_sequence ([], Action, Update) ->
-   {Action, Update};
+handle_attack_sequence ([], _Action, Update) ->
+   Update;
 handle_attack_sequence ([AttackCategory|S0NextElements], Action, S0Update) ->
    {S1NextElements, S1Update} =
       handle_hit(AttackCategory, S0NextElements, Action, S0Update),
