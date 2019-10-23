@@ -7,6 +7,7 @@
 -define(ACTIONS_FIELD, <<"act">>).
 -define(ACTIONS_MOVE_FIELD, <<"mov">>).
 -define(ACTIONS_WEAPON_SWITCH_FIELD, <<"wps">>).
+-define(ACTIONS_SKILL_FIELD, <<"skl">>).
 -define(ACTIONS_ATTACK_FIELD, <<"tar">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,8 +64,8 @@ decode_actions (CharacterIX, Act) ->
             maps:get(?ACTIONS_MOVE_FIELD, Act)
          )
       of
-         [] -> S0Result;
-         [Move] -> [Move|S0Result]
+         {ok, Move} -> [Move|S0Result];
+         none -> S0Result
       end,
 
    S2Result =
@@ -75,8 +76,8 @@ decode_actions (CharacterIX, Act) ->
             maps:get(?ACTIONS_ATTACK_FIELD, Act)
          )
       of
-         [] -> S1Result;
-         [Atk] -> [Atk|S1Result]
+         {ok, Atk} -> [Atk|S1Result];
+         none -> S1Result
       end,
 
    S3Result =
@@ -87,11 +88,23 @@ decode_actions (CharacterIX, Act) ->
             maps:get(?ACTIONS_WEAPON_SWITCH_FIELD, Act)
          )
       of
-         [] -> S2Result;
-         [Wps] -> [Wps|S2Result]
+         {ok, Wps} -> [Wps|S2Result];
+         none -> S2Result
       end,
 
-   lists:reverse(S3Result).
+   S4Result =
+      case
+         btl_action:maybe_decode_skill
+         (
+            CharacterIX,
+            maps:get(?ACTIONS_SKILL_FIELD, Act)
+         )
+      of
+         {ok, Skill} -> [Skill|S3Result];
+         none -> S3Result
+      end,
+
+   lists:reverse(S4Result).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
