@@ -13,6 +13,7 @@
    {
       id :: id(),
       name :: binary(),
+      module :: atom(),
       description :: binary(),
       % can it be removed or stolen? Not ranks, for example.
       is_transferable :: boolean()
@@ -29,6 +30,8 @@
 -export
 (
    [
+      from_id/1,
+      get_module/1
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,3 +41,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_module (type()) -> atom().
+get_module (#condition{ module = Module }) -> Module.
+
+-spec from_id (id()) -> type().
+from_id (ID) ->
+   error({condition, unknown, ID}).

@@ -74,7 +74,8 @@
 -export
 (
    [
-      encode/1
+      encode/1,
+      encode_collection/1
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -436,6 +437,8 @@ new (CondID, Triggers, Params) ->
 -spec new_collection () -> collection().
 new_collection () -> orddict:new().
 
-
 -spec encode (type()) -> {list({binary(), any()})}.
 encode (Condition) -> {[]}. % TODO
+
+-spec encode_collection (collection()) -> {list({binary(), any()})}.
+encode_collection (Conditions) -> {[]}. % TODO

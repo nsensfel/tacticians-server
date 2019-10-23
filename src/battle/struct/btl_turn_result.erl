@@ -24,15 +24,29 @@
 
 -record
 (
-   attacked,
+   hit,
    {
       attacker_ix :: non_neg_integer(),
       defender_ix :: non_neg_integer(),
-      sequence :: list(btl_attack:type()),
+      category :: btl_attack:category(),
+      precision :: btl_attack:precision(),
+      is_critical :: boolean(),
+      is_parry :: boolean(),
+      damage :: non_neg_integer(),
       attacker_luck :: integer(),
       defender_luck :: integer()
    }
 ).
+
+-record
+(
+   targetted,
+   {
+      attacker_ix :: non_neg_integer(),
+      defender_ix :: non_neg_integer()
+   }
+).
+
 
 -record
 (
@@ -61,7 +75,8 @@
 -opaque type() :: (
    #switched_weapon{}
    | #moved{}
-   | #attacked{}
+   | #hit{}
+   | #targetted{}
    | #player_won{}
    | #player_lost{}
    | #player_turn_started{}
@@ -80,7 +95,8 @@
       new_player_turn_started/1,
       new_character_switched_weapons/1,
       new_character_moved/3,
-      new_character_attacked/5
+      new_character_hit/9,
+      new_character_targetted/2
    ]
 ).
 
@@ -129,28 +145,48 @@ new_character_moved (CharacterIX, Path, NewLocation) ->
       new_location = NewLocation
    }.
 
--spec new_character_attacked
+-spec new_character_targetted (non_neg_integer(), non_neg_integer()) -> type().
+new_character_targetted (AttackerIX, DefenderIX) ->
+   #targetted
+   {
+      attacker_ix = AttackerIX,
+      defender_ix = DefenderIX
+   }.
+
+-spec new_character_hit
    (
       non_neg_integer(),
       non_neg_integer(),
-      list(btl_attack:type()),
+      btl_attack:category(),
+      btl_attack:precision(),
+      boolean(),
+      boolean(),
+      non_neg_integer(),
       integer(),
       integer()
    )
    -> type().
-new_character_attacked
+new_character_hit
 (
    AttackerIX,
    DefenderIX,
-   AttackSequence,
+   Category,
+   Precision,
+   IsCritical,
+   IsParry,
+   Damage,
    AttackerLuck,
    DefenderLuck
 ) ->
-   #attacked
+   #hit
    {
       attacker_ix = AttackerIX,
       defender_ix = DefenderIX,
-      sequence = AttackSequence,
+      category = Category,
+      precision = Precision,
+      is_critical = IsCritical,
+      is_parry = IsParry,
+      damage = Damage,
       attacker_luck = AttackerLuck,
       defender_luck = DefenderLuck
    }.
@@ -181,23 +217,40 @@ encode (TurnResult) when is_record(TurnResult, moved) ->
          {<<"nlc">>, EncodedNewLocation}
       ]
    };
-encode (TurnResult) when is_record(TurnResult, attacked) ->
-   AttackerIX = TurnResult#attacked.attacker_ix,
-   DefenderIX = TurnResult#attacked.defender_ix,
-   Sequence = TurnResult#attacked.sequence,
-   AttackerLuck = TurnResult#attacked.attacker_luck,
-   DefenderLuck = TurnResult#attacked.defender_luck,
-
-   EncodedSequence = lists:map(fun btl_attack:encode/1, Sequence),
+encode (TurnResult) when is_record(TurnResult, hit) ->
+   AttackerIX = TurnResult#hit.attacker_ix,
+   DefenderIX = TurnResult#hit.defender_ix,
+   Category = TurnResult#hit.category,
+   Precision = TurnResult#hit.precision,
+   IsCritical = TurnResult#hit.is_critical,
+   IsParry = TurnResult#hit.is_parry,
+   Damage = TurnResult#hit.damage,
+   AttackerLuck = TurnResult#hit.attacker_luck,
+   DefenderLuck = TurnResult#hit.defender_luck,
 
    {
       [
          {<<"t">>, <<"atk">>},
          {<<"aix">>, AttackerIX},
          {<<"dix">>, DefenderIX},
-         {<<"seq">>, EncodedSequence},
+         {<<"ord">>, btl_attack:encode_category(Category)},
+         {<<"pre">>, btl_attack:encode_precision(Precision)},
+         {<<"cri">>, IsCritical},
+         {<<"par">>, IsParry},
+         {<<"dmg">>, Damage},
          {<<"alk">>, AttackerLuck},
          {<<"dlk">>, DefenderLuck}
+      ]
+   };
+encode (TurnResult) when is_record(TurnResult, targetted) ->
+   AttackerIX = TurnResult#targetted.attacker_ix,
+   DefenderIX = TurnResult#targetted.defender_ix,
+
+   {
+      [
+         {<<"t">>, <<"tar">>},
+         {<<"aix">>, AttackerIX},
+         {<<"dix">>, DefenderIX}
       ]
    };
 encode (TurnResult) when is_record(TurnResult, player_won) ->

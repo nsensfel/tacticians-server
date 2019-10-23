@@ -102,7 +102,6 @@
       resolve/2,
       is_unresolved/1,
       to_unresolved/1,
-      decode/1,
       encode/1
    ]
 ).
@@ -490,7 +489,7 @@ ataxia_set_conditions (Conditions, Char) ->
       rank(),
       shr_location:type(),
       shr_character:type(),
-      list(btl_condition:type())
+      btl_condition:collection()
    )
    -> type().
 new
@@ -563,25 +562,6 @@ get_base_character_field () -> #btl_char_ref.base.
 -spec get_conditions_field() -> non_neg_integer().
 get_conditions_field () -> #btl_char_ref.conditions.
 
--spec decode (map()) -> unresolved().
-decode (Map) ->
-   #btl_char_ref
-   {
-      player_ix = maps:get(?PLAYER_IX_FIELD, Map),
-      rank = maps:get(?RANK_FIELD, Map),
-      location = shr_location:decode(maps:get(?LOCATION_FIELD, Map)),
-      current_health = maps:get(?CURRENT_HEALTH_FIELD, Map),
-      is_active = maps:get(?IS_ACTIVE_FIELD, Map),
-      is_defeated = maps:get(?IS_DEFEATED_FIELD, Map),
-      base = shr_character:decode(maps:get(?BASE_CHAR_FIELD, Map)),
-      conditions =
-         lists:map
-         (
-            fun btl_condition:decode/1,
-            maps:get(?CONDITIONS_FIELD, Map)
-         )
-   }.
-
 -spec encode (unresolved()) -> {list({binary(), any()})}.
 encode (CharRef) ->
    {
@@ -595,11 +575,7 @@ encode (CharRef) ->
          {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)},
          {
             ?CONDITIONS_FIELD,
-            lists:map
-            (
-               fun btl_condition:encode/1,
-               CharRef#btl_char_ref.conditions
-            )
+            btl_condition:encode_collection(CharRef#btl_char_ref.conditions)
          }
       ]
    }.

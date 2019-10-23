@@ -259,7 +259,7 @@ handle_start_of_attack (S0AttackSequence, Action, S0Update) ->
    S1Update =
       btl_character_turn_update:add_to_timeline
       (
-         btl_turn_result:new_targeting
+         btl_turn_result:new_character_targetted
          (
             btl_action:get_actor_index(Action),
             btl_action:get_target_index(Action)
