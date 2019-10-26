@@ -6,6 +6,7 @@
 -define(PORTRAIT_FIELD, <<"pt">>).
 -define(GLYPH_BOARD_FIELD, <<"gb">>).
 -define(GLYPHS_FIELD, <<"gl">>).
+-define(SKILL_FIELD, <<"sk">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,7 +20,8 @@
       armor :: shr_armor:id(),
       portrait :: shr_portrait:id(),
       glyph_board :: shr_glyph_board:id(),
-      glyphs :: list(shr_glyph:id())
+      glyphs :: list(shr_glyph:id()),
+      skill :: shr_skill:id()
    }
 ).
 
@@ -32,7 +34,8 @@
       armor :: shr_armor:type(),
       portrait :: shr_portrait:type(),
       glyph_board :: shr_glyph_board:type(),
-      glyphs :: list(shr_glyph:type())
+      glyphs :: list(shr_glyph:type()),
+      skill :: shr_skill:type()
    }
 ).
 
@@ -55,6 +58,7 @@
       get_portrait/1,
       get_glyph_board/1,
       get_glyphs/1,
+      get_skill/1,
 
       set_primary_weapon/2,
       set_secondary_weapon/2,
@@ -62,6 +66,7 @@
       set_portrait/2,
       set_glyph_board/2,
       set_glyphs/2,
+      set_skill/2,
 
       ataxia_set_primary_weapon/2,
       ataxia_set_secondary_weapon/2,
@@ -70,6 +75,7 @@
       ataxia_set_glyph_board/2,
       ataxia_set_glyphs/2,
       ataxia_set_glyphs/3,
+      ataxia_set_skill/2,
 
       get_primary_weapon_id/1,
       get_secondary_weapon_id/1,
@@ -77,6 +83,7 @@
       get_portrait_id/1,
       get_glyph_board_id/1,
       get_glyph_ids/1,
+      get_skill_id/1,
 
       set_primary_weapon_id/2,
       set_secondary_weapon_id/2,
@@ -84,6 +91,7 @@
       set_portrait_id/2,
       set_glyph_board_id/2,
       set_glyph_ids/2,
+      set_skill_id/2,
 
       ataxia_set_primary_weapon_id/2,
       ataxia_set_secondary_weapon_id/2,
@@ -91,7 +99,8 @@
       ataxia_set_portrait_id/2,
       ataxia_set_glyph_board_id/2,
       ataxia_set_glyph_ids/2,
-      ataxia_set_glyph_ids/3
+      ataxia_set_glyph_ids/3,
+      ataxia_set_skill_id/2
    ]
 ).
 
@@ -122,7 +131,8 @@
       get_armor_field/0,
       get_portrait_field/0,
       get_glyph_board_field/0,
-      get_glyphs_field/0
+      get_glyphs_field/0,
+      get_skill_field/0
    ]
 ).
 
@@ -157,6 +167,10 @@ get_glyph_board (#shr_eq_ref{ glyph_board = R }) -> shr_glyph_board:from_id(R).
 get_glyphs (#shr_eq{ glyphs = R }) -> R;
 get_glyphs (#shr_eq_ref{ glyphs = R }) -> lists:map(fun shr_glyph:from_id/1, R).
 
+-spec get_skill (either()) -> shr_skill:type().
+get_skill (#shr_eq{ skill = R }) -> R;
+get_skill (#shr_eq_ref{ skill = R }) -> shr_skill:from_id(R).
+
 -spec get_primary_weapon_id (either()) -> shr_weapon:id().
 get_primary_weapon_id (#shr_eq_ref{ primary = R }) -> R;
 get_primary_weapon_id (#shr_eq{ primary = R }) -> shr_weapon:get_id(R).
@@ -180,6 +194,10 @@ get_glyph_board_id (#shr_eq{ glyph_board = R }) -> shr_glyph_board:get_id(R).
 -spec get_glyph_ids (either()) -> list(shr_glyph:id()).
 get_glyph_ids (#shr_eq_ref{ glyphs = R }) -> R;
 get_glyph_ids (#shr_eq{ glyphs = R }) -> lists:map(fun shr_glyph:get_id/1, R).
+
+-spec get_skill_id (either()) -> shr_skill:id().
+get_skill_id (#shr_eq_ref{ skill = R }) -> R;
+get_skill_id (#shr_eq{ skill = R }) -> shr_skill:get_id(R).
 
 -spec set_primary_weapon
    (shr_weapon:type(), type()) -> type();
@@ -328,6 +346,27 @@ ataxia_set_glyphs (V, VUpdate, Eq) ->
       )
    }.
 
+-spec set_skill
+   (shr_skill:type(), type()) -> type();
+   (shr_skill:type(), unresolved()) -> unresolved().
+set_skill (V, Eq) when is_record(Eq, shr_eq) ->
+   Eq#shr_eq{ skill = V };
+set_skill (V, Eq) when is_record(Eq, shr_eq_ref) ->
+   Eq#shr_eq_ref{ skill = shr_skill:get_id(V) }.
+
+-spec ataxia_set_skill
+   (shr_skill:type(), type()) -> {type(), ataxic:basic()};
+   (shr_skill:type(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_skill (V, Eq) ->
+   {
+      set_skill(V, Eq),
+      ataxic:update_field
+      (
+         get_skill_field(),
+         ataxic:constant(shr_skill:get_id(V))
+      )
+   }.
+
 -spec set_primary_weapon_id
    (shr_weapon:id(), type()) -> type();
    (shr_weapon:id(), unresolved()) -> unresolved().
@@ -466,6 +505,27 @@ ataxia_set_glyph_ids (V, VUpdate, Eq) ->
       ataxic:update_field(get_glyphs_field(), VUpdate)
    }.
 
+-spec set_skill_id
+   (shr_skill:id(), type()) -> type();
+   (shr_skill:id(), unresolved()) -> unresolved().
+set_skill_id (V, Eq) when is_record(Eq, shr_eq_ref) ->
+   Eq#shr_eq_ref{ skill = V };
+set_skill_id (V, Eq) when is_record(Eq, shr_eq) ->
+   Eq#shr_eq{ skill = shr_skill:from_id(V) }.
+
+-spec ataxia_set_skill_id
+   (shr_skill:id(), type()) -> {type(), ataxic:basic()};
+   (shr_skill:id(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_skill_id (V, Eq) ->
+   {
+      set_skill_id(V, Eq),
+      ataxic:update_field
+      (
+         get_skill_field(),
+         ataxic:constant(V)
+      )
+   }.
+
 -spec default () -> type().
 default () ->
    DefaultGlyphBoard = shr_glyph_board:default(),
@@ -481,7 +541,8 @@ default () ->
          (
             fun (_E) -> shr_glyph:default() end,
             shr_glyph_board:get_slots(DefaultGlyphBoard)
-         )
+         ),
+      skill = shr_skill:default()
    }.
 
 -spec default_unresolved () -> unresolved().
@@ -498,7 +559,8 @@ default_unresolved () ->
          (
             fun (_E) -> shr_glyph:default_id() end,
             shr_glyph_board:get_slots(shr_glyph_board:default())
-         )
+         ),
+      skill = shr_skill:default_id()
    }.
 
 -spec decode (map()) -> unresolved().
@@ -510,7 +572,8 @@ decode (Map) ->
       armor = maps:get(?ARMOR_FIELD, Map),
       portrait = maps:get(?PORTRAIT_FIELD, Map),
       glyph_board = maps:get(?GLYPH_BOARD_FIELD, Map),
-      glyphs = maps:get(?GLYPHS_FIELD, Map)
+      glyphs = maps:get(?GLYPHS_FIELD, Map),
+      skill = maps:get(?SKILL_FIELD, Map)
    }.
 
 -spec encode (either()) -> {list({binary(), any()})}.
@@ -522,7 +585,8 @@ encode (Eq) ->
          {?ARMOR_FIELD, get_armor_id(Eq)},
          {?PORTRAIT_FIELD, get_portrait_id(Eq)},
          {?GLYPH_BOARD_FIELD, get_glyph_board_id(Eq)},
-         {?GLYPHS_FIELD, get_glyph_ids(Eq)}
+         {?GLYPHS_FIELD, get_glyph_ids(Eq)},
+         {?SKILL_FIELD, get_skill_id(Eq)}
       ]
    }.
 
@@ -535,7 +599,8 @@ resolve (EqRef) ->
       armor = shr_armor:from_id(EqRef#shr_eq_ref.armor),
       portrait = shr_portrait:from_id(EqRef#shr_eq_ref.portrait),
       glyph_board = shr_glyph_board:from_id(EqRef#shr_eq_ref.glyph_board),
-      glyphs = lists:map(fun shr_glyph:from_id/1, EqRef#shr_eq_ref.glyphs)
+      glyphs = lists:map(fun shr_glyph:from_id/1, EqRef#shr_eq_ref.glyphs),
+      skill = shr_skill:from_id(EqRef#shr_eq_ref.skill)
    }.
 
 -spec to_unresolved (type()) -> unresolved().
@@ -547,7 +612,8 @@ to_unresolved (Eq) ->
       armor = shr_armor:get_id(Eq#shr_eq.armor),
       portrait = shr_portrait:get_id(Eq#shr_eq.portrait),
       glyph_board = shr_glyph_board:get_id(Eq#shr_eq.glyph_board),
-      glyphs = lists:map(fun shr_glyph:get_id/1, Eq#shr_eq.glyphs)
+      glyphs = lists:map(fun shr_glyph:get_id/1, Eq#shr_eq.glyphs),
+      skill = shr_skill:get_id(Eq#shr_eq.skill)
    }.
 
 -spec get_primary_weapon_field () -> non_neg_integer().
@@ -561,6 +627,9 @@ get_armor_field () -> #shr_eq_ref.armor.
 
 -spec get_portrait_field () -> non_neg_integer().
 get_portrait_field () -> #shr_eq_ref.portrait.
+
+-spec get_skill_field () -> non_neg_integer().
+get_skill_field () -> #shr_eq_ref.skill.
 
 -spec get_glyph_board_field () -> non_neg_integer().
 get_glyph_board_field () -> #shr_eq_ref.glyph_board.

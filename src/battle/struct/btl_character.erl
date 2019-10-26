@@ -4,6 +4,7 @@
 -define(RANK_FIELD, <<"rnk">>).
 -define(LOCATION_FIELD, <<"lc">>).
 -define(CURRENT_HEALTH_FIELD, <<"he">>).
+-define(SKILL_POINTS_FIELD, <<"sp">>).
 -define(IS_ACTIVE_FIELD, <<"ena">>).
 -define(IS_DEFEATED_FIELD, <<"dea">>).
 -define(BASE_CHAR_FIELD, <<"bas">>).
@@ -22,6 +23,7 @@
       rank :: rank(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
+      skill_points :: integer(), %% Negative integers let us reverse skill uses.
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:unresolved(),
@@ -37,6 +39,7 @@
       rank :: rank(),
       location :: {non_neg_integer(), non_neg_integer()},
       current_health :: integer(), %% Negative integers let us reverse attacks.
+      skill_points :: integer(), %% Negative integers let us reverse skill uses.
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:type(),
@@ -60,6 +63,7 @@
       get_rank/1,
       get_location/1,
       get_current_health/1,
+      get_skill_points/1,
       get_is_alive/1,
       get_is_active/1,
       get_is_defeated/1,
@@ -69,6 +73,7 @@
       set_rank/2,
       set_location/3,
       set_current_health/2,
+      set_skill_points/2,
       set_is_active/2,
       set_is_defeated/2,
       set_base_character/2,
@@ -77,6 +82,7 @@
       ataxia_set_rank/2,
       ataxia_set_location/3,
       ataxia_set_current_health/2,
+      ataxia_set_skill_points/2,
       ataxia_set_is_active/2,
       ataxia_set_is_defeated/2,
       ataxia_set_base_character/2,
@@ -87,6 +93,7 @@
 
       get_rank_field/0,
       get_current_health_field/0,
+      get_skill_points_field/0,
       get_is_active_field/0,
       get_is_defeated_field/0,
       get_location_field/0,
@@ -156,6 +163,10 @@ get_location (#btl_char_ref{ location = R }) -> R.
 -spec get_current_health (either()) -> integer().
 get_current_health (#btl_char{ current_health = R }) -> R;
 get_current_health (#btl_char_ref{ current_health = R }) -> R.
+
+-spec get_skill_points (either()) -> integer().
+get_skill_points (#btl_char{ skill_points = R }) -> R;
+get_skill_points (#btl_char_ref{ skill_points = R }) -> R.
 
 -spec get_is_alive (either()) -> boolean().
 get_is_alive (#btl_char{ current_health = H, is_defeated = D }) ->
@@ -303,6 +314,27 @@ ataxia_set_current_health (Health, Char) ->
       (
          get_current_health_field(),
          ataxic:constant(Health)
+      )
+   }.
+
+-spec set_skill_points
+   (integer(), type()) -> type();
+   (integer(), unresolved()) -> unresolved().
+set_skill_points (SkillPoints, Char) when is_record(Char, btl_char) ->
+   Char#btl_char{ skill_points = SkillPoints };
+set_skill_points (SkillPoints, Char) when is_record(Char, btl_char_ref) ->
+   Char#btl_char_ref{ skill_points = SkillPoints }.
+
+-spec ataxia_set_skill_points
+   (integer(), type()) -> {type(), ataxic:basic()};
+   (integer(), unresolved()) -> {unresolved(), ataxic:basic()}.
+ataxia_set_skill_points (SkillPoints, Char) ->
+   {
+      set_skill_points(SkillPoints, Char),
+      ataxic:update_field
+      (
+         get_skill_points_field(),
+         ataxic:constant(SkillPoints)
       )
    }.
 
@@ -508,6 +540,7 @@ new
       rank = Rank,
       location = Location,
       current_health = shr_attributes:get_health(Attributes),
+      skill_points = 0,
       is_active = (PlayerIX == 0),
       is_defeated = false,
       base = Base,
@@ -522,6 +555,7 @@ resolve (LocalOmnimods, CharRef) when is_record(CharRef, btl_char_ref) ->
       rank = CharRef#btl_char_ref.rank,
       location = CharRef#btl_char_ref.location,
       current_health = CharRef#btl_char_ref.current_health,
+      skill_points = CharRef#btl_char_ref.skill_points,
       is_active = CharRef#btl_char_ref.is_active,
       is_defeated = CharRef#btl_char_ref.is_defeated,
       base = shr_character:resolve(LocalOmnimods, CharRef#btl_char_ref.base),
@@ -537,6 +571,7 @@ to_unresolved (Char) when is_record(Char, btl_char) ->
       rank = Char#btl_char.rank,
       location = Char#btl_char.location,
       current_health = Char#btl_char.current_health,
+      skill_points = Char#btl_char.skill_points,
       is_active = Char#btl_char.is_active,
       is_defeated = Char#btl_char.is_defeated,
       base = shr_character:to_unresolved(Char#btl_char.base),
@@ -553,6 +588,8 @@ get_rank_field () -> #btl_char_ref.rank.
 get_location_field () -> #btl_char_ref.location.
 -spec get_current_health_field() -> non_neg_integer().
 get_current_health_field () -> #btl_char_ref.current_health.
+-spec get_skill_points_field() -> non_neg_integer().
+get_skill_points_field () -> #btl_char_ref.skill_points.
 -spec get_is_active_field() -> non_neg_integer().
 get_is_active_field () -> #btl_char_ref.is_active.
 -spec get_is_defeated_field() -> non_neg_integer().
@@ -570,6 +607,7 @@ encode (CharRef) ->
          {?RANK_FIELD, CharRef#btl_char_ref.rank},
          {?LOCATION_FIELD, shr_location:encode(CharRef#btl_char_ref.location)},
          {?CURRENT_HEALTH_FIELD, CharRef#btl_char_ref.current_health},
+         {?SKILL_POINTS_FIELD, CharRef#btl_char_ref.skill_points},
          {?IS_ACTIVE_FIELD, CharRef#btl_char_ref.is_active},
          {?IS_DEFEATED_FIELD, CharRef#btl_char_ref.is_defeated},
          {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)},
