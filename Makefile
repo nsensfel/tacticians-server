@@ -113,7 +113,7 @@ run_db_node: build
 	$(ERL_EXEC) $(ERL_NAME_VS_SNAME) db_node -run db_node start
 
 run_query_node: build $(YAWS_CONFIG_FILE)
-	$(YAWS_EXEC) --conf $(YAWS_CONFIG_FILE) 
+	$(YAWS_EXEC) --conf $(YAWS_CONFIG_FILE)
 
 clean:
 	# Preprocessor
@@ -152,6 +152,7 @@ $(PREPROCESSED_FILES): %: %.m4 .PHONY
 $(OPTIONAL_DIRS): %:
 	mkdir -p $@
 
+# [TODO][IMPORTANT] Handle 'include' directives.
 $(ERL_BIN_FILES): $(BIN_DIR)/%.beam: $(SRC_DIR)/%.erl
 	mkdir -p $(dir $@)
 	$(ERLC_EXEC) -o $(dir $@) $<

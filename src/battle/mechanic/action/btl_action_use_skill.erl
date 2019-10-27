@@ -1,4 +1,4 @@
--module(btl_action_skill).
+-module(btl_action_use_skill).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -22,7 +22,7 @@
       non_neg_integer(),
       btl_character_turn_update:type()
    )
-   -> btl_character_turn_update:type().
+   -> {btl_character_turn_update:type(), shr_skill:type()}.
 pay_for_cast (ActorIX, S0Update) ->
    S0Battle = btl_character_turn_update:get_battle(S0Update),
    S0Actor = btl_battle:get_character(ActorIX, S0Battle),
@@ -51,7 +51,7 @@ pay_for_cast (ActorIX, S0Update) ->
       ),
 
    S1Update =
-      btl_character_turn:ataxia_set_battle
+      btl_character_turn_update:ataxia_set_battle
       (
          S1Battle,
          BattleAtaxiaUpdate,
@@ -82,7 +82,7 @@ cast_skill (Action, S0Update) ->
       btl_condition:apply_to_character
       (
          ActorIX,
-         ?CONDITION_TRIGGER_HAS_CAST_SKILL,
+         ?CONDITION_TRIGGER_HAS_USED_THEIR_SKILL,
          Action,
          none,
          S2Update
@@ -91,7 +91,7 @@ cast_skill (Action, S0Update) ->
    {none, S3Update} =
       btl_condition:apply_to_battle
       (
-         ?CONDITION_TRIGGER_A_CHARACTER_HAS_CAST_SKILL,
+         ?CONDITION_TRIGGER_A_CHARACTER_HAS_USED_THEIR_SKILL,
          Action,
          none,
          S2Update
@@ -118,7 +118,7 @@ handle (S0Action, S0Update) ->
       btl_condition:apply_to_character
       (
          ActorIX,
-         ?CONDITION_TRIGGER_ABOUT_TO_CAST_SKILL,
+         ?CONDITION_TRIGGER_ABOUT_TO_USE_THEIR_SKILL,
          none,
          {S0Action, S0PerformAction},
          S0Update
@@ -127,7 +127,7 @@ handle (S0Action, S0Update) ->
    {{S2Action, S2PerformAction}, S2Update} =
       btl_condition:apply_to_battle
       (
-         ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_CAST_SKILL,
+         ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_USE_THEIR_SKILL,
          none,
          {S1Action, S1PerformAction},
          S1Update

@@ -30,9 +30,9 @@ handle (S0Update) ->
             case btl_action:get_category(Action) of
                move -> btl_action_move:handle(Action, S1Update);
                attack -> btl_action_attack:handle(Action, S1Update);
-               skill -> btl_action_skill:handle(Action, S1Update);
-               switch_weapon ->
-                  btl_action_switch_weapon:handle(Action, S1Update)
+               skill -> btl_action_use_skill:handle(Action, S1Update);
+               switch_weapons ->
+                  btl_action_switch_weapons:handle(Action, S1Update)
             end,
 
          handle(S2Update)

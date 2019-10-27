@@ -5,6 +5,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("tacticians/conditions.hrl").
 
+-type visibility() ::
+   (
+      none
+      | {limited, ordsets:ordsets(non_neg_integer())} % PlayerIXs
+      | all
+   ).
+
 -type update_action() ::
    (
       none
@@ -24,14 +31,15 @@
    {
       category :: shr_condition:id(),
       triggers :: ordsets:ordset(shr_condition:trigger()),
-      parameters :: tuple()
+      parameters :: tuple(),
+      visibility :: visibility()
    }
 ).
 
 -opaque type() :: #btl_cond{}.
 -opaque collection() :: orddict:orddict(non_neg_integer(), type()).
 
--export_type([type/0, ref/0, collection/0, update_action/0]).
+-export_type([type/0, ref/0, visibility/0, collection/0, update_action/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -42,21 +50,26 @@
       get_category/1,
       get_triggers/1,
       get_parameters/1,
+      get_visibility/1,
+
+      set_visibility/2,
+      ataxia_set_visibility/2,
 
       set_triggers/2,
-      set_parameters/2,
-
       ataxia_set_triggers/2,
-      ataxia_set_parameters/2,
-
       ataxia_set_triggers/3,
+
+      set_parameters/2,
+      ataxia_set_parameters/2,
       ataxia_set_parameters/3,
+
 
       get_category_field/0,
       get_triggers_field/0,
       get_parameters_field/0,
+      get_visibility_field/0,
 
-      new/3,
+      new/4,
       new_collection/0
    ]
 ).
@@ -74,8 +87,7 @@
 -export
 (
    [
-      encode/1,
-      encode_collection/1
+      encode_collection_for/2
    ]
 ).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -437,8 +449,33 @@ new (CondID, Triggers, Params) ->
 -spec new_collection () -> collection().
 new_collection () -> orddict:new().
 
--spec encode (type()) -> {list({binary(), any()})}.
-encode (Condition) -> {[]}. % TODO
+-spec encode
+   (
+      non_neg_integer(),
+      type()
+   )
+   -> list({binary(), any()}).
+encode (IX, Condition) -> todo. % TODO
 
--spec encode_collection (collection()) -> {list({binary(), any()})}.
-encode_collection (Conditions) -> {[]}. % TODO
+-spec encode_collection_for
+   (
+      non_neg_integer(),
+      collection()
+   )
+   -> list({binary(), any()}).
+encode_collection_for (PlayerIX, Conditions) ->
+   lists:filtermap
+   (
+      fun ({IX, Condition}) ->
+         case Condition#btl_cond.visibility of
+            none -> false;
+            any -> encode(IX, Condition);
+            {limited, AllowedPlayerIXs} ->
+               case ordsets:is_element(PlayerIX, AllowedPlayerIXs) of
+                  false -> false;
+                  true -> {true, encode(IX, Condition)}
+               end
+         end
+      end,
+      orddict:to_list(Conditions)
+   ).

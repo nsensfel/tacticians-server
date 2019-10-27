@@ -10,7 +10,7 @@
 -export
 (
    [
-      cast/5
+      cast/3
    ]
 ).
 
@@ -24,11 +24,9 @@
 -spec cast
    (
       shr_skill:type(),
-      non_neg_integer(),
-      list(non_neg_integer()),
-      list(shr_location:type()),
+      btl_action:type(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
-cast (_Skill, _UserIX, _TargetIXs, _Locations, S0Update) ->
+cast (_Skill, _Action, S0Update) ->
    S0Update.

@@ -5,10 +5,6 @@
 -define(BATTLE_ID_FIELD, <<"bid">>).
 -define(CHAR_IX_FIELD, <<"cix">>).
 -define(ACTIONS_FIELD, <<"act">>).
--define(ACTIONS_MOVE_FIELD, <<"mov">>).
--define(ACTIONS_WEAPON_SWITCH_FIELD, <<"wps">>).
--define(ACTIONS_SKILL_FIELD, <<"skl">>).
--define(ACTIONS_ATTACK_FIELD, <<"tar">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,58 +49,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec decode_actions (non_neg_integer(), map()) -> list(btl_action:type()).
-decode_actions (CharacterIX, Act) ->
-   S0Result = [],
-   S1Result =
-      case
-         btl_action:maybe_decode_move
-         (
-            CharacterIX,
-            maps:get(?ACTIONS_MOVE_FIELD, Act)
-         )
-      of
-         {ok, Move} -> [Move|S0Result];
-         none -> S0Result
-      end,
+-spec validate_actions (list(btl_action:type())) -> ok.
+validate_actions (Actions) ->
+   {AreValid, _LastAction} =
+      lists:foldl
+      (
+         fun (Action, {CurrentResult, PrevAction}) ->
+            {
+               case CurrentResult of
+                  false -> false;
+                  true -> btl_action:can_follow(PrevAction, Action)
+               end,
+               Action
+            }
+         end,
+         {true, nothing},
+         Actions
+      ),
 
-   S2Result =
-      case
-         btl_action:maybe_decode_attack
-         (
-            CharacterIX,
-            maps:get(?ACTIONS_ATTACK_FIELD, Act)
-         )
-      of
-         {ok, Atk} -> [Atk|S1Result];
-         none -> S1Result
-      end,
-
-   S3Result =
-      case
-         btl_action:maybe_decode_weapon_switch
-         (
-            CharacterIX,
-            maps:get(?ACTIONS_WEAPON_SWITCH_FIELD, Act)
-         )
-      of
-         {ok, Wps} -> [Wps|S2Result];
-         none -> S2Result
-      end,
-
-   S4Result =
-      case
-         btl_action:maybe_decode_skill
-         (
-            CharacterIX,
-            maps:get(?ACTIONS_SKILL_FIELD, Act)
-         )
-      of
-         {ok, Skill} -> [Skill|S3Result];
-         none -> S3Result
-      end,
-
-   lists:reverse(S4Result).
+   case AreValid of
+      false -> error({actions, Actions});
+      true -> ok
+   end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,7 +79,16 @@ decode_actions (CharacterIX, Act) ->
 decode (Map) ->
    CharacterIX = maps:get(?CHAR_IX_FIELD, Map),
    EncodedActions = maps:get(?ACTIONS_FIELD, Map),
-   Actions = decode_actions(CharacterIX, EncodedActions),
+   Actions =
+      lists:map
+      (
+         fun (EncodedAction) ->
+            btl_action:decode(CharacterIX, EncodedAction)
+         end,
+         EncodedActions
+      ),
+
+   validate_actions(Actions),
 
    #type
    {

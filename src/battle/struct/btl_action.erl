@@ -3,6 +3,19 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-define(CATEGORY_FIELD, <<"cat">>).
+-define(CATEGORY_MOVE, <<"mov">>).
+-define(CATEGORY_ATTACK, <<"atk">>).
+-define(CATEGORY_SWITCH_WEAPONS, <<"swp">>).
+-define(CATEGORY_USE_SKILL, <<"skl">>).
+
+-define(MOVE_PATH_FIELD, <<"pat">>).
+
+-define(ATTACK_TARGET_FIELD, <<"tar">>).
+
+-define(USE_SKILL_TARGETS_FIELD, <<"tar">>).
+-define(USE_SKILL_LOCATIONS_FIELD, <<"loc">>).
+
 -record
 (
    move,
@@ -15,7 +28,7 @@
 
 -record
 (
-   switch_weapon,
+   switch_weapons,
    {
       actor_ix :: non_neg_integer()
    }
@@ -44,7 +57,7 @@
 -type category() ::
    (
       'move'
-      | 'switch_weapon'
+      | 'switch_weapons'
       | 'attack'
       | 'skill'
       | 'nothing'
@@ -53,7 +66,7 @@
 -opaque type() ::
    (
       #move{}
-      | #switch_weapon{}
+      | #switch_weapons{}
       | #attack{}
       | #skill{}
    ).
@@ -67,10 +80,6 @@
 (
    [
       from_map_marker/3,
-      maybe_decode_move/2,
-      maybe_decode_weapon_switch/2,
-      maybe_decode_attack/2,
-      maybe_decode_skill/2,
       can_follow/2
    ]
 ).
@@ -99,79 +108,63 @@
    ]
 ).
 
+-export
+(
+   [
+      decode/2
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec decode (binary(), non_neg_integer(), map()) -> type().
+decode (?CATEGORY_MOVE, ActorIX, Map) ->
+   EncodedPath = map:get(?MOVE_PATH_FIELD, Map),
+   Path = lists:map(fun shr_direction:decode/1, EncodedPath),
+
+   #move
+   {
+      actor_ix = ActorIX,
+      path = Path,
+      movement_points = -1
+   };
+decode (?CATEGORY_ATTACK, ActorIX, Map) ->
+   TargetIX = map:get(?ATTACK_TARGET_FIELD, Map),
+
+   #attack
+   {
+      actor_ix = ActorIX,
+      target_ix = TargetIX,
+      is_opportunistic = false
+   };
+decode (?CATEGORY_SWITCH_WEAPONS, ActorIX, _Map) ->
+   #switch_weapons
+   {
+      actor_ix = ActorIX
+   };
+decode (?CATEGORY_USE_SKILL, ActorIX, Map) ->
+   Targets = map:get(?USE_SKILL_TARGETS_FIELD, Map),
+   EncodedLocations = map:get(?USE_SKILL_LOCATIONS_FIELD, Map),
+   Locations = lists:map(fun shr_location:decode/1, EncodedLocations),
+
+   #skill
+   {
+      actor_ix = ActorIX,
+      targets = Targets,
+      locations = Locations
+   }.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec maybe_decode_move
-   (
-      non_neg_integer(),
-      list(shr_direction:type())
-   )
-   -> ({ok, type()} | none).
-maybe_decode_move (_CharacterIX, []) -> none;
-maybe_decode_move (CharacterIX, PathInBinary) ->
-   Path = lists:map(fun shr_direction:decode/1, PathInBinary),
-
-   {
-      ok,
-      #move
-      {
-         actor_ix = CharacterIX,
-         path = Path,
-         movement_points = -1
-      }
-   }.
-
--spec maybe_decode_attack
-   (
-      non_neg_integer(),
-      integer()
-   )
-   -> ({ok, type()} | none).
-maybe_decode_attack (_CharacterIX, TargetIX) when (TargetIX < 0) -> none;
-maybe_decode_attack (CharacterIX, TargetIX) ->
-   {
-      ok,
-      #attack
-      {
-         actor_ix = CharacterIX,
-         target_ix = TargetIX,
-         is_opportunistic = false
-      }
-   }.
-
--spec maybe_decode_weapon_switch
-   (
-      non_neg_integer(),
-      boolean()
-   )
-   -> ({ok, type()} | none).
-maybe_decode_weapon_switch (_CharacterIX, false) -> none;
-maybe_decode_weapon_switch (CharacterIX, true) ->
-   {ok, #switch_weapon{ actor_ix = CharacterIX }}.
-
--spec maybe_decode_skill (non_neg_integer(), any()) -> ({ok, type()} | none).
-maybe_decode_skill (_CharacterIX, what) -> none;
-maybe_decode_skill (CharacterIX, _) ->
-   % TODO
-   {
-      ok,
-      #skill
-      {
-         actor_ix = CharacterIX
-      }
-   }.
-
 -spec can_follow (category(), category()) -> boolean().
 can_follow (nothing, attack) -> true;
-can_follow (nothing, switch_weapon) -> true;
+can_follow (nothing, switch_weapons) -> true;
 can_follow (nothing, move) -> true;
 can_follow (nothing, skill) -> true;
-can_follow (move, switch_weapon) -> true;
+can_follow (move, switch_weapons) -> true;
 can_follow (move, attack) -> true;
 can_follow (move, skill) -> true;
 can_follow (_, _) -> false.
@@ -206,8 +199,8 @@ get_actor_index (Action) when is_record(Action, attack) ->
    Action#attack.actor_ix;
 get_actor_index (Action) when is_record(Action, move) ->
    Action#move.actor_ix;
-get_actor_index (Action) when is_record(Action, switch_weapon) ->
-   Action#switch_weapon.actor_ix;
+get_actor_index (Action) when is_record(Action, switch_weapons) ->
+   Action#switch_weapons.actor_ix;
 get_actor_index (Action) when is_record(Action, skill) ->
    Action#skill.actor_ix;
 get_actor_index (_) ->
@@ -274,8 +267,11 @@ new_skill (ActorIX, Targets, Locations) ->
 -spec get_category (type()) -> category().
 get_category (Action) when is_record(Action, attack) -> attack;
 get_category (Action) when is_record(Action, move) -> move;
-get_category (Action) when is_record(Action, switch_weapon) -> switch_weapon;
+get_category (Action) when is_record(Action, switch_weapons) -> switch_weapons;
 get_category (Action) when is_record(Action, skill) -> skill.
+
+-spec decode (non_neg_integer(), map()) -> type().
+decode (ActorIX, Map) -> decode(map:get(?CATEGORY_FIELD), ActorIX, Map).
 
 -spec from_map_marker
    (
