@@ -1,4 +1,4 @@
--module(btl_condition).
+-module(btl_conditions).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,7 +12,7 @@
       | all
    ).
 
--type update_action() ::
+-type update() ::
    (
       none
       | remove
@@ -36,10 +36,21 @@
    }
 ).
 
--opaque type() :: #btl_cond{}.
--opaque collection() :: orddict:orddict(non_neg_integer(), type()).
+-opaque single() :: #btl_cond{}.
 
--export_type([type/0, ref/0, visibility/0, collection/0, update_action/0]).
+-record
+(
+   btl_conds,
+   {
+      collection :: orddict:orddict(non_neg_integer(), single()),
+      from_trigger ::
+         orddict:orddict(shr_condition:trigger(), non_neg_integer())
+   }
+).
+
+-opaque type() :: #btl_conds{}.
+
+-export_type([type/0, ref/0, visibility/0, update/0]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,25 +58,6 @@
 -export
 (
    [
-      get_category/1,
-      get_triggers/1,
-      get_parameters/1,
-      get_visibility/1,
-
-      set_visibility/2,
-      ataxia_set_visibility/2,
-
-      set_triggers/2,
-      ataxia_set_triggers/2,
-      ataxia_set_triggers/3,
-
-      set_parameters/2,
-      ataxia_set_parameters/2,
-      ataxia_set_parameters/3,
-
-
-      get_category_field/0,
-      get_triggers_field/0,
       get_parameters_field/0,
       get_visibility_field/0,
 
@@ -77,7 +69,6 @@
 -export
 (
    [
-      ataxia_apply_trigger/3,
       apply_to_character/5,
       apply_to_battle/4,
       update_from_reference/3
@@ -87,9 +78,10 @@
 -export
 (
    [
-      encode_collection_for/2
+      encode_for/2
    ]
 ).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,12 +93,12 @@
    -> {list({binary(), any()})}.
 encode_parameters (_Category, _Parameters) -> {[]}. % TODO.
 
--spec update_actions_to_ataxic_update
+-spec updates_to_ataxic_update
    (
-      list({non_neg_integer(), update_action()})
+      list({non_neg_integer(), update()})
    )
    -> ataxic:basic().
-update_actions_to_ataxic_update (Updates) ->
+updates_to_ataxic_update (Updates) ->
    AtaxicSequence =
       lists:foldl
       (
@@ -295,7 +287,7 @@ ataxia_apply_trigger (Context, S0Update, Conditions) ->
          RelevantConditions
       ),
 
-   ConditionsAtaxiaUpdate = update_actions_to_ataxic_update(AllUpdateActions),
+   ConditionsAtaxiaUpdate = updates_to_ataxic_update(AllUpdateActions),
 
    {LastVolatileData, ConditionsAtaxiaUpdate, LastUpdate}.
 
@@ -422,7 +414,7 @@ apply_to_battle
 -spec update_from_reference
    (
       ref(),
-      update_action(),
+      update(),
       btl_character_turn_update:type()
    )
    -> btl_character_turn_update:type().
