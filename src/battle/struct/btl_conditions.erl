@@ -44,7 +44,11 @@
    {
       collection :: orddict:orddict(non_neg_integer(), single()),
       from_trigger ::
-         orddict:orddict(shr_condition:trigger(), non_neg_integer())
+         orddict:orddict
+         (
+            shr_condition:trigger(),
+            ordset:ordset(non_neg_integer())
+         )
    }
 ).
 
@@ -59,10 +63,10 @@
 (
    [
       get_parameters_field/0,
-      get_visibility_field/0,
 
-      new/4,
-      new_collection/0
+      add/5,
+      ataxia_add/5,
+      new/0
    ]
 ).
 
@@ -129,98 +133,6 @@ updates_to_ataxic_update (Updates) ->
 
    ataxic:sequence(AtaxicSequence).
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec get_category (type()) -> shr_condition:id().
-get_category (Condition) -> Condition#btl_cond.category.
-
--spec get_triggers (type()) -> ordsets:ordset(shr_condition:trigger()).
-get_triggers (Condition) -> Condition#btl_cond.triggers.
-
--spec get_parameters (type()) -> tuple().
-get_parameters (Condition) -> Condition#btl_cond.parameters.
-
--spec set_triggers (ordsets:ordset(shr_condition:trigger()), type()) -> type().
-set_triggers (Triggers, Condition) -> Condition#btl_cond{ triggers = Triggers }.
-
--spec set_parameters (tuple(), type()) -> type().
-set_parameters (Value, Condition) -> Condition#btl_cond{ parameters = Value }.
-
--spec ataxia_set_triggers
-   (
-      ordsets:ordset(shr_condition:trigger()),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_triggers (Triggers, Condition) ->
-   {
-      set_triggers(Triggers, Condition),
-      ataxic:update_field
-      (
-         get_triggers_field(),
-         ataxic:constant(Triggers)
-      )
-   }.
-
--spec ataxia_set_parameters (tuple(), type()) -> {type(), ataxic:basic()}.
-ataxia_set_parameters (Value, Condition) ->
-   {
-      set_parameters(Value, Condition),
-      ataxic:update_field
-      (
-         get_parameters_field(),
-         ataxic:constant(Value)
-      )
-   }.
-
--spec ataxia_set_triggers
-   (
-      ordsets:ordset(shr_condition:trigger()),
-      ataxic:basic(),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_triggers (Triggers, Update, Condition) ->
-   {
-      set_triggers(Triggers, Condition),
-      ataxic:update_field
-      (
-         get_triggers_field(),
-         Update
-      )
-   }.
-
--spec ataxia_set_parameters
-   (
-      tuple(),
-      ataxic:basic(),
-      type()
-   )
-   -> {type(), ataxic:basic()}.
-ataxia_set_parameters (Value, Update, Condition) ->
-   {
-      set_parameters(Value, Condition),
-      ataxic:update_field
-      (
-         get_parameters_field(),
-         Update
-      )
-   }.
-
--spec triggers_on (shr_condition:trigger(), type()) -> boolean().
-triggers_on (Trigger, Type) ->
-   ordsets:is_element(Trigger, Type#btl_cond.triggers).
-
--spec get_category_field () -> non_neg_integer().
-get_category_field () -> #btl_cond.category.
-
--spec get_triggers_field () -> non_neg_integer().
-get_triggers_field () -> #btl_cond.triggers.
-
--spec get_parameters_field () -> non_neg_integer().
-get_parameters_field () -> #btl_cond.parameters.
-
 -spec ataxia_apply_trigger
    (
       shr_condition:context(_ReadOnlyDataType, VolatileDataType),
@@ -239,7 +151,9 @@ ataxia_apply_trigger (Context, S0Update, Conditions) ->
    RelevantConditions =
       orddict:filter
       (
-         fun (_IX, Condition) -> triggers_on(Trigger, Condition) end,
+         fun (_IX, Condition) ->
+            ordsets:is_element(Trigger, Condition#btl_cond.triggers)
+         end,
          Conditions
       ),
 
@@ -291,6 +205,34 @@ ataxia_apply_trigger (Context, S0Update, Conditions) ->
 
    {LastVolatileData, ConditionsAtaxiaUpdate, LastUpdate}.
 
+-spec compute_next_index (type()) -> non_neg_integer().
+compute_next_index (Conditions) ->
+   Collection = Conditions#btl_conds.collection,
+   CollectionSize = orddict:size(Collection),
+   Candidates = lists:seq(0, CollectionSize),
+
+   Result =
+      lists:foldr
+      (
+         fun (Candidate, CurrentResult) ->
+            case is_integer(CurrentResult) of
+               true -> CurrentResult;
+               false ->
+                  case orddict:is_key(Candidate, Collection) of
+                     true -> none;
+                     false -> Candidate
+                  end
+            end
+         end,
+         none,
+         Candidates
+      ),
+
+   Result.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec apply_to_character
    (
       non_neg_integer(),
@@ -423,39 +365,179 @@ update_from_reference ({battle, _CondIX}, _UpdateAction, Update) ->
 update_from_reference ({char, _CharIX, _CondIX}, _UpdateAction, Update) ->
    Update. % TODO
 
--spec new
+-spec add
    (
       shr_condition:id(),
       ordsets:ordset(shr_condition:trigger()),
-      tuple()
+      tuple(),
+      visibility(),
+      type()
    )
-   -> type().
-new (CondID, Triggers, Params) ->
-   #btl_cond
+   -> {type(), non_neg_integer()}.
+add (CondID, Triggers, Params, Visibility, Conditions) ->
+   NewCondition =
+      #btl_cond
+      {
+         category = CondID,
+         triggers = Triggers,
+         parameters = Params,
+         visibility = Visibility
+      },
+
+   NewConditionIX = compute_next_index(Conditions),
+
+   UpdatedCollection =
+      orddict:store
+      (
+         NewConditionIX,
+         NewCondition,
+         Conditions#btl_conds.collection
+      ),
+
+   UpdatedFromTrigger =
+      ordset:fold
+      (
+         fun (Trigger, FromTrigger) ->
+            orddict:update
+            (
+               Trigger,
+               fun (Set) -> ordsets:add_element(NewConditionIX, Set) end,
+               FromTrigger
+            )
+         end,
+         Conditions#btl_conds.from_trigger,
+         Triggers
+      ),
+
    {
-      category = CondID,
-      triggers = Triggers,
-      parameters = Params
+      Conditions#btl_conds
+      {
+         collection = UpdatedCollection,
+         from_trigger = UpdatedFromTrigger
+      },
+      NewConditionIX
    }.
 
--spec new_collection () -> collection().
-new_collection () -> orddict:new().
+-spec ataxia_add
+   (
+      shr_condition:id(),
+      ordsets:ordset(shr_condition:trigger()),
+      tuple(),
+      visibility(),
+      type()
+   )
+   -> {type(), non_neg_integer(), ataxic:basic()}.
+ataxia_add (CondID, Triggers, Params, Visibility, Conditions) ->
+   NewCondition =
+      #btl_cond
+      {
+         category = CondID,
+         triggers = Triggers,
+         parameters = Params,
+         visibility = Visibility
+      },
 
--spec encode
+   NewConditionIX = compute_next_index(Conditions),
+   AtaxicNewConditionIX = ataxic:constant(NewConditionIX),
+
+   UpdatedCollection =
+      orddict:store
+      (
+         NewConditionIX,
+         NewCondition,
+         Conditions#btl_conds.collection
+      ),
+
+   CollectionAtaxicUpdate =
+      ataxic:apply_function
+      (
+         orddict,
+         store,
+         [
+            AtaxicNewConditionIX,
+            ataxic:constant(NewCondition),
+            ataxic:current_value()
+         ]
+      ),
+
+   SetAtaxicUpdate =
+      ataxic:apply_function
+      (
+         ordsets,
+         add_element,
+         [
+            AtaxicNewConditionIX,
+            ataxic:current_value()
+         ]
+      ),
+
+   {UpdatedFromTrigger, FromTriggerAtaxicUpdateList} =
+      ordset:fold
+      (
+         fun (Trigger, {FromTrigger, FromTriggerUpdates}) ->
+            {
+               orddict:update
+               (
+                  Trigger,
+                  fun (Set) -> ordsets:add_element(NewConditionIX, Set) end,
+                  FromTrigger
+               ),
+               [
+                  ataxic_sugar:update_orddict_element
+                  (
+                     Trigger,
+                     SetAtaxicUpdate
+                  )
+                  |FromTriggerUpdates
+               ]
+            }
+         end,
+         Conditions#btl_conds.from_trigger,
+         Triggers
+      ),
+
+   {
+      Conditions#btl_conds
+      {
+         collection = UpdatedCollection,
+         from_trigger = UpdatedFromTrigger
+      },
+      NewConditionIX,
+      ataxic:sequence
+      (
+         [
+            ataxic:update_field
+            (
+               #btl_conds.collection,
+               CollectionAtaxicUpdate
+            ),
+            ataxic:update_field
+            (
+               #btl_conds.from_trigger,
+               ataxic:sequence(FromTriggerAtaxicUpdateList)
+            )
+         ]
+      )
+   }.
+
+-spec new () -> type().
+new () ->
+   #btl_conds
+   {
+      collection = orddict:new(),
+      from_trigger = orddict:new()
+   }.
+
+-spec encode_single
    (
       non_neg_integer(),
       type()
    )
    -> list({binary(), any()}).
-encode (IX, Condition) -> todo. % TODO
+encode_single (IX, Condition) -> todo. % TODO
 
--spec encode_collection_for
-   (
-      non_neg_integer(),
-      collection()
-   )
-   -> list({binary(), any()}).
-encode_collection_for (PlayerIX, Conditions) ->
+-spec encode_for (non_neg_integer(), type()) -> list({binary(), any()}).
+encode_for (PlayerIX, Conditions) ->
    lists:filtermap
    (
       fun ({IX, Condition}) ->
@@ -471,3 +553,9 @@ encode_collection_for (PlayerIX, Conditions) ->
       end,
       orddict:to_list(Conditions)
    ).
+
+-spec get_parameters_field () -> non_neg_integer().
+get_parameters_field () -> #btl_cond.parameters.
+
+-spec get_visibility_field () -> non_neg_integer().
+get_visibility_field () -> #btl_cond.visibility.
