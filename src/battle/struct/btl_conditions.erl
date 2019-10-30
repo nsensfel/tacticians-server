@@ -12,13 +12,6 @@
       | all
    ).
 
--type update() ::
-   (
-      none
-      | remove
-      | {update, ataxic:basic()}
-   ).
-
 -type ref() ::
    (
       {char, non_neg_integer(), non_neg_integer()}
@@ -36,7 +29,7 @@
    }
 ).
 
--opaque single() :: #btl_cond{}.
+-type single() :: #btl_cond{}.
 
 -record
 (
@@ -54,7 +47,14 @@
 
 -opaque type() :: #btl_conds{}.
 
--export_type([type/0, ref/0, visibility/0, update/0]).
+-export_type
+(
+   [
+      type/0,
+      ref/0,
+      visibility/0
+   ]
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,10 +62,29 @@
 -export
 (
    [
-      get_parameters_field/0,
+      get_condition/2,
 
+      get_parameters/1,
+      set_parameters/3, % IX, Value, Conditions
+      ataxia_set_parameters/3, % IX, Value, Conditions
+
+      get_triggers/1,
+      set_triggers/3, % IX, Value, Conditions
+      ataxia_set_triggers/3, % IX, Value, Conditions
+
+      get_visibility/1,
+      set_visibility/3, % IX, Value, Conditions
+      ataxia_set_visibility/3 % IX, Value, Conditions
+   ]
+).
+
+-export
+(
+   [
       add/5,
       ataxia_add/5,
+      remove/2,
+      ataxia_remove/2,
       new/0
    ]
 ).
@@ -89,55 +108,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec encode_parameters
-   (
-      shr_condition:id(),
-      tuple()
-   )
-   -> {list({binary(), any()})}.
-encode_parameters (_Category, _Parameters) -> {[]}. % TODO.
-
--spec updates_to_ataxic_update
-   (
-      list({non_neg_integer(), update()})
-   )
-   -> ataxic:basic().
-updates_to_ataxic_update (Updates) ->
-   AtaxicSequence =
-      lists:foldl
-      (
-         fun ({IX, Update}, AtaxicUpdates) ->
-            case Update of
-               none -> AtaxicUpdates;
-               remove ->
-                  [
-                     ataxic:apply_function
-                     (
-                        orddict,
-                        erase,
-                        [ataxic:constant(IX), ataxic:current_value()]
-                     )
-                     |AtaxicUpdates
-                  ];
-
-               {update, Ataxic} ->
-                  [
-                     ataxic_sugar:update_orddict_element(IX, Ataxic)
-                     |AtaxicUpdates
-                  ]
-            end
-         end,
-         [],
-         Updates
-      ),
-
-   ataxic:sequence(AtaxicSequence).
-
 -spec ataxia_apply_trigger
    (
       shr_condition:context(_ReadOnlyDataType, VolatileDataType),
       btl_character_turn_update:type(),
-      collection()
+      ordsets:ordset(non_neg_integer()),
+      type()
    )
    ->
    {
@@ -145,60 +121,66 @@ updates_to_ataxic_update (Updates) ->
       ataxic:basic(),
       btl_character_turn_update:type()
    }.
-ataxia_apply_trigger (Context, S0Update, Conditions) ->
+ataxia_apply_trigger (Context, S0Update, RelevantIndices, Conditions) ->
    {Trigger, ReadOnlyData, S0VolatileData} = Context,
 
-   RelevantConditions =
-      orddict:filter
-      (
-         fun (_IX, Condition) ->
-            ordsets:is_element(Trigger, Condition#btl_cond.triggers)
-         end,
-         Conditions
-      ),
+   ConditionCollection = Conditions#btl_conds.collection,
 
    {LastVolatileData, LastUpdate, AllUpdateActions} =
-      orddict:fold
+      ordsets:fold
       (
          fun
          (
             IX,
-            Condition,
             {
                CurrentVolatileData,
                CurrentUpdate,
                UpdateActions
             }
          ) ->
-            Module =
-               shr_condition:get_module
-               (
-                  shr_condition:from_id(Condition#btl_cond.category)
-               ),
+            case orddict:find(IX, ConditionCollection) of
+               {ok, Condition} ->
+                  Module =
+                     shr_condition:get_module
+                     (
+                        shr_condition:from_id(Condition#btl_cond.category)
+                     ),
 
-            {NextVolatileData, NextUpdate, UpdateAction} =
-               erlang:apply
-               (
-                  Module,
-                  apply,
-                  [
-                     Condition,
-                     CurrentUpdate,
-                     {Trigger, ReadOnlyData, CurrentVolatileData}
-                  ]
-               ),
+                  {NextVolatileData, NextUpdate, UpdateAction} =
+                     erlang:apply
+                     (
+                        Module,
+                        apply,
+                        [
+                           % TODO:
+                           % Provide Ref instead of Condition. This ensures that
+                           % the condition will use its most up-to-date status
+                           % and, more importantly, will not overwrite changes
+                           % made to itself by previous conditions.
+                           % This comes at the cost of an additional Condition
+                           % lookup, but whatever.
+                           Condition,
+                           CurrentUpdate,
+                           {Trigger, ReadOnlyData, CurrentVolatileData}
+                        ]
+                     ),
 
-            {
-               NextVolatileData,
-               NextUpdate,
-               case UpdateAction of
-                  none -> UpdateActions;
-                  _ -> [{IX, UpdateAction}|UpdateActions]
-               end
-            }
+                  {
+                     NextVolatileData,
+                     NextUpdate,
+                     case UpdateAction of
+                        none -> UpdateActions;
+                        _ -> [{IX, UpdateAction}|UpdateActions]
+                     end
+                  };
+
+               error ->
+                  % TODO: add a 'cleanup' update.
+                  {CurrentVolatileData, CurrentUpdate, UpdateActions}
+            end
          end,
          {S0VolatileData, S0Update, []},
-         RelevantConditions
+         RelevantIndices
       ),
 
    ConditionsAtaxiaUpdate = updates_to_ataxic_update(AllUpdateActions),
@@ -230,6 +212,48 @@ compute_next_index (Conditions) ->
 
    Result.
 
+-spec encode_single
+   (
+      non_neg_integer(),
+      single()
+   )
+   -> list({binary(), any()}).
+encode_single (IX, Condition) ->
+   Module =
+      shr_condition:get_module
+      (
+         shr_conditon:from_id(Condition#btl_cond.category)
+      ),
+
+   EncodedParameters =
+      erlang:apply
+      (
+         Module,
+         encode_parameters,
+         [
+            Condition#btl_cond.parameters
+         ]
+      ),
+
+   {
+      [
+         {<<"ix">>, IX},
+         {<<"p">>, EncodedParameters}
+      ]
+   }.
+
+-spec get_relevant_condition_indices
+   (
+      shr_condition:trigger(),
+      type()
+   )
+   -> ordsets:ordset(non_neg_integer()).
+get_relevant_condition_indices(Trigger, Conditions) ->
+   case orddict:find(Trigger, Conditions#btl_conds.from_trigger) of
+      {ok, Result} -> Result;
+      _ -> ordsets:new()
+   end.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -254,53 +278,64 @@ apply_to_character
    {S0Actor, S1Battle} = btl_battle:get_resolved_character(ActorIX, S0Battle),
    S1Update = btl_character_turn_update:set_battle(S1Battle, S0Update),
 
-   {
-      S1VolatileContext,
-      ActorConditionsAtaxicUpdate,
-      S2Update
-   } =
-      ataxia_apply_trigger
-      (
-         {Trigger, ReadOnlyData, S0VolatileData},
-         S1Update,
-         btl_character:get_conditions(S0Actor)
-      ),
+   CharacterConditions = btl_character:get_conditions(S0Actor),
+   MatchingConditionIndices =
+      get_relevant_condition_indices(Trigger, CharacterConditions),
 
-   %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   case ordsets:is_empty(MatchingConditionIndices) of
+      true -> {S0VolatileData, btl_character_turn_update:type()};
+      false ->
+         {
+            S1VolatileContext,
+            ActorConditionsAtaxicUpdate,
+            S2Update
+         } =
+            ataxia_apply_trigger
+            (
+               {Trigger, ReadOnlyData, S0VolatileData},
+               S1Update,
+               CharacterConditions,
+               MatchingConditionIndices
+            ),
 
-   S1Battle = btl_character_turn_update:get_battle(S2Update),
-   {S1Actor, S2Battle} = btl_battle:get_resolved_character(ActorIX, S1Battle),
-   S0Conditions = btl_character:get_conditions(S1Actor),
+         %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%
 
-   S1Conditions =
-      ataxic:apply_basic_to(ActorConditionsAtaxicUpdate, S0Conditions),
+         S1Battle = btl_character_turn_update:get_battle(S2Update),
+         {S1Actor, S2Battle} =
+            btl_battle:get_resolved_character(ActorIX, S1Battle),
 
-   {S2Actor, ActorAtaxicUpdate} =
-      btl_character:ataxia_set_conditions
-      (
-         S1Conditions,
-         ActorConditionsAtaxicUpdate,
-         S1Actor
-      ),
+         S0Conditions = btl_character:get_conditions(S1Actor),
 
-   {S3Battle, BattleAtaxicUpdate} =
-      btl_battle:ataxia_set_character
-      (
-         ActorIX,
-         S2Actor,
-         ActorAtaxicUpdate,
-         S2Battle
-      ),
+         S1Conditions =
+            ataxic:apply_basic_to(ActorConditionsAtaxicUpdate, S0Conditions),
 
-   S2Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         S3Battle,
-         BattleAtaxicUpdate,
-         S1Update
-      ),
+         {S2Actor, ActorAtaxicUpdate} =
+            btl_character:ataxia_set_conditions
+            (
+               S1Conditions,
+               ActorConditionsAtaxicUpdate,
+               S1Actor
+            ),
 
-   {S1VolatileContext, S2Update}.
+         {S3Battle, BattleAtaxicUpdate} =
+            btl_battle:ataxia_set_character
+            (
+               ActorIX,
+               S2Actor,
+               ActorAtaxicUpdate,
+               S2Battle
+            ),
+
+         S2Update =
+            btl_character_turn_update:ataxia_set_battle
+            (
+               S3Battle,
+               BattleAtaxicUpdate,
+               S1Update
+            ),
+
+         {S1VolatileContext, S2Update}
+   end.
 
 -spec apply_to_battle
    (
@@ -319,39 +354,48 @@ apply_to_battle
 ) ->
    S0Battle = btl_character_turn_update:get_battle(S0Update),
 
-   {
-      S1VolatileContext,
-      BattleConditionsAtaxicUpdate,
-      S1Update
-   } =
-      ataxia_apply_trigger
-      (
-         {Trigger, ReadOnlyData, S0VolatileData},
-         S0Update,
-         btl_battle:get_conditions(S0Battle)
-      ),
+   BattleConditions = btl_battle:get_conditions(S0Battle),
+   MatchingConditionIndices =
+      get_relevant_condition_indices(Trigger, BattleConditions),
 
-   %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%%%%%%%
-   S1Battle = btl_character_turn_update:get_battle(S1Update),
-   UpdatedBattleConditions =
-      ataxic:apply_basic_to
-      (
-         BattleConditionsAtaxicUpdate,
-         btl_battle:get_conditions(S1Battle)
-      ),
+   case ordsets:is_empty(MatchingConditionIndices) of
+      true -> {S0VolatileData, S0Update};
+      false ->
+         {
+            S1VolatileContext,
+            BattleConditionsAtaxicUpdate,
+            S1Update
+         } =
+            ataxia_apply_trigger
+            (
+               {Trigger, ReadOnlyData, S0VolatileData},
+               S0Update,
+               MatchingConditionIndices,
+               BattleConditions
+            ),
 
-   {S2Battle, BattleAtaxicUpdate} =
-      btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
+         %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%
+         S1Battle = btl_character_turn_update:get_battle(S1Update),
+         UpdatedBattleConditions =
+            ataxic:apply_basic_to
+            (
+               BattleConditionsAtaxicUpdate,
+               btl_battle:get_conditions(S1Battle)
+            ),
 
-   S1Update =
-      btl_character_turn_update:ataxia_set_battle
-      (
-         S2Battle,
-         BattleAtaxicUpdate,
-         S1Update
-      ),
+         {S2Battle, BattleAtaxicUpdate} =
+            btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
 
-   {S1VolatileContext, S1Update}.
+         S1Update =
+            btl_character_turn_update:ataxia_set_battle
+            (
+               S2Battle,
+               BattleAtaxicUpdate,
+               S1Update
+            ),
+
+         {S1VolatileContext, S1Update}
+   end.
 
 -spec update_from_reference
    (
@@ -528,14 +572,6 @@ new () ->
       from_trigger = orddict:new()
    }.
 
--spec encode_single
-   (
-      non_neg_integer(),
-      type()
-   )
-   -> list({binary(), any()}).
-encode_single (IX, Condition) -> todo. % TODO
-
 -spec encode_for (non_neg_integer(), type()) -> list({binary(), any()}).
 encode_for (PlayerIX, Conditions) ->
    lists:filtermap
@@ -543,19 +579,13 @@ encode_for (PlayerIX, Conditions) ->
       fun ({IX, Condition}) ->
          case Condition#btl_cond.visibility of
             none -> false;
-            any -> encode(IX, Condition);
+            any -> encode_single(IX, Condition);
             {limited, AllowedPlayerIXs} ->
                case ordsets:is_element(PlayerIX, AllowedPlayerIXs) of
                   false -> false;
-                  true -> {true, encode(IX, Condition)}
+                  true -> {true, encode_single(IX, Condition)}
                end
          end
       end,
       orddict:to_list(Conditions)
    ).
-
--spec get_parameters_field () -> non_neg_integer().
-get_parameters_field () -> #btl_cond.parameters.
-
--spec get_visibility_field () -> non_neg_integer().
-get_visibility_field () -> #btl_cond.visibility.
