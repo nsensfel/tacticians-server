@@ -114,7 +114,7 @@ handle_player_defeat (PlayerIX, S0Update) ->
       ),
 
    {_V3Nothing, S3Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_PLAYER_DEFEAT,
          PlayerIX,
@@ -135,7 +135,7 @@ handle_player_defeat (PlayerIX, S0Update) ->
    -> btl_character_turn_update:type().
 handle_character_loss (ActorIX, S0Update) ->
    {_V0Nothing, S1Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_HAS_DIED,
@@ -145,7 +145,7 @@ handle_character_loss (ActorIX, S0Update) ->
       ),
 
    {_V1Nothing, S2Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_A_CHARACTER_HAS_DIED,
          ActorIX,

@@ -79,7 +79,7 @@ cast_skill (Action, S0Update) ->
       ),
 
    {none, S3Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_HAS_USED_THEIR_SKILL,
@@ -89,7 +89,7 @@ cast_skill (Action, S0Update) ->
       ),
 
    {none, S3Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_A_CHARACTER_HAS_USED_THEIR_SKILL,
          Action,
@@ -115,7 +115,7 @@ handle (S0Action, S0Update) ->
    S0PerformAction = true,
 
    {{S1Action, S1PerformAction}, S1Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_ABOUT_TO_USE_THEIR_SKILL,
@@ -125,7 +125,7 @@ handle (S0Action, S0Update) ->
       ),
 
    {{S2Action, S2PerformAction}, S2Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_USE_THEIR_SKILL,
          none,

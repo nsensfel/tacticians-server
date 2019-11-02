@@ -27,7 +27,7 @@
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:unresolved(),
-      conditions :: btl_condition:collection()
+      conditions :: btl_conditions:type()
    }
 ).
 
@@ -43,7 +43,7 @@
       is_active :: boolean(),
       is_defeated :: boolean(),
       base :: shr_character:type(),
-      conditions :: btl_condition:collection()
+      conditions :: btl_conditions:type()
    }
 ).
 
@@ -109,7 +109,7 @@
       resolve/2,
       is_unresolved/1,
       to_unresolved/1,
-      encode/1
+      encode/2
    ]
 ).
 
@@ -197,8 +197,8 @@ get_base_character (#btl_char{ base = R }) -> R;
 get_base_character (#btl_char_ref{ base = R }) -> R.
 
 -spec get_conditions
-   (type()) -> btl_condition:collection();
-   (unresolved()) -> btl_condition:collection().
+   (type()) -> btl_conditions:type();
+   (unresolved()) -> btl_conditions:type().
 get_conditions (#btl_char{ conditions = R }) -> R;
 get_conditions (#btl_char_ref{ conditions = R }) -> R.
 
@@ -457,16 +457,8 @@ ataxia_set_base_character (NewBaseCharacter, Char) ->
    ).
 
 -spec set_conditions
-   (
-      btl_condition:collection(),
-      type()
-   )
-   -> type();
-   (
-      btl_condition:collection(),
-      unresolved()
-   )
-   -> unresolved().
+   (btl_conditions:type(), type()) -> type();
+   (btl_conditions:type(), unresolved()) -> unresolved().
 set_conditions (Conditions, Char) when is_record(Char, btl_char) ->
    Char#btl_char{ conditions = Conditions };
 set_conditions (Conditions, Char) when is_record(Char, btl_char_ref) ->
@@ -475,13 +467,13 @@ set_conditions (Conditions, Char) when is_record(Char, btl_char_ref) ->
 
 -spec ataxia_set_conditions
    (
-      btl_condition:collection(),
+      btl_conditions:type(),
       ataxic:basic(),
       type()
    )
    -> {type(), ataxic:basic()};
    (
-      btl_condition:collection(),
+      btl_conditions:type(),
       ataxic:basic(),
       unresolved()
    ) -> {unresolved(), ataxic:basic()}.
@@ -496,16 +488,8 @@ ataxia_set_conditions (Conditions, Update, Char) ->
    }.
 
 -spec ataxia_set_conditions
-   (
-      btl_condition:collection(),
-      type()
-   )
-   -> {type(), ataxic:basic()};
-   (
-      btl_condition:collection(),
-      unresolved()
-   )
-   -> {unresolved(), ataxic:basic()}.
+   (btl_conditions:type(), type()) -> {type(), ataxic:basic()};
+   (btl_conditions:type(), unresolved()) -> {unresolved(), ataxic:basic()}.
 ataxia_set_conditions (Conditions, Char) ->
    ataxia_set_conditions
    (
@@ -521,7 +505,7 @@ ataxia_set_conditions (Conditions, Char) ->
       rank(),
       shr_location:type(),
       shr_character:type(),
-      btl_condition:collection()
+      btl_conditions:type()
    )
    -> type().
 new
@@ -599,8 +583,8 @@ get_base_character_field () -> #btl_char_ref.base.
 -spec get_conditions_field() -> non_neg_integer().
 get_conditions_field () -> #btl_char_ref.conditions.
 
--spec encode (unresolved()) -> {list({binary(), any()})}.
-encode (CharRef) ->
+-spec encode (non_neg_integer(), unresolved()) -> {list({binary(), any()})}.
+encode (RequestingPlayerIX, CharRef) ->
    {
       [
          {?PLAYER_IX_FIELD, CharRef#btl_char_ref.player_ix},
@@ -613,7 +597,11 @@ encode (CharRef) ->
          {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)},
          {
             ?CONDITIONS_FIELD,
-            btl_condition:encode_collection(CharRef#btl_char_ref.conditions)
+            btl_conditions:encode
+            (
+               RequestingPlayerIX,
+               CharRef#btl_char_ref.conditions
+            )
          }
       ]
    }.

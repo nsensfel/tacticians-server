@@ -8,7 +8,7 @@
 -type visibility() ::
    (
       none
-      | {limited, ordsets:ordsets(non_neg_integer())} % PlayerIXs
+      | {limited, ordsets:ordset(non_neg_integer())} % PlayerIXs
       | all
    ).
 
@@ -40,7 +40,7 @@
          orddict:orddict
          (
             shr_condition:trigger(),
-            ordset:ordset(non_neg_integer())
+            ordsets:ordset(non_neg_integer())
          )
    }
 ).
@@ -201,7 +201,7 @@ encode_single (IX, Condition) ->
    Module =
       shr_condition:get_module
       (
-         shr_conditon:from_id(Condition#btl_cond.category)
+         shr_condition:from_id(Condition#btl_cond.category)
       ),
 
    EncodedParameters =
@@ -678,7 +678,7 @@ add (CondID, Triggers, Params, Visibility, Conditions) ->
       ),
 
    UpdatedFromTrigger =
-      ordset:fold
+      ordsets:fold
       (
          fun (Trigger, FromTrigger) ->
             orddict:update
@@ -755,7 +755,7 @@ ataxia_add (CondID, Triggers, Params, Visibility, Conditions) ->
       ),
 
    {UpdatedFromTrigger, FromTriggerAtaxicUpdateList} =
-      ordset:fold
+      ordsets:fold
       (
          fun (Trigger, {FromTrigger, FromTriggerUpdates}) ->
             {

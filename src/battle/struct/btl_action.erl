@@ -120,7 +120,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec decode (binary(), non_neg_integer(), map()) -> type().
 decode (?CATEGORY_MOVE, ActorIX, Map) ->
-   EncodedPath = map:get(?MOVE_PATH_FIELD, Map),
+   EncodedPath = maps:get(?MOVE_PATH_FIELD, Map),
    Path = lists:map(fun shr_direction:decode/1, EncodedPath),
 
    #move
@@ -130,7 +130,7 @@ decode (?CATEGORY_MOVE, ActorIX, Map) ->
       movement_points = -1
    };
 decode (?CATEGORY_ATTACK, ActorIX, Map) ->
-   TargetIX = map:get(?ATTACK_TARGET_FIELD, Map),
+   TargetIX = maps:get(?ATTACK_TARGET_FIELD, Map),
 
    #attack
    {
@@ -144,8 +144,8 @@ decode (?CATEGORY_SWITCH_WEAPONS, ActorIX, _Map) ->
       actor_ix = ActorIX
    };
 decode (?CATEGORY_USE_SKILL, ActorIX, Map) ->
-   Targets = map:get(?USE_SKILL_TARGETS_FIELD, Map),
-   EncodedLocations = map:get(?USE_SKILL_LOCATIONS_FIELD, Map),
+   Targets = maps:get(?USE_SKILL_TARGETS_FIELD, Map),
+   EncodedLocations = maps:get(?USE_SKILL_LOCATIONS_FIELD, Map),
    Locations = lists:map(fun shr_location:decode/1, EncodedLocations),
 
    #skill
@@ -271,7 +271,7 @@ get_category (Action) when is_record(Action, switch_weapons) -> switch_weapons;
 get_category (Action) when is_record(Action, skill) -> skill.
 
 -spec decode (non_neg_integer(), map()) -> type().
-decode (ActorIX, Map) -> decode(map:get(?CATEGORY_FIELD), ActorIX, Map).
+decode (ActorIX, Map) -> decode(maps:get(?CATEGORY_FIELD, Map), ActorIX, Map).
 
 -spec from_map_marker
    (

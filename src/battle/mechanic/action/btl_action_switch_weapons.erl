@@ -34,7 +34,7 @@ handle (Action, S0Update) ->
    S0PerformSwitch = true,
 
    {S1PerformSwitch, S1Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_ABOUT_TO_SWITCH_WEAPONS,
@@ -44,7 +44,7 @@ handle (Action, S0Update) ->
       ),
 
    {S2PerformSwitch, S2Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_SWITCH_WEAPONS,
          Action,
@@ -96,7 +96,7 @@ handle (Action, S0Update) ->
             ),
 
          {_V0Nothing, S5Update} =
-            btl_condition:apply_to_character
+            btl_conditions:apply_to_character
             (
                ActorIX,
                ?CONDITION_TRIGGER_HAS_SWITCHED_WEAPONS,
@@ -106,7 +106,7 @@ handle (Action, S0Update) ->
             ),
 
          {_V1Nothing, S6Update} =
-            btl_condition:apply_to_battle
+            btl_conditions:apply_to_battle
             (
                ?CONDITION_TRIGGER_A_CHARACTER_HAS_SWITCHED_WEAPONS,
                Action,

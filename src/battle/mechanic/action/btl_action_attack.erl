@@ -61,7 +61,7 @@ apply_mirror_conditions
       end,
 
    {S1VolatileContext, S1Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          OwnTriggerName,
@@ -71,7 +71,7 @@ apply_mirror_conditions
       ),
 
    {S2VolatileContext, S2Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          TargetIX,
          OtherTriggerName,
@@ -81,7 +81,7 @@ apply_mirror_conditions
       ),
 
    {S3VolatileContext, S3Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          GlobalTriggerName,
          ReadOnlyContext,

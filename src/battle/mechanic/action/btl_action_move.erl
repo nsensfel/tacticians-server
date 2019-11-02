@@ -462,7 +462,7 @@ handle (Action, S0Update) ->
    S0Path = btl_action:get_path(Action),
 
    {{S1MovementPoints, S1Path}, S2Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_ABOUT_TO_MOVE,
@@ -472,7 +472,7 @@ handle (Action, S0Update) ->
       ),
 
    {{S2MovementPoints, S2Path}, S3Update} =
-      btl_condition:apply_to_battle
+      btl_conditions:apply_to_battle
       (
          ?CONDITION_TRIGGER_A_CHARACTER_IS_ABOUT_TO_MOVE,
          Action,
@@ -503,7 +503,7 @@ handle (Action, S0Update) ->
       commit_move(ActorIX, S1Actor, S4Update, HandledPath, NewLocation),
 
    {_V0Nothing, S5Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_HAS_MOVED,
@@ -513,7 +513,7 @@ handle (Action, S0Update) ->
       ),
 
    {_V1Nothing, S6Update} =
-      btl_condition:apply_to_character
+      btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_A_CHARACTER_HAS_MOVED,

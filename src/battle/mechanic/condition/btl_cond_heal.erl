@@ -11,7 +11,7 @@
 -export
 (
    [
-      apply/4
+      apply/3
    ]
 ).
 
@@ -25,15 +25,11 @@
 -spec apply
    (
       shr_condition:context(any(), VolatileDataType),
-      btl_condition:ref(),
-      btl_condition:type(),
+      btl_conditions:ref(),
       btl_character_turn_update:type()
-   ) ->
-   {
-      VolatileDataType,
-      btl_character_turn_update:type()
-   }.
-apply (S0Context, _SelfRef, _S0Condition, S0Update) ->
+   )
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply (S0Context, _SelfRef, S0Update) ->
    {_Trigger, _ReadOnlyData, VolatileData} = S0Context,
 
    {VolatileData, S0Update, none}.

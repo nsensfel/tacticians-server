@@ -15,7 +15,7 @@
       characters :: orddict:orddict(non_neg_integer(), btl_character:either()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type(),
-      conditions :: btl_condition:collection()
+      conditions :: btl_conditions:type()
    }
 ).
 
@@ -586,16 +586,16 @@ ataxia_set_current_player_turn (PlayerTurn, PlayerTurnUpdate, Battle) ->
 -spec get_conditions_field() -> non_neg_integer().
 get_conditions_field () -> #battle.conditions.
 
--spec get_conditions (type()) -> btl_condition:collection().
+-spec get_conditions (type()) -> btl_conditions:type().
 get_conditions (#battle{ conditions = R }) -> R.
 
--spec set_conditions (btl_condition:collection(), type()) -> type().
+-spec set_conditions (btl_conditions:type(), type()) -> type().
 set_conditions (Conditions, Battle) ->
    Battle#battle{ conditions = Conditions }.
 
 -spec ataxia_set_conditions
    (
-      btl_condition:collection(),
+      btl_conditions:type(),
       ataxic:basic(),
       type()
    )
@@ -612,7 +612,7 @@ ataxia_set_conditions (Conditions, Update, Battle) ->
 
 -spec ataxia_set_conditions
    (
-      btl_condition:collection(),
+      btl_conditions:type(),
       type()
    )
    -> {type(), ataxic:basic()}.
@@ -637,5 +637,5 @@ new (Map) ->
       characters = EmptyDict,
       players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0),
-      conditions = btl_condition:new_collection()
+      conditions = btl_conditions:new()
    }.
