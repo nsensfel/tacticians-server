@@ -32,4 +32,4 @@
 apply (S0Context, _SelfRef, S0Update) ->
    {_Trigger, _ReadOnlyData, VolatileData} = S0Context,
 
-   {VolatileData, S0Update, none}.
+   {VolatileData, S0Update}.

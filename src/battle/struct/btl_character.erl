@@ -109,7 +109,7 @@
       resolve/2,
       is_unresolved/1,
       to_unresolved/1,
-      encode/2
+      encode_for/2
    ]
 ).
 
@@ -583,8 +583,8 @@ get_base_character_field () -> #btl_char_ref.base.
 -spec get_conditions_field() -> non_neg_integer().
 get_conditions_field () -> #btl_char_ref.conditions.
 
--spec encode (non_neg_integer(), unresolved()) -> {list({binary(), any()})}.
-encode (RequestingPlayerIX, CharRef) ->
+-spec encode_for (non_neg_integer(), unresolved()) -> {list({binary(), any()})}.
+encode_for (RequestingPlayerIX, CharRef) ->
    {
       [
          {?PLAYER_IX_FIELD, CharRef#btl_char_ref.player_ix},
@@ -597,7 +597,7 @@ encode (RequestingPlayerIX, CharRef) ->
          {?BASE_CHAR_FIELD, shr_character:encode(CharRef#btl_char_ref.base)},
          {
             ?CONDITIONS_FIELD,
-            btl_conditions:encode
+            btl_conditions:encode_for
             (
                RequestingPlayerIX,
                CharRef#btl_char_ref.conditions

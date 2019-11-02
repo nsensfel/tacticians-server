@@ -191,12 +191,7 @@ compute_next_index (Conditions) ->
 
    Result.
 
--spec encode_single
-   (
-      non_neg_integer(),
-      single()
-   )
-   -> list({binary(), any()}).
+-spec encode_single (non_neg_integer(), single()) -> {list({binary(), any()})}.
 encode_single (IX, Condition) ->
    Module =
       shr_condition:get_module
@@ -240,15 +235,12 @@ get_relevant_condition_indices(Trigger, Conditions) ->
 %%%% Accessors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec get_condition (ref(), btl_character_turn_update:type()) -> single().
 get_condition ({battle, IX}, Update) ->
-   orddict:find
-   (
-      IX,
-      btl_battle:get_conditions(btl_character_turn_update:get_battle(Update))
-   );
+   Conditions =
+      btl_battle:get_conditions(btl_character_turn_update:get_battle(Update)),
+
+   orddict:fetch(IX, Conditions#btl_conds.collection);
 get_condition ({char, CharIX, CondIX}, Update) ->
-   orddict:find
-   (
-      CondIX,
+   Conditions =
       btl_character:get_conditions
       (
          btl_battle:get_character
@@ -256,8 +248,9 @@ get_condition ({char, CharIX, CondIX}, Update) ->
             CharIX,
             btl_character_turn_update:get_battle(Update)
          )
-      )
-   ).
+      ),
+
+   orddict:fetch(CondIX, Conditions#btl_conds.collection).
 
 %%%%%%%%%%%%%%%%%%%%
 %%%% Visibility %%%%
@@ -321,8 +314,8 @@ get_triggers (Condition) -> Condition#btl_cond.triggers.
 set_triggers (IX, NewTriggers, Conditions) ->
    CurrentCondition = orddict:fetch(IX, Conditions#btl_conds.collection),
    CurrentTriggers = CurrentCondition#btl_cond.triggers,
-   AddedTriggers = ordsets:substract(NewTriggers, CurrentTriggers),
-   RemovedTriggers = ordsets:substract(CurrentTriggers, NewTriggers),
+   AddedTriggers = ordsets:subtract(NewTriggers, CurrentTriggers),
+   RemovedTriggers = ordsets:subtract(CurrentTriggers, NewTriggers),
 
    S0FromTrigger =
       ordsets:fold
@@ -380,8 +373,8 @@ set_triggers (IX, NewTriggers, Conditions) ->
 ataxia_set_triggers (IX, NewTriggers, Conditions) ->
    CurrentCondition = orddict:fetch(IX, Conditions#btl_conds.collection),
    CurrentTriggers = CurrentCondition#btl_cond.triggers,
-   AddedTriggers = ordsets:substract(NewTriggers, CurrentTriggers),
-   RemovedTriggers = ordsets:substract(CurrentTriggers, NewTriggers),
+   AddedTriggers = ordsets:subtract(NewTriggers, CurrentTriggers),
+   RemovedTriggers = ordsets:subtract(CurrentTriggers, NewTriggers),
    AtaxicFromTriggerParams = [ataxic:constant(IX), ataxic:current_value()],
 
    {S0FromTrigger, S0FromTriggerAtaxicUpdates} =
@@ -480,7 +473,7 @@ ataxia_set_triggers (IX, NewTriggers, Conditions) ->
                            ataxic:apply_function
                            (
                               ordsets,
-                              substract,
+                              subtract,
                               [
                                  ataxic:current_value(),
                                  ataxic:constant(RemovedTriggers)
@@ -599,8 +592,8 @@ apply_to_character
                {Trigger, ReadOnlyData, S0VolatileData},
                fun (IX) -> {char, ActorIX, IX} end,
                S1Update,
-               CharacterConditions,
-               MatchingConditionIndices
+               MatchingConditionIndices,
+               CharacterConditions
             ),
 
          {S1VolatileContext, S2Update}
@@ -832,20 +825,22 @@ ataxia_remove (IX, S0Conditions) ->
       S2Conditions,
       ataxic:sequence
       (
-         ConditionsAtaxicUpdate1,
-         ataxic:update_field
-         (
-            #btl_conds.collection,
-            ataxic:apply_function
+         [
+            ConditionsAtaxicUpdate1,
+            ataxic:update_field
             (
-               orddict,
-               erase,
-               [
-                  ataxic:constant(IX),
-                  ataxic:current_value()
-               ]
+               #btl_conds.collection,
+               ataxic:apply_function
+               (
+                  orddict,
+                  erase,
+                  [
+                     ataxic:constant(IX),
+                     ataxic:current_value()
+                  ]
+               )
             )
-         )
+         ]
       )
    }.
 
@@ -858,14 +853,14 @@ new () ->
       from_trigger = orddict:new()
    }.
 
--spec encode_for (non_neg_integer(), type()) -> list({binary(), any()}).
+-spec encode_for (non_neg_integer(), type()) -> list(any()).
 encode_for (PlayerIX, Conditions) ->
    lists:filtermap
    (
       fun ({IX, Condition}) ->
          case Condition#btl_cond.visibility of
             none -> false;
-            any -> encode_single(IX, Condition);
+            all -> encode_single(IX, Condition);
             {limited, AllowedPlayerIXs} ->
                case ordsets:is_element(PlayerIX, AllowedPlayerIXs) of
                   false -> false;
@@ -873,5 +868,5 @@ encode_for (PlayerIX, Conditions) ->
                end
          end
       end,
-      orddict:to_list(Conditions)
+      orddict:to_list(Conditions#btl_conds.collection)
    ).
