@@ -24,7 +24,7 @@
    {
       category :: shr_condition:id(),
       triggers :: ordsets:ordset(shr_condition:trigger()),
-      parameters :: tuple(),
+      parameters :: any(),
       visibility :: visibility()
    }
 ).
@@ -67,6 +67,7 @@
       get_parameters/1,
       set_parameters/3, % IX, Value, Conditions
       ataxia_set_parameters/3, % IX, Value, Conditions
+      ataxia_set_parameters/4, % IX, Value, Conditions
 
       get_triggers/1,
       set_triggers/3, % IX, Value, Conditions
@@ -93,8 +94,7 @@
 (
    [
       apply_to_character/5,
-      apply_to_battle/4,
-      update_from_reference/3
+      apply_to_battle/4
    ]
 ).
 
@@ -108,36 +108,24 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--spec ataxia_apply_trigger
+-spec apply_trigger
    (
       shr_condition:context(_ReadOnlyDataType, VolatileDataType),
+      fun((non_neg_integer()) -> ref()),
       btl_character_turn_update:type(),
       ordsets:ordset(non_neg_integer()),
       type()
    )
-   ->
-   {
-      VolatileDataType,
-      ataxic:basic(),
-      btl_character_turn_update:type()
-   }.
-ataxia_apply_trigger (Context, S0Update, RelevantIndices, Conditions) ->
+   -> {VolatileDataType, btl_character_turn_update:type()}.
+apply_trigger (Context, IXtoRef, S0Update, RelevantIndices, Conditions) ->
    {Trigger, ReadOnlyData, S0VolatileData} = Context,
 
    ConditionCollection = Conditions#btl_conds.collection,
 
-   {LastVolatileData, LastUpdate, AllUpdateActions} =
+   {LastVolatileData, LastUpdate} =
       ordsets:fold
       (
-         fun
-         (
-            IX,
-            {
-               CurrentVolatileData,
-               CurrentUpdate,
-               UpdateActions
-            }
-         ) ->
+         fun (IX, {CurrentVolatileData, CurrentUpdate}) ->
             case orddict:find(IX, ConditionCollection) of
                {ok, Condition} ->
                   Module =
@@ -146,7 +134,7 @@ ataxia_apply_trigger (Context, S0Update, RelevantIndices, Conditions) ->
                         shr_condition:from_id(Condition#btl_cond.category)
                      ),
 
-                  {NextVolatileData, NextUpdate, UpdateAction} =
+                  {NextVolatileData, NextUpdate} =
                      erlang:apply
                      (
                         Module,
@@ -159,33 +147,24 @@ ataxia_apply_trigger (Context, S0Update, RelevantIndices, Conditions) ->
                            % made to itself by previous conditions.
                            % This comes at the cost of an additional Condition
                            % lookup, but whatever.
-                           Condition,
+                           IXtoRef(IX),
                            CurrentUpdate,
                            {Trigger, ReadOnlyData, CurrentVolatileData}
                         ]
                      ),
 
-                  {
-                     NextVolatileData,
-                     NextUpdate,
-                     case UpdateAction of
-                        none -> UpdateActions;
-                        _ -> [{IX, UpdateAction}|UpdateActions]
-                     end
-                  };
+                  {NextVolatileData, NextUpdate};
 
                error ->
-                  % TODO: add a 'cleanup' update.
-                  {CurrentVolatileData, CurrentUpdate, UpdateActions}
+                  % TODO: Remove the condition.
+                  {CurrentVolatileData, CurrentUpdate}
             end
          end,
          {S0VolatileData, S0Update, []},
          RelevantIndices
       ),
 
-   ConditionsAtaxiaUpdate = updates_to_ataxic_update(AllUpdateActions),
-
-   {LastVolatileData, ConditionsAtaxiaUpdate, LastUpdate}.
+   {LastVolatileData, LastUpdate}.
 
 -spec compute_next_index (type()) -> non_neg_integer().
 compute_next_index (Conditions) ->
@@ -257,6 +236,335 @@ get_relevant_condition_indices(Trigger, Conditions) ->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%% Accessors %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_condition (ref(), btl_character_turn_update:type()) -> single().
+get_condition ({battle, IX}, Update) ->
+   orddict:find
+   (
+      IX,
+      btl_battle:get_conditions(btl_character_turn_update:get_battle(Update))
+   );
+get_condition ({char, CharIX, CondIX}, Update) ->
+   orddict:find
+   (
+      CondIX,
+      btl_character:get_conditions
+      (
+         btl_battle:get_character
+         (
+            CharIX,
+            btl_character_turn_update:get_battle(Update)
+         )
+      )
+   ).
+
+%%%%%%%%%%%%%%%%%%%%
+%%%% Visibility %%%%
+%%%%%%%%%%%%%%%%%%%%
+-spec get_visibility (single()) -> visibility().
+get_visibility (Condition) -> Condition#btl_cond.visibility.
+
+-spec set_visibility (non_neg_integer(), visibility(), type()) -> type().
+set_visibility (IX, NewVisibility, Conditions) ->
+   Conditions#btl_conds
+   {
+      collection =
+         orddict:update
+         (
+            IX,
+            fun (Condition) ->
+               Condition#btl_cond{ visibility = NewVisibility }
+            end,
+            Conditions#btl_conds.collection
+         )
+   }.
+
+-spec ataxia_set_visibility
+   (
+      non_neg_integer(),
+      visibility(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_visibility (IX, NewVisibility, Conditions) ->
+   {
+      set_visibility(IX, NewVisibility, Conditions),
+      ataxic:update_field
+      (
+         #btl_conds.collection,
+         ataxic_sugar:update_orddict_element
+         (
+            IX,
+            ataxic:update_field
+            (
+               #btl_cond.visibility,
+               ataxic:constant(NewVisibility)
+            )
+         )
+      )
+   }.
+
+%%%%%%%%%%%%%%%%%%
+%%%% Triggers %%%%
+%%%%%%%%%%%%%%%%%%
+-spec get_triggers (single()) -> ordsets:ordset(shr_condition:trigger()).
+get_triggers (Condition) -> Condition#btl_cond.triggers.
+
+-spec set_triggers
+   (
+      non_neg_integer(),
+      ordsets:ordset(shr_condition:trigger()),
+      type()
+   )
+   -> type().
+set_triggers (IX, NewTriggers, Conditions) ->
+   CurrentCondition = orddict:fetch(IX, Conditions#btl_conds.collection),
+   CurrentTriggers = CurrentCondition#btl_cond.triggers,
+   AddedTriggers = ordsets:substract(NewTriggers, CurrentTriggers),
+   RemovedTriggers = ordsets:substract(CurrentTriggers, NewTriggers),
+
+   S0FromTrigger =
+      ordsets:fold
+      (
+         fun (Trigger, FromTrigger) ->
+            orddict:update
+            (
+               Trigger,
+               fun (ConditionIXs) ->
+                  ordsets:del_element(IX, ConditionIXs)
+               end,
+               FromTrigger
+            )
+         end,
+         Conditions#btl_conds.from_trigger,
+         RemovedTriggers
+      ),
+
+   S1FromTrigger =
+      ordsets:fold
+      (
+         fun (Trigger, FromTrigger) ->
+            orddict:update
+            (
+               Trigger,
+               fun (ConditionIXs) ->
+                  ordsets:add_element(IX, ConditionIXs)
+               end,
+               FromTrigger
+            )
+         end,
+         S0FromTrigger,
+         AddedTriggers
+      ),
+
+   Conditions#btl_conds
+   {
+      from_trigger = S1FromTrigger,
+      collection =
+         orddict:update
+         (
+            IX,
+            fun (Condition) -> Condition#btl_cond{ triggers = NewTriggers } end,
+            Conditions#btl_conds.collection
+         )
+   }.
+
+-spec ataxia_set_triggers
+   (
+      non_neg_integer(),
+      ordsets:ordset(shr_condition:trigger()),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_triggers (IX, NewTriggers, Conditions) ->
+   CurrentCondition = orddict:fetch(IX, Conditions#btl_conds.collection),
+   CurrentTriggers = CurrentCondition#btl_cond.triggers,
+   AddedTriggers = ordsets:substract(NewTriggers, CurrentTriggers),
+   RemovedTriggers = ordsets:substract(CurrentTriggers, NewTriggers),
+   AtaxicFromTriggerParams = [ataxic:constant(IX), ataxic:current_value()],
+
+   {S0FromTrigger, S0FromTriggerAtaxicUpdates} =
+      ordsets:fold
+      (
+         fun (Trigger, {FromTrigger, PrevFromTriggerAtaxicUpdates}) ->
+            {
+               orddict:update
+               (
+                  Trigger,
+                  fun (ConditionIXs) ->
+                     ordsets:del_element(IX, ConditionIXs)
+                  end,
+                  FromTrigger
+               ),
+               [
+                  ataxic_sugar:update_orddict_element
+                  (
+                     IX,
+                     ataxic:apply_function
+                     (
+                        ordsets,
+                        del_element,
+                        AtaxicFromTriggerParams
+                     )
+                  )
+                  | PrevFromTriggerAtaxicUpdates
+               ]
+            }
+         end,
+         {Conditions#btl_conds.from_trigger, []},
+         RemovedTriggers
+      ),
+
+   {S1FromTrigger, S1FromTriggerAtaxicUpdates} =
+      ordsets:fold
+      (
+         fun (Trigger, {FromTrigger, PrevFromTriggerAtaxicUpdates}) ->
+            {
+               orddict:update
+               (
+                  Trigger,
+                  fun (ConditionIXs) ->
+                     ordsets:add_element(IX, ConditionIXs)
+                  end,
+                  FromTrigger
+               ),
+               [
+                  ataxic_sugar:update_orddict_element
+                  (
+                     IX,
+                     ataxic:apply_function
+                     (
+                        ordsets,
+                        add_element,
+                        AtaxicFromTriggerParams
+                     )
+                  )
+                  | PrevFromTriggerAtaxicUpdates
+               ]
+            }
+         end,
+         {S0FromTrigger, S0FromTriggerAtaxicUpdates},
+         AddedTriggers
+      ),
+
+   {
+      Conditions#btl_conds
+      {
+         from_trigger = S1FromTrigger,
+         collection =
+            orddict:update
+            (
+               IX,
+               fun (Condition) ->
+                  Condition#btl_cond{ triggers = NewTriggers }
+               end,
+               Conditions#btl_conds.collection
+            )
+      },
+      ataxic:sequence
+      (
+         [
+            ataxic:update_field
+            (
+               #btl_conds.collection,
+               ataxic_sugar:update_orddict_element
+               (
+                  IX,
+                  ataxic:update_field
+                  (
+                     #btl_cond.triggers,
+                     ataxic:sequence
+                     (
+                        [
+                           ataxic:apply_function
+                           (
+                              ordsets,
+                              substract,
+                              [
+                                 ataxic:current_value(),
+                                 ataxic:constant(RemovedTriggers)
+                              ]
+                           ),
+                           ataxic:apply_function
+                           (
+                              ordsets,
+                              union,
+                              [
+                                 ataxic:current_value(),
+                                 ataxic:constant(AddedTriggers)
+                              ]
+                           )
+                        ]
+                     )
+                  )
+               )
+            ),
+            ataxic:update_field
+            (
+               #btl_conds.from_trigger,
+               ataxic:sequence(S1FromTriggerAtaxicUpdates)
+            )
+         ]
+      )
+   }.
+
+%%%%%%%%%%%%%%%%%%%%
+%%%% Parameters %%%%
+%%%%%%%%%%%%%%%%%%%%
+-spec get_parameters (single()) -> any().
+get_parameters (Condition) -> Condition#btl_cond.parameters.
+
+-spec set_parameters (non_neg_integer(), any(), type()) -> type().
+set_parameters (IX, NewValue, Conditions) ->
+   Conditions#btl_conds
+   {
+      collection =
+         orddict:update
+         (
+            IX,
+            fun (Condition) -> Condition#btl_cond{ parameters = NewValue } end,
+            Conditions#btl_conds.collection
+         )
+   }.
+
+-spec ataxia_set_parameters
+   (
+      non_neg_integer(),
+      any(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_parameters (IX, NewValue, Conditions) ->
+   ataxia_set_parameters(IX, NewValue, ataxic:constant(NewValue), Conditions).
+
+-spec ataxia_set_parameters
+   (
+      non_neg_integer(),
+      any(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_parameters (IX, NewValue, ParamsAtaxicUpdate, Conditions) ->
+   {
+      set_parameters(IX, NewValue, Conditions),
+      ataxic:update_field
+      (
+         #btl_conds.collection,
+         ataxic_sugar:update_orddict_element
+         (
+            IX,
+            ataxic:update_field
+            (
+               #btl_cond.parameters,
+               ParamsAtaxicUpdate
+            )
+         )
+      )
+   }.
+
+%%%% Apply %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec apply_to_character
    (
       non_neg_integer(),
@@ -283,55 +591,16 @@ apply_to_character
       get_relevant_condition_indices(Trigger, CharacterConditions),
 
    case ordsets:is_empty(MatchingConditionIndices) of
-      true -> {S0VolatileData, btl_character_turn_update:type()};
+      true -> {S0VolatileData, S1Update};
       false ->
-         {
-            S1VolatileContext,
-            ActorConditionsAtaxicUpdate,
-            S2Update
-         } =
-            ataxia_apply_trigger
+         {S1VolatileContext, S2Update} =
+            apply_trigger
             (
                {Trigger, ReadOnlyData, S0VolatileData},
+               fun (IX) -> {char, ActorIX, IX} end,
                S1Update,
                CharacterConditions,
                MatchingConditionIndices
-            ),
-
-         %%%%% Actor and Battle may have been modified %%%%%%%%%%%%%%%%%%%%%%%%%
-
-         S1Battle = btl_character_turn_update:get_battle(S2Update),
-         {S1Actor, S2Battle} =
-            btl_battle:get_resolved_character(ActorIX, S1Battle),
-
-         S0Conditions = btl_character:get_conditions(S1Actor),
-
-         S1Conditions =
-            ataxic:apply_basic_to(ActorConditionsAtaxicUpdate, S0Conditions),
-
-         {S2Actor, ActorAtaxicUpdate} =
-            btl_character:ataxia_set_conditions
-            (
-               S1Conditions,
-               ActorConditionsAtaxicUpdate,
-               S1Actor
-            ),
-
-         {S3Battle, BattleAtaxicUpdate} =
-            btl_battle:ataxia_set_character
-            (
-               ActorIX,
-               S2Actor,
-               ActorAtaxicUpdate,
-               S2Battle
-            ),
-
-         S2Update =
-            btl_character_turn_update:ataxia_set_battle
-            (
-               S3Battle,
-               BattleAtaxicUpdate,
-               S1Update
             ),
 
          {S1VolatileContext, S2Update}
@@ -361,59 +630,29 @@ apply_to_battle
    case ordsets:is_empty(MatchingConditionIndices) of
       true -> {S0VolatileData, S0Update};
       false ->
-         {
-            S1VolatileContext,
-            BattleConditionsAtaxicUpdate,
-            S1Update
-         } =
-            ataxia_apply_trigger
+         {S1VolatileContext, S1Update} =
+            apply_trigger
             (
                {Trigger, ReadOnlyData, S0VolatileData},
+               fun (IX) -> {battle, IX} end,
                S0Update,
                MatchingConditionIndices,
                BattleConditions
             ),
 
-         %%%% Battle may have been modified (and very likely has) %%%%%%%%%%%%%%
-         S1Battle = btl_character_turn_update:get_battle(S1Update),
-         UpdatedBattleConditions =
-            ataxic:apply_basic_to
-            (
-               BattleConditionsAtaxicUpdate,
-               btl_battle:get_conditions(S1Battle)
-            ),
-
-         {S2Battle, BattleAtaxicUpdate} =
-            btl_battle:ataxia_set_conditions(UpdatedBattleConditions, S1Battle),
-
-         S1Update =
-            btl_character_turn_update:ataxia_set_battle
-            (
-               S2Battle,
-               BattleAtaxicUpdate,
-               S1Update
-            ),
-
          {S1VolatileContext, S1Update}
    end.
 
--spec update_from_reference
-   (
-      ref(),
-      update(),
-      btl_character_turn_update:type()
-   )
-   -> btl_character_turn_update:type().
-update_from_reference ({battle, _CondIX}, _UpdateAction, Update) ->
-   Update; % TODO
-update_from_reference ({char, _CharIX, _CondIX}, _UpdateAction, Update) ->
-   Update. % TODO
+%%%% Add/Remove Elements %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%%%%%%%%%%%%
+%%%% Add %%%%
+%%%%%%%%%%%%%
 -spec add
    (
       shr_condition:id(),
       ordsets:ordset(shr_condition:trigger()),
-      tuple(),
+      any(),
       visibility(),
       type()
    )
@@ -466,7 +705,7 @@ add (CondID, Triggers, Params, Visibility, Conditions) ->
    (
       shr_condition:id(),
       ordsets:ordset(shr_condition:trigger()),
-      tuple(),
+      any(),
       visibility(),
       type()
    )
@@ -532,7 +771,7 @@ ataxia_add (CondID, Triggers, Params, Visibility, Conditions) ->
                      Trigger,
                      SetAtaxicUpdate
                   )
-                  |FromTriggerUpdates
+                  | FromTriggerUpdates
                ]
             }
          end,
@@ -564,6 +803,53 @@ ataxia_add (CondID, Triggers, Params, Visibility, Conditions) ->
       )
    }.
 
+%%%%%%%%%%%%%%%%
+%%%% Remove %%%%
+%%%%%%%%%%%%%%%%
+-spec remove (non_neg_integer(), type()) -> type().
+remove (IX, S0Conditions) ->
+   S1Conditions = set_triggers(IX, ordsets:new(), S0Conditions),
+   S2Conditions =
+      S1Conditions#btl_conds
+      {
+         collection = orddict:erase(IX, S1Conditions#btl_conds.collection)
+      },
+
+   S2Conditions.
+
+-spec ataxia_remove (non_neg_integer(), type()) -> {type(), ataxic:basic()}.
+ataxia_remove (IX, S0Conditions) ->
+   {S1Conditions, ConditionsAtaxicUpdate1} =
+      ataxia_set_triggers(IX, ordsets:new(), S0Conditions),
+
+   S2Conditions =
+      S1Conditions#btl_conds
+      {
+         collection = orddict:erase(IX, S1Conditions#btl_conds.collection)
+      },
+
+   {
+      S2Conditions,
+      ataxic:sequence
+      (
+         ConditionsAtaxicUpdate1,
+         ataxic:update_field
+         (
+            #btl_conds.collection,
+            ataxic:apply_function
+            (
+               orddict,
+               erase,
+               [
+                  ataxic:constant(IX),
+                  ataxic:current_value()
+               ]
+            )
+         )
+      )
+   }.
+
+%%%% Other %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new () -> type().
 new () ->
    #btl_conds
