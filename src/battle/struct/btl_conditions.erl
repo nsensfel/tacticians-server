@@ -52,7 +52,8 @@
    [
       type/0,
       ref/0,
-      visibility/0
+      visibility/0,
+      single/0
    ]
 ).
 
@@ -140,13 +141,6 @@ apply_trigger (Context, IXtoRef, S0Update, RelevantIndices, Conditions) ->
                         Module,
                         apply,
                         [
-                           % TODO:
-                           % Provide Ref instead of Condition. This ensures that
-                           % the condition will use its most up-to-date status
-                           % and, more importantly, will not overwrite changes
-                           % made to itself by previous conditions.
-                           % This comes at the cost of an additional Condition
-                           % lookup, but whatever.
                            IXtoRef(IX),
                            CurrentUpdate,
                            {Trigger, ReadOnlyData, CurrentVolatileData}
