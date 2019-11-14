@@ -24,7 +24,7 @@
    {
       category :: shr_condition:id(),
       triggers :: ordsets:ordset(shr_condition:trigger()),
-      parameters :: any(),
+      parameters :: btl_condition_parameters:type(any()),
       visibility :: visibility()
    }
 ).
