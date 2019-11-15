@@ -21,7 +21,7 @@
    {
       player_ix :: non_neg_integer(),
       rank :: rank(),
-      location :: {non_neg_integer(), non_neg_integer()},
+      location :: shr_location:type(),
       current_health :: integer(), %% Negative integers let us reverse attacks.
       skill_points :: integer(), %% Negative integers let us reverse skill uses.
       is_active :: boolean(),
@@ -37,7 +37,7 @@
    {
       player_ix :: non_neg_integer(),
       rank :: rank(),
-      location :: {non_neg_integer(), non_neg_integer()},
+      location :: shr_location:type(),
       current_health :: integer(), %% Negative integers let us reverse attacks.
       skill_points :: integer(), %% Negative integers let us reverse skill uses.
       is_active :: boolean(),
@@ -156,7 +156,7 @@ get_player_index (#btl_char_ref{ player_ix = R }) -> R.
 get_rank (#btl_char{ rank = R }) -> R;
 get_rank (#btl_char_ref{ rank = R }) -> R.
 
--spec get_location (either()) -> {non_neg_integer(), non_neg_integer()}.
+-spec get_location (either()) -> shr_location:type().
 get_location (#btl_char{ location = R }) -> R;
 get_location (#btl_char_ref{ location = R }) -> R.
 
@@ -225,7 +225,7 @@ ataxia_set_rank (Rank, Char) ->
 
 -spec set_location
    (
-      {non_neg_integer(), non_neg_integer()},
+      shr_location:type(),
       shr_omnimods:type(),
       type()
    )
@@ -261,7 +261,7 @@ set_location (Location, LocOmnimods, Char) ->
 
 -spec ataxia_set_location
    (
-      {non_neg_integer(), non_neg_integer()},
+      shr_location:type(),
       shr_omnimods:type(),
       type()
    )

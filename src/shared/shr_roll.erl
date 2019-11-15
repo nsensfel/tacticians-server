@@ -45,9 +45,9 @@ between (Min, Max) ->
    Diff = (Max - Min),
    (Min + (rand:uniform(Diff + 1) - 1)).
 
--spec percentage () -> 0..100.
+-spec percentage () -> 1..100.
 percentage () ->
-   between(0, 100).
+   between(1, 100).
 
 -spec percentage_with_luck
    (

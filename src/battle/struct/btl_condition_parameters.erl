@@ -10,7 +10,6 @@
       targets :: list(non_neg_integer()),
       locations :: list(shr_location:type()),
       uses :: (non_neg_integer() | -1),
-      duration :: (non_neg_integer() | -1),
       chance :: (0..100 | -1),
       other :: any()
    }
@@ -39,10 +38,6 @@
       get_uses/1,
       set_uses/2,
       ataxia_set_uses/2,
-
-      get_duration/1,
-      set_duration/2,
-      ataxia_set_duration/2,
 
       get_chance/1,
       set_chance/2,
@@ -113,28 +108,6 @@ ataxia_set_uses (Uses, Params) ->
    {
       set_uses(Uses, Params),
       ataxic:update_field(#btl_cond_params.uses, ataxic:constant(Uses))
-   }.
-
-%%%%%%%%%%%%%%%%%%
-%%%% Duration %%%%
-%%%%%%%%%%%%%%%%%%
--spec get_duration (type(_)) -> (non_neg_integer() | -1).
-get_duration (Params) -> Params#btl_cond_params.duration.
-
--spec set_duration ((non_neg_integer() | -1), type(ODT)) -> type(ODT).
-set_duration (Duration, Params) ->
-   Params#btl_cond_params{ duration = Duration }.
-
--spec ataxia_set_duration
-   (
-      (non_neg_integer() | -1),
-      type(ODT)
-   )
-   -> {type(ODT), ataxic:basic()}.
-ataxia_set_duration (Duration, Params) ->
-   {
-      set_duration(Duration, Params),
-      ataxic:update_field(#btl_cond_params.duration, ataxic:constant(Duration))
    }.
 
 %%%%%%%%%%%%%%%%
