@@ -15,7 +15,8 @@
       characters :: orddict:orddict(non_neg_integer(), btl_character:either()),
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type(),
-      conditions :: btl_conditions:type()
+      conditions :: btl_conditions:type(),
+      status_indicators :: btl_status_indicators:type()
    }
 ).
 
@@ -80,12 +81,18 @@
       ataxia_set_conditions/2,
       ataxia_set_conditions/3,
 
+      get_status_indicators/1,
+      set_status_indicators/2,
+      ataxia_set_status_indicators/2,
+      ataxia_set_status_indicators/3,
+
       get_characters_field/0,
       get_players_field/0,
       get_related_inventory_field/0,
       get_related_tile_ids_field/0,
       get_current_player_turn_field/0,
-      get_conditions_field/0
+      get_conditions_field/0,
+      get_status_indicators_field/0
    ]
 ).
 
@@ -624,6 +631,50 @@ ataxia_set_conditions (Conditions, Battle) ->
       Battle
    ).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Status Indicators %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec get_status_indicators_field() -> non_neg_integer().
+get_status_indicators_field () -> #battle.status_indicators.
+
+-spec get_status_indicators (type()) -> btl_status_indicators:type().
+get_status_indicators (#battle{ status_indicators = R }) -> R.
+
+-spec set_status_indicators (btl_status_indicators:type(), type()) -> type().
+set_status_indicators (StatusIndicators, Battle) ->
+   Battle#battle{ status_indicators = StatusIndicators }.
+
+-spec ataxia_set_status_indicators
+   (
+      btl_status_indicators:type(),
+      ataxic:basic(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_status_indicators (StatusIndicators, Update, Battle) ->
+   {
+      set_status_indicators(StatusIndicators, Battle),
+      ataxic:update_field
+      (
+         get_status_indicators_field(),
+         Update
+      )
+   }.
+
+-spec ataxia_set_status_indicators
+   (
+      btl_status_indicators:type(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_status_indicators (StatusIndicators, Battle) ->
+   ataxia_set_status_indicators
+   (
+      StatusIndicators,
+      ataxic:constant(StatusIndicators),
+      Battle
+   ).
+
 %%%% Constructor %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -spec new (shr_map:type()) -> type().
 new (Map) ->
@@ -637,5 +688,6 @@ new (Map) ->
       characters = EmptyDict,
       players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0),
-      conditions = btl_conditions:new()
+      conditions = btl_conditions:new(),
+      status_indicators = btl_status_indicators:new()
    }.

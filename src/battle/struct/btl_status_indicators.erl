@@ -211,7 +211,7 @@ ataxia_set_category (IX, NewValue, StatusIndicators) ->
          ataxic:update_field
          (
             #btl_sti.category,
-            ataxic:const(NewValue)
+            ataxic:constant(NewValue)
          )
       )
    }.
@@ -250,7 +250,7 @@ ataxia_set_parameter (IX, NewValue, StatusIndicators) ->
          ataxic:update_field
          (
             #btl_sti.parameter,
-            ataxic:const(NewValue)
+            ataxic:constant(NewValue)
          )
       )
    }.
@@ -278,7 +278,7 @@ add (Category, Parameter, Visibility, S0StatusIndicators) ->
       },
 
    NewStatusIndicatorIX =
-      shr_orddict_util:compute_next_non_neg_integer(S0StatusIndicators),
+      shr_orddict_util:compute_next_non_neg_integer_index(S0StatusIndicators),
 
    S1StatusIndicators =
       orddict:store
@@ -288,7 +288,7 @@ add (Category, Parameter, Visibility, S0StatusIndicators) ->
          S0StatusIndicators
       ),
 
-   S1StatusIndicators.
+   {S1StatusIndicators, NewStatusIndicatorIX}.
 
 -spec ataxia_add
    (
@@ -308,7 +308,7 @@ ataxia_add (Category, Parameter, Visibility, S0StatusIndicators) ->
       },
 
    NewStatusIndicatorIX =
-      shr_orddict_util:compute_next_non_neg_integer(S0StatusIndicators),
+      shr_orddict_util:compute_next_non_neg_integer_index(S0StatusIndicators),
 
    S1StatusIndicators =
       orddict:store

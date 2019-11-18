@@ -551,7 +551,7 @@ add (CondID, Triggers, Params, Conditions) ->
    Collection = Conditions#btl_conds.collection,
 
    NewConditionIX =
-      shr_util_orddict:compute_next_non_neg_integer_index(Collection),
+      shr_orddict_util:compute_next_non_neg_integer_index(Collection),
 
    UpdatedCollection = orddict:store(NewConditionIX, NewCondition, Collection),
 
@@ -599,7 +599,7 @@ ataxia_add (CondID, Triggers, Params, Conditions) ->
    Collection = Conditions#btl_conds.collection,
 
    NewConditionIX =
-      shr_util_orddict:compute_next_non_neg_integer_index(Collection),
+      shr_orddict_util:compute_next_non_neg_integer_index(Collection),
 
    AtaxicNewConditionIX = ataxic:constant(NewConditionIX),
 
