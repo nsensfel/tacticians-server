@@ -140,30 +140,6 @@ apply_trigger (Context, IXtoRef, S0Update, RelevantIndices, Conditions) ->
 
    {LastVolatileData, LastUpdate}.
 
--spec compute_next_index (type()) -> non_neg_integer().
-compute_next_index (Conditions) ->
-   Collection = Conditions#btl_conds.collection,
-   CollectionSize = orddict:size(Collection),
-   Candidates = lists:seq(0, CollectionSize),
-
-   Result =
-      lists:foldr
-      (
-         fun (Candidate, CurrentResult) ->
-            case is_integer(CurrentResult) of
-               true -> CurrentResult;
-               false ->
-                  case orddict:is_key(Candidate, Collection) of
-                     true -> none;
-                     false -> Candidate
-                  end
-            end
-         end,
-         none,
-         Candidates
-      ),
-
-   Result.
 
 -spec get_relevant_condition_indices
    (
@@ -572,15 +548,12 @@ add (CondID, Triggers, Params, Conditions) ->
          parameters = Params
       },
 
-   NewConditionIX = compute_next_index(Conditions),
+   Collection = Conditions#btl_conds.collection,
 
-   UpdatedCollection =
-      orddict:store
-      (
-         NewConditionIX,
-         NewCondition,
-         Conditions#btl_conds.collection
-      ),
+   NewConditionIX =
+      shr_util_orddict:compute_next_non_neg_integer_index(Collection),
+
+   UpdatedCollection = orddict:store(NewConditionIX, NewCondition, Collection),
 
    UpdatedFromTrigger =
       ordsets:fold
@@ -623,16 +596,14 @@ ataxia_add (CondID, Triggers, Params, Conditions) ->
          parameters = Params
       },
 
-   NewConditionIX = compute_next_index(Conditions),
+   Collection = Conditions#btl_conds.collection,
+
+   NewConditionIX =
+      shr_util_orddict:compute_next_non_neg_integer_index(Collection),
+
    AtaxicNewConditionIX = ataxic:constant(NewConditionIX),
 
-   UpdatedCollection =
-      orddict:store
-      (
-         NewConditionIX,
-         NewCondition,
-         Conditions#btl_conds.collection
-      ),
+   UpdatedCollection = orddict:store(NewConditionIX, NewCondition, Collection),
 
    CollectionAtaxicUpdate =
       ataxic:apply_function
