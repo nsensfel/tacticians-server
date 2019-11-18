@@ -1,9 +1,14 @@
--module(btl_conditions).
+-module(btl_status_indicators).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--include("tacticians/conditions.hrl").
+-type visibility() ::
+   (
+      none
+      | {limited, ordsets:ordset(non_neg_integer())} % PlayerIXs
+      | all
+   ).
 
 -type ref() ::
    (
@@ -13,37 +18,23 @@
 
 -record
 (
-   btl_cond,
+   btl_sti,
    {
-      category :: shr_condition:id(),
-      triggers :: ordsets:ordset(shr_condition:trigger()),
-      parameters :: btl_condition_parameters:type(any())
+      icon :: binary(),
+      extra :: binary(),
+      visibility :: visibility()
    }
 ).
 
 -type single() :: #btl_cond{}.
-
--record
-(
-   btl_conds,
-   {
-      collection :: orddict:orddict(non_neg_integer(), single()),
-      from_trigger ::
-         orddict:orddict
-         (
-            shr_condition:trigger(),
-            ordsets:ordset(non_neg_integer())
-         )
-   }
-).
-
--opaque type() :: #btl_conds{}.
+-type type () :: orddict:orddict(non_neg_integer(), single()),
 
 -export_type
 (
    [
       type/0,
       ref/0,
+      visibility/0,
       single/0
    ]
 ).
@@ -54,7 +45,7 @@
 -export
 (
    [
-      get_condition/2,
+      get_status_indicator/2,
 
       get_parameters/1,
       set_parameters/3, % IX, Value, Conditions
@@ -63,15 +54,19 @@
 
       get_triggers/1,
       set_triggers/3, % IX, Value, Conditions
-      ataxia_set_triggers/3 % IX, Value, Conditions
+      ataxia_set_triggers/3, % IX, Value, Conditions
+
+      get_visibility/1,
+      set_visibility/3, % IX, Value, Conditions
+      ataxia_set_visibility/3 % IX, Value, Conditions
    ]
 ).
 
 -export
 (
    [
-      add/4,
-      ataxia_add/4,
+      add/5,
+      ataxia_add/5,
       remove/2,
       ataxia_remove/2,
       new/0
@@ -83,6 +78,13 @@
    [
       apply_to_character/5,
       apply_to_battle/4
+   ]
+).
+
+-export
+(
+   [
+      encode_for/2
    ]
 ).
 
@@ -165,6 +167,31 @@ compute_next_index (Conditions) ->
 
    Result.
 
+-spec encode_single (non_neg_integer(), single()) -> {list({binary(), any()})}.
+encode_single (IX, Condition) ->
+   Module =
+      shr_condition:get_module
+      (
+         shr_condition:from_id(Condition#btl_cond.category)
+      ),
+
+   EncodedParameters =
+      erlang:apply
+      (
+         Module,
+         encode_parameters,
+         [
+            Condition#btl_cond.parameters
+         ]
+      ),
+
+   {
+      [
+         {<<"ix">>, IX},
+         {<<"p">>, EncodedParameters}
+      ]
+   }.
+
 -spec get_relevant_condition_indices
    (
       shr_condition:trigger(),
@@ -211,6 +238,52 @@ get_condition ({char, CharIX, CondIX}, Update) ->
       error -> none;
       Other -> Other
    end.
+
+%%%%%%%%%%%%%%%%%%%%
+%%%% Visibility %%%%
+%%%%%%%%%%%%%%%%%%%%
+-spec get_visibility (single()) -> visibility().
+get_visibility (Condition) -> Condition#btl_cond.visibility.
+
+-spec set_visibility (non_neg_integer(), visibility(), type()) -> type().
+set_visibility (IX, NewVisibility, Conditions) ->
+   Conditions#btl_conds
+   {
+      collection =
+         orddict:update
+         (
+            IX,
+            fun (Condition) ->
+               Condition#btl_cond{ visibility = NewVisibility }
+            end,
+            Conditions#btl_conds.collection
+         )
+   }.
+
+-spec ataxia_set_visibility
+   (
+      non_neg_integer(),
+      visibility(),
+      type()
+   )
+   -> {type(), ataxic:basic()}.
+ataxia_set_visibility (IX, NewVisibility, Conditions) ->
+   {
+      set_visibility(IX, NewVisibility, Conditions),
+      ataxic:update_field
+      (
+         #btl_conds.collection,
+         ataxic_sugar:update_orddict_element
+         (
+            IX,
+            ataxic:update_field
+            (
+               #btl_cond.visibility,
+               ataxic:constant(NewVisibility)
+            )
+         )
+      )
+   }.
 
 %%%%%%%%%%%%%%%%%%
 %%%% Triggers %%%%
@@ -560,16 +633,18 @@ apply_to_battle
       shr_condition:id(),
       ordsets:ordset(shr_condition:trigger()),
       any(),
+      visibility(),
       type()
    )
    -> {type(), non_neg_integer()}.
-add (CondID, Triggers, Params, Conditions) ->
+add (CondID, Triggers, Params, Visibility, Conditions) ->
    NewCondition =
       #btl_cond
       {
          category = CondID,
          triggers = Triggers,
-         parameters = Params
+         parameters = Params,
+         visibility = Visibility
       },
 
    NewConditionIX = compute_next_index(Conditions),
@@ -611,16 +686,18 @@ add (CondID, Triggers, Params, Conditions) ->
       shr_condition:id(),
       ordsets:ordset(shr_condition:trigger()),
       any(),
+      visibility(),
       type()
    )
    -> {type(), non_neg_integer(), ataxic:basic()}.
-ataxia_add (CondID, Triggers, Params, Conditions) ->
+ataxia_add (CondID, Triggers, Params, Visibility, Conditions) ->
    NewCondition =
       #btl_cond
       {
          category = CondID,
          triggers = Triggers,
-         parameters = Params
+         parameters = Params,
+         visibility = Visibility
       },
 
    NewConditionIX = compute_next_index(Conditions),
@@ -762,3 +839,21 @@ new () ->
       collection = orddict:new(),
       from_trigger = orddict:new()
    }.
+
+-spec encode_for (non_neg_integer(), type()) -> list(any()).
+encode_for (PlayerIX, Conditions) ->
+   lists:filtermap
+   (
+      fun ({IX, Condition}) ->
+         case Condition#btl_cond.visibility of
+            none -> false;
+            all -> encode_single(IX, Condition);
+            {limited, AllowedPlayerIXs} ->
+               case ordsets:is_element(PlayerIX, AllowedPlayerIXs) of
+                  false -> false;
+                  true -> {true, encode_single(IX, Condition)}
+               end
+         end
+      end,
+      orddict:to_list(Conditions#btl_conds.collection)
+   ).

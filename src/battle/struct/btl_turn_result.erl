@@ -3,7 +3,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%
+-record
+(
+   condition,
+   {
+      module :: atom(),
+      params :: any()
+   }
+).
+
 -record
 (
    switched_weapon,
@@ -80,6 +88,7 @@
    | #player_won{}
    | #player_lost{}
    | #player_turn_started{}
+   | #condition{}
 ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,6 +99,7 @@
 -export
 (
    [
+      new_condition/2,
       new_player_won/1,
       new_player_lost/1,
       new_player_turn_started/1,
@@ -114,6 +124,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec new_condition (atom(), any()) -> type().
+new_condition (Module, Params) ->
+   #condition{ module = Module, params = Params }.
+
 -spec new_player_won (non_neg_integer()) -> type().
 new_player_won (PlayerIX) ->
    #player_won { player_ix = PlayerIX }.
@@ -278,6 +292,24 @@ encode (TurnResult) when is_record(TurnResult, player_turn_started) ->
       [
          {<<"t">>, <<"pts">>},
          {<<"ix">>, PlayerIX}
+      ]
+   };
+encode (TurnResult) when is_record(TurnResult, condition) ->
+   {ModuleID, EncodedParams} =
+      erlang:apply
+      (
+         TurnResult#condition.module,
+         encode_turn_result,
+         [
+            TurnResult#condition.params
+         ]
+      ),
+
+   {
+      [
+         {<<"t">>, <<"con">>},
+         {<<"m">>, ModuleID},
+         {<<"p">>, EncodedParams}
       ]
    };
 encode (Other) ->

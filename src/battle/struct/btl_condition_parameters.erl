@@ -35,6 +35,11 @@
       ataxia_set_targets/2,
       ataxia_set_targets/3,
 
+      get_locations/1,
+      set_locations/2,
+      ataxia_set_locations/2,
+      ataxia_set_locations/3,
+
       get_uses/1,
       set_uses/2,
       ataxia_set_uses/2,
@@ -57,6 +62,38 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTED FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%
+%%%% Locations %%%%
+%%%%%%%%%%%%%%%%%
+-spec get_locations (type(_)) -> list(shr_location:type()).
+get_locations (Params) -> Params#btl_cond_params.locations.
+
+-spec set_locations (list(shr_location:type()), type(ODT)) -> type(ODT).
+set_locations (Locations, Params) ->
+   Params#btl_cond_params{ locations = Locations }.
+
+-spec ataxia_set_locations
+   (
+      list(shr_location:type()),
+      type(ODT)
+   )
+   -> {type(ODT), ataxic:basic()}.
+ataxia_set_locations (Locations, Params) ->
+   ataxia_set_locations(Locations, ataxic:constant(Locations), Params).
+
+-spec ataxia_set_locations
+   (
+      list(shr_location:type()),
+      ataxic:basic(),
+      type(ODT)
+   )
+   -> {type(ODT), ataxic:basic()}.
+ataxia_set_locations (Locations, LocationsAtaxicUpdate, Params) ->
+   {
+      set_locations(Locations, Params),
+      ataxic:update_field(#btl_cond_params.locations, LocationsAtaxicUpdate)
+   }.
 
 %%%%%%%%%%%%%%%%%
 %%%% Targets %%%%

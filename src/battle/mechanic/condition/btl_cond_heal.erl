@@ -11,8 +11,7 @@
 -export
 (
    [
-%      encode/1,
-%      get_turn_result_encoding/1,
+      encode_turn_result/1,
       apply/3
    ]
 ).
@@ -43,14 +42,14 @@ heal_character (ActorIX, S0Actor, S0HealingAmount) ->
          CurrentHealth = btl_character:get_current_health(S0Actor),
          BaseActor = btl_character:get_base_character(S0Actor),
          ActorAttributes = shr_character:get_attributes(BaseActor),
-         MaxHealth = shr_attributes:get_maximum_health(ActorAttributes),
+         MaxHealth = shr_attributes:get_health(ActorAttributes),
          MaxHealing = (MaxHealth - CurrentHealth),
          S1HealingAmount = min(MaxHealing, S0HealingAmount),
          {S1Actor, ActorAtaxicUpdate} =
             btl_character:ataxia_set_current_health
             (
-               S0Actor,
-               (CurrentHealth + S1HealingAmount)
+               (CurrentHealth + S1HealingAmount),
+               S0Actor
             ),
 
          {
@@ -89,7 +88,7 @@ perform_on_target (TargetIX, Power, S0Update) ->
       }
          ->
             {S2Battle, BattleAtaxicUpdate} =
-               btl_battle:ataxic_set_character
+               btl_battle:ataxia_set_character
                (
                   TargetIX,
                   S1Target,
@@ -98,7 +97,7 @@ perform_on_target (TargetIX, Power, S0Update) ->
                ),
 
             S1Update =
-               btl_character_turn_update:ataxic_set_battle
+               btl_character_turn_update:ataxia_set_battle
                (
                   S2Battle,
                   BattleAtaxicUpdate,
@@ -123,7 +122,7 @@ perform_on_location (Location, Power, Update) ->
    Characters = btl_battle:get_characters(Battle),
 
    MaybeResultIX =
-      orddict:foldl
+      orddict:fold
       (
          fun (IX, Char, CurrentResult) ->
             case CurrentResult of
@@ -155,7 +154,7 @@ perform_on_location (Location, Power, Update) ->
 standard_perform (Condition, S0Update) ->
    Parameters = btl_conditions:get_parameters(Condition),
    Power =
-      case btl_condition_parameters:get_other(Condition) of
+      case btl_condition_parameters:get_other(Parameters) of
          N when (is_integer(N) and (N >= 0)) -> N;
          Other ->
             error({param, other, Other}),
