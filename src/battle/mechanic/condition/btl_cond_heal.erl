@@ -5,9 +5,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -include("tacticians/conditions.hrl").
 
+-type turn_result() :: {non_neg_integer(), non_neg_integer()}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EXPORTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-export_type([turn_result/0]).
+
 -export
 (
    [
@@ -216,3 +220,15 @@ apply (SelfRef, S0Update, S0Context) ->
 
          {VolatileData, S1Update}
    end.
+
+-spec encode_turn_result (any()) -> binary().
+encode_turn_result ({CharIX, HealingAmount}) ->
+   jiffy:encode
+   (
+      [
+         {<<"ix">>, CharIX},
+         {<<"p">>, HealingAmount}
+      ]
+   );
+encode_turn_result (Other) ->
+   error({turn_result, Other}).
