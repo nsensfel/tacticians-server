@@ -59,6 +59,13 @@
    ]
 ).
 
+-export
+(
+   [
+      encode/1
+   ]
+).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LOCAL FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,3 +121,21 @@ default () -> from_id(<<"0">>).
 
 -spec default_id () -> id().
 default_id () -> <<"0">>.
+
+-spec encode (type()) -> {list({binary(), any()})}.
+encode (Skill) ->
+   {
+      [
+         { <<"id">>, Skill#skill.id },
+         { <<"nam">>, Skill#skill.name },
+         { <<"cos">>, Skill#skill.cost },
+         { <<"res">>, Skill#skill.reserve },
+         { <<"tar">>, Skill#skill.targets },
+         { <<"loc">>, Skill#skill.locations },
+         { <<"dur">>, Skill#skill.duration },
+         { <<"use">>, Skill#skill.uses },
+         { <<"cha">>, Skill#skill.chance },
+         { <<"pow">>, Skill#skill.power },
+         { <<"ran">>, Skill#skill.range }
+      ]
+   }.
