@@ -16,7 +16,9 @@
       players :: orddict:orddict(non_neg_integer(), btl_player:type()),
       current_player_turn :: btl_player_turn:type(),
       conditions :: btl_conditions:type(),
-      status_indicators :: btl_status_indicators:type()
+      map_conditions :: btl_conditions:type(),
+      status_indicators :: btl_status_indicators:type(),
+      map_status_indicators :: btl_status_indicators:type()
    }
 ).
 

@@ -3,14 +3,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% TYPES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--type display_data() :: list(binary()).
-
 -opaque type() ::
    {
       shr_tile:id(),
       shr_tile:variant_id(),
-      display_data(),
-      ordsets:ordset(shr_map_marker:name())
+      orddict:orddict
+      (
+         shr_condition:trigger(),
+         ordsets:ordset(non_neg_integer())
+      )
    }.
 
 -export_type([type/0]).

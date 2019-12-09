@@ -14,6 +14,7 @@
    (
       {char, non_neg_integer(), non_neg_integer()}
       | {battle, non_neg_integer()}
+      | {map, non_neg_integer()}
    ).
 
 -record
@@ -64,6 +65,8 @@
 -export
 (
    [
+      add_at/5,
+      ataxia_add/5,
       add/4,
       ataxia_add/4,
       remove/2,

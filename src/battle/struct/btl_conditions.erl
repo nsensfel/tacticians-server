@@ -9,6 +9,7 @@
    (
       {char, non_neg_integer(), non_neg_integer()}
       | {battle, non_neg_integer()}
+      | {map, non_neg_integer()}
    ).
 
 -record
