@@ -691,5 +691,7 @@ new (Map) ->
       players = EmptyDict,
       current_player_turn = btl_player_turn:new(0, 0),
       conditions = btl_conditions:new(),
-      status_indicators = btl_status_indicators:new()
+      map_conditions = btl_conditions:new(),
+      status_indicators = btl_status_indicators:new(),
+      map_status_indicators = btl_status_indicators:new()
    }.

@@ -20,7 +20,7 @@
 generate (Armor) ->
    {
       [
-         {<<"msg">>, <<"add_armor">>},
+         {<<"msg">>, <<"acds_armor">>},
          {<<"id">>, shr_armor:get_id(Armor)},
          {<<"nam">>, shr_armor:get_name(Armor)},
          {<<"omni">>, shr_omnimods:encode(shr_armor:get_omnimods(Armor))}

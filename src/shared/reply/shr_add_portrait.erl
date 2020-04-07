@@ -20,7 +20,7 @@
 generate (Portrait) ->
    {
       [
-         {<<"msg">>, <<"add_portrait">>},
+         {<<"msg">>, <<"acds_portrait">>},
          {<<"id">>, shr_portrait:get_id(Portrait)},
          {<<"nam">>, shr_portrait:get_name(Portrait)},
          {<<"bid">>, shr_portrait:get_body_id(Portrait)},

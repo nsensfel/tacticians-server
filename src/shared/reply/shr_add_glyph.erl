@@ -20,7 +20,7 @@
 generate (Glyph) ->
    {
       [
-         {<<"msg">>, <<"add_glyph">>},
+         {<<"msg">>, <<"acds_glyph">>},
          {<<"id">>, shr_glyph:get_id(Glyph)},
          {<<"nam">>, shr_glyph:get_name(Glyph)},
          {<<"fam">>, shr_glyph:get_family_id(Glyph)},

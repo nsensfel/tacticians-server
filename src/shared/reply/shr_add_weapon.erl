@@ -20,7 +20,7 @@
 generate (Weapon) ->
    {
       [
-         {<<"msg">>, <<"add_weapon">>},
+         {<<"msg">>, <<"acds_weapon">>},
          {<<"id">>, shr_weapon:get_id(Weapon)},
          {<<"nam">>, shr_weapon:get_name(Weapon)},
          {<<"rmi">>, shr_weapon:get_minimum_range(Weapon)},

@@ -20,7 +20,7 @@
 generate (Tile) ->
    {
       [
-         {<<"msg">>, <<"add_tile">>},
+         {<<"msg">>, <<"amds_tile">>},
          {<<"id">>, shr_tile:get_id(Tile)},
          {<<"nam">>, shr_tile:get_name(Tile)},
          {<<"ct">>, shr_tile:get_cost(Tile)},

@@ -87,10 +87,10 @@ create_character (PlayerIX, RosterChar, Map, ForbiddenLocations) ->
       btl_character:new
       (
          PlayerIX,
-         optional,
          Location,
          ResolvedBaseChar,
-         btl_conditions:new()
+         btl_conditions:new(),
+         btl_status_indicators:new()
       ),
 
    btl_character:to_unresolved(Result).

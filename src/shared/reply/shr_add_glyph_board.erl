@@ -20,7 +20,7 @@
 generate (GlyphBoard) ->
    {
       [
-         {<<"msg">>, <<"add_glyph_board">>},
+         {<<"msg">>, <<"acds_glyph_board">>},
          {<<"id">>, shr_glyph_board:get_id(GlyphBoard)},
          {<<"nam">>, shr_glyph_board:get_name(GlyphBoard)},
          {<<"slot">>, shr_glyph_board:get_slots(GlyphBoard)}
