@@ -72,13 +72,13 @@ handle (Action, S0Update) ->
                S0Actor
             ),
 
-         {S1Battle, BattleAtaxicUpdate} =
+         {S2Battle, BattleAtaxicUpdate} =
             btl_battle:ataxia_set_character
             (
                ActorIX,
                S1Actor,
                ActorAtaxicUpdate,
-               S0Battle
+               S1Battle
             ),
 
          TimelineItem =
@@ -90,7 +90,7 @@ handle (Action, S0Update) ->
          S4Update =
             btl_character_turn_update:ataxia_set_battle
             (
-               S1Battle,
+               S2Battle,
                BattleAtaxicUpdate,
                S3Update
             ),

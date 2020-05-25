@@ -54,13 +54,21 @@ validate_actions (Actions) ->
    {AreValid, _LastAction} =
       lists:foldl
       (
-         fun (Action, {CurrentResult, PrevAction}) ->
+         fun (Action, {CurrentResult, PrevActionCategory}) ->
+            ActionCategory = btl_action:get_category(Action),
             {
                case CurrentResult of
-                  false -> false;
-                  true -> btl_action:can_follow(PrevAction, Action)
+                  false ->
+                     error({action, PrevActionCategory, ActionCategory}),
+                     false;
+                  true ->
+                     btl_action:can_follow
+                     (
+                        PrevActionCategory,
+                        ActionCategory
+                     )
                end,
-               Action
+               ActionCategory
             }
          end,
          {true, nothing},

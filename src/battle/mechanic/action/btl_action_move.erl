@@ -499,31 +499,31 @@ handle (Action, S0Update) ->
    end,
 
    % [FIXME][IMPORTANT]: 'Path' will not be correct if there is an interruption.
-   S4Update =
+   S5Update =
       commit_move(ActorIX, S1Actor, S4Update, HandledPath, NewLocation),
 
-   {_V0Nothing, S5Update} =
+   {_V0Nothing, S6Update} =
       btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_HAS_MOVED,
          {Action, HandledPath, PathCost, NewLocation},
          none,
-         S4Update
+         S5Update
       ),
 
-   {_V1Nothing, S6Update} =
+   {_V1Nothing, S7Update} =
       btl_conditions:apply_to_character
       (
          ActorIX,
          ?CONDITION_TRIGGER_A_CHARACTER_HAS_MOVED,
          {Action, HandledPath, PathCost, NewLocation},
          none,
-         S5Update
+         S6Update
       ),
 
    case RemainingPath of
-      [] -> S6Update;
+      [] -> S7Update;
       _ ->
          btl_character_turn_update:add_actions
          (
@@ -540,6 +540,6 @@ handle (Action, S0Update) ->
                   )
                ]
             ),
-            S6Update
+            S7Update
          )
    end.
