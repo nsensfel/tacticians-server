@@ -635,8 +635,13 @@ get_conditions_field () -> #btl_char_ref.conditions.
 -spec get_status_indicators_field() -> non_neg_integer().
 get_status_indicators_field () -> #btl_char_ref.status_indicators.
 
--spec encode_for (non_neg_integer(), unresolved()) -> {list({binary(), any()})}.
-encode_for (RequestingPlayerIX, CharRef) ->
+-spec encode_for (non_neg_integer(), either()) -> {list({binary(), any()})}.
+encode_for
+   (
+      RequestingPlayerIX,
+      CharRef
+   )
+   when is_record(CharRef, btl_char_ref) ->
    {
       [
          {?PLAYER_IX_FIELD, CharRef#btl_char_ref.player_ix},
@@ -652,6 +657,26 @@ encode_for (RequestingPlayerIX, CharRef) ->
             (
                RequestingPlayerIX,
                CharRef#btl_char_ref.status_indicators
+            )
+         }
+      ]
+   };
+encode_for (RequestingPlayerIX, Char) ->
+   {
+      [
+         {?PLAYER_IX_FIELD, Char#btl_char.player_ix},
+         {?LOCATION_FIELD, shr_location:encode(Char#btl_char.location)},
+         {?CURRENT_HEALTH_FIELD, Char#btl_char.current_health},
+         {?SKILL_POINTS_FIELD, Char#btl_char.skill_points},
+         {?IS_ACTIVE_FIELD, Char#btl_char.is_active},
+         {?IS_DEFEATED_FIELD, Char#btl_char.is_defeated},
+         {?BASE_CHAR_FIELD, shr_character:encode(Char#btl_char.base)},
+         {
+            ?STATUS_INDICATORS,
+            btl_status_indicators:encode_for
+            (
+               RequestingPlayerIX,
+               Char#btl_char.status_indicators
             )
          }
       ]

@@ -132,6 +132,12 @@ send_to_database (Update, Request) ->
    BattleID = btl_character_turn_request:get_battle_id(Request),
    BattleAtaxicUpdate = btl_character_turn_update:get_battle_update(Update),
 
+   io:format
+   (
+      "pre-optimize: ~p~n, post-optimize: ~p~n",
+      [BattleAtaxicUpdate, ataxic_optimize:aggressive(BattleAtaxicUpdate)]
+   ),
+
    ok =
       ataxia_client:update
       (
