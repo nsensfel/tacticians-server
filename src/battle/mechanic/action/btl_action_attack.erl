@@ -573,19 +573,19 @@ commit_hit
          S0Target
       ),
 
-   {S1Battle, BattleAtaxicUpdate1} =
+   {S2Battle, BattleAtaxicUpdate1} =
       btl_battle:ataxia_set_character
       (
          TargetIX,
          S1Target,
          TargetAtaxicUpdate,
-         S0Battle
+         S1Battle
       ),
 
    S2Update =
       btl_character_turn_update:ataxia_set_battle
       (
-         S1Battle,
+         S2Battle,
          BattleAtaxicUpdate1,
          S1Update
       ),
@@ -1049,43 +1049,43 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
 
                {
                   Precision,
-                  S2ModdedActor,
-                  S2ModdedTarget,
-                  S3Sequence,
-                  S4Update
-               } =
-                  handle_precision
-                  (
-                     S1ModdedActor,
-                     S1ModdedTarget,
-                     S2Sequence,
-                     AttackCategory,
-                     Action,
-                     IsParry,
-                     ActorHasRange,
-                     S3Update
-                  ),
-
-               {
-                  IsCritical,
                   S3ModdedActor,
                   S3ModdedTarget,
                   S4Sequence,
                   S5Update
                } =
-                  handle_critical_hit
+                  handle_precision
                   (
-                     S2ModdedActor,
-                     S2ModdedTarget,
+                     S1ModdedActor,
+                     S1ModdedTarget,
                      S3Sequence,
                      AttackCategory,
                      Action,
                      IsParry,
-                     Precision,
+                     ActorHasRange,
                      S4Update
                   ),
 
-               {S5Sequence, S6Update} =
+               {
+                  IsCritical,
+                  S4ModdedActor,
+                  S4ModdedTarget,
+                  S5Sequence,
+                  S6Update
+               } =
+                  handle_critical_hit
+                  (
+                     S2ModdedActor,
+                     S2ModdedTarget,
+                     S4Sequence,
+                     AttackCategory,
+                     Action,
+                     IsParry,
+                     Precision,
+                     S5Update
+                  ),
+
+               {S6Sequence, S7Update} =
                   commit_hit
                   (
                      IsParry,
@@ -1093,13 +1093,13 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                      IsCritical,
                      S3ModdedActor,
                      S3ModdedTarget,
-                     S4Sequence,
+                     S5Sequence,
                      AttackCategory,
                      Action,
-                     S5Update
+                     S6Update
                   ),
 
-               {S5Sequence, S6Update}
+               {S6Sequence, S7Update}
          end;
 
       {_, _} -> {S1Sequence, S2Update}
