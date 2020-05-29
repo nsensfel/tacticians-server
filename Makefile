@@ -19,7 +19,7 @@ ERL_NAME_VS_SNAME ?= -sname
 
 ## Binaries
 ERLC ?= erlc
-ERLC_OPTS ?= -I $(INCLUDE_DIR)
+ERLC_OPTS ?= -Wall -Werror -I $(INCLUDE_DIR)
 
 ERL ?= erl
 ERL_OPTS ?= -connect_all false \

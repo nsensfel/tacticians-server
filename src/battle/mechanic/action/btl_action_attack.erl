@@ -521,7 +521,7 @@ commit_hit
    S1DamageMultiplier =
       case IsCritical of
          true -> (S0DamageMultiplier) * 2.0;
-         false -> 0.0
+         false -> 1.0
       end,
 
    S0AttackDamage =
@@ -1056,8 +1056,8 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                } =
                   handle_precision
                   (
-                     S1ModdedActor,
-                     S1ModdedTarget,
+                     S2ModdedActor,
+                     S2ModdedTarget,
                      S3Sequence,
                      AttackCategory,
                      Action,
@@ -1075,8 +1075,8 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                } =
                   handle_critical_hit
                   (
-                     S2ModdedActor,
-                     S2ModdedTarget,
+                     S3ModdedActor,
+                     S3ModdedTarget,
                      S4Sequence,
                      AttackCategory,
                      Action,
@@ -1091,8 +1091,8 @@ handle_hit (AttackCategory, S0Sequence, Action, S0Update) ->
                      IsParry,
                      Precision,
                      IsCritical,
-                     S3ModdedActor,
-                     S3ModdedTarget,
+                     S4ModdedActor,
+                     S4ModdedTarget,
                      S5Sequence,
                      AttackCategory,
                      Action,
