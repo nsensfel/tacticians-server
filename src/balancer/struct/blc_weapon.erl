@@ -204,8 +204,8 @@ get_max_attribute_ratio (SpendablePoints, ?WEAPON_ATTRIBUTE_RANGE) ->
       ),
 
    case (Contrib == 0) of
-      true -> 0.0;
-      false -> (SpendablePoints / Contrib) * 100.0
+      false -> (SpendablePoints / Contrib) * 100.0;
+      _ -> 0.0
    end;
 get_max_attribute_ratio (SpendablePoints, Attribute) ->
    {AttMin, _AttDef, AttMax, AttCost} = blc_attribute:get_info(Attribute),

@@ -310,47 +310,47 @@ generate_pending_battle
 
    S0PendingBattle.
 
--spec repair_join_battle
-   (
-      shr_player:id(),
-      non_neg_integer(),
-      shr_battle_summary:category(),
-      list(non_neg_integer()),
-      btl_pending_battle:id(),
-      btl_pending_battle:type()
-   )
-   -> {ok, btl_pending_battle:type()}.
-repair_join_battle
-(
-   PlayerID,
-   PlayerSumIX,
-   PlayerSumCategory,
-   RosterCharIXs,
-   PBattleID,
-   PBattle
-) ->
-   PlayerUser = ataxia_security:user_from_id(PlayerID),
-
-   {S0PBattle, AtaxicUpdate} =
-      add_to_pending_battle
-      (
-         PlayerID,
-         PlayerSumIX,
-         PlayerSumCategory,
-         RosterCharIXs,
-         PBattle
-      ),
-
-   ok =
-      ataxia_client:update
-      (
-         pending_battle_db,
-         PlayerUser,
-         AtaxicUpdate,
-         PBattleID
-      ),
-
-   {ok, S0PBattle}.
+%%-spec repair_join_battle
+%%   (
+%%      shr_player:id(),
+%%      non_neg_integer(),
+%%      shr_battle_summary:category(),
+%%      list(non_neg_integer()),
+%%      btl_pending_battle:id(),
+%%      btl_pending_battle:type()
+%%   )
+%%   -> {ok, btl_pending_battle:type()}.
+%%repair_join_battle
+%%(
+%%   PlayerID,
+%%   PlayerSumIX,
+%%   PlayerSumCategory,
+%%   RosterCharIXs,
+%%   PBattleID,
+%%   PBattle
+%%) ->
+%%   PlayerUser = ataxia_security:user_from_id(PlayerID),
+%%
+%%   {S0PBattle, AtaxicUpdate} =
+%%      add_to_pending_battle
+%%      (
+%%         PlayerID,
+%%         PlayerSumIX,
+%%         PlayerSumCategory,
+%%         RosterCharIXs,
+%%         PBattle
+%%      ),
+%%
+%%   ok =
+%%      ataxia_client:update
+%%      (
+%%         pending_battle_db,
+%%         PlayerUser,
+%%         AtaxicUpdate,
+%%         PBattleID
+%%      ),
+%%
+%%   {ok, S0PBattle}.
 
 -spec repair_create_battle
    (
